@@ -132,6 +132,7 @@ local UITheme = {
 		lantern = "Metal",
 		candle = "SmoothPlastic",
 		altar = "Slate",
+		cloth = "Fabric",
 	}),
 	motion = table.freeze({
 		buttonHover = table.freeze({

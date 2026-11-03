@@ -11,6 +11,7 @@ local Remotes = require(script.Parent:WaitForChild("Remotes"))
 local Debounce = require(Shared:WaitForChild("Logic"):WaitForChild("Debounce")) :: any
 local Economy = require(Shared:WaitForChild("Config"):WaitForChild("Economy")) :: any
 local Lair = require(Shared:WaitForChild("Config"):WaitForChild("Lair")) :: any
+local Plots = require(Shared:WaitForChild("Config"):WaitForChild("Plots")) :: any
 local Income = require(Shared:WaitForChild("Logic"):WaitForChild("Income")) :: any
 local Names = require(Shared:WaitForChild("Config"):WaitForChild("Remotes")) :: any
 local ProfileQuery = require(Shared:WaitForChild("Logic"):WaitForChild("ProfileQuery")) :: any
@@ -189,7 +190,15 @@ queueSave = function(session: any)
 	task.spawn(performSave, session)
 end
 
+local function ownsPlot(session: any): boolean
+	local plot = session.plot
+	return plot ~= nil and plot.state == "owned" and plot.userId == session.player.UserId
+end
+
 local function allowRequest(session: any): boolean
+	if not ownsPlot(session) then
+		return false
+	end
 	local now = os.clock()
 	if now - session.windowStart >= 1 then
 		session.windowStart = now
@@ -338,6 +347,23 @@ local function onCompleteCatch(session: any)
 	commit(session, ok)
 end
 
+local function onReturn(session: any)
+	if not allowRequest(session) then
+		return
+	end
+	local character = session.player.Character
+	if character == nil then
+		return
+	end
+	local now = os.clock()
+	local allowed, at = Debounce.allow(session.lastReturnAt, now, Plots.RETURN_COOLDOWN_SECONDS)
+	if not allowed then
+		return
+	end
+	session.lastReturnAt = at
+	character:PivotTo(Plot.spawnCFrame(session.plot))
+end
+
 local function onReducedMotion(session: any, enabled: any)
 	if not allowRequest(session) then
 		return
@@ -377,6 +403,7 @@ local function bind(folder: Folder)
 	listen(Names.BEGIN_CATCH, onBeginCatch)
 	listen(Names.COMPLETE_CATCH, onCompleteCatch)
 	listen(Names.REDUCED_MOTION, onReducedMotion)
+	listen(Names.RETURN_TO_LAIR, onReturn)
 end
 
 local function startLoops(session: any)
@@ -430,6 +457,9 @@ end
 
 function PlayerSession.start(folder: Folder)
 	bind(folder)
+	Plot.start(function(player: Player)
+		return sessions[player]
+	end)
 end
 
 function PlayerSession.onPlayer(player: Player)
@@ -461,8 +491,23 @@ function PlayerSession.onPlayer(player: Player)
 	guide.Name = "GuideTarget"
 	guide.Parent = player
 
-	local plot = Plot.create(player.UserId, Plot.nextOrigin())
-	player.RespawnLocation = plot.spawnLocation
+	local plot, claimStatus = Plot.claim(player)
+	if player.Parent == nil or claimStatus == "left" then
+		if plot ~= nil then
+			Plot.hold(player)
+		end
+		if loaded.ok and loaded.ephemeral ~= true and loaded.profile ~= nil then
+			DataStoreGateway.release(player.UserId, loaded.profile)
+		end
+		return
+	end
+	if plot == nil then
+		if loaded.ok and loaded.ephemeral ~= true and loaded.profile ~= nil then
+			DataStoreGateway.release(player.UserId, loaded.profile)
+		end
+		player:Kick(Plots.KICK_NO_LAIR)
+		return
+	end
 
 	local session = {
 		player = player,
@@ -481,6 +526,7 @@ function PlayerSession.onPlayer(player: Player)
 		revision = 0,
 		catchStart = nil,
 		catchToken = 0,
+		lastReturnAt = nil,
 		workers = 0,
 		plot = plot,
 		snapshot = snapshot,
@@ -513,7 +559,7 @@ function PlayerSession.onRemoving(player: Player)
 	if not session.ephemeral then
 		DataStoreGateway.release(player.UserId, session.profile)
 	end
-	Plot.destroy(session.plot)
+	Plot.hold(player)
 end
 
 function PlayerSession.shutdown()

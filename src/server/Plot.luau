@@ -1,93 +1,314 @@
 --!strict
 
-local CollectionService = game:GetService("CollectionService")
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local CryptidModel = require(script.Parent:WaitForChild("CryptidModel"))
+local PlotBuilder = require(script.Parent:WaitForChild("PlotBuilder"))
+local PlotSignals = require(script.Parent:WaitForChild("PlotSignals"))
 local Economy = require(Shared:WaitForChild("Config"):WaitForChild("Economy")) :: any
-local Lair = require(Shared:WaitForChild("Config"):WaitForChild("Lair")) :: any
 local NumberFormat = require(Shared:WaitForChild("Logic"):WaitForChild("NumberFormat")) :: any
 local OnboardingGoals = require(Shared:WaitForChild("Logic"):WaitForChild("OnboardingGoals")) :: any
+local PlotAccess = require(Shared:WaitForChild("Logic"):WaitForChild("PlotAccess")) :: any
+local PlotAssign = require(Shared:WaitForChild("Logic"):WaitForChild("PlotAssign")) :: any
+local PlotRing = require(Shared:WaitForChild("Logic"):WaitForChild("PlotRing")) :: any
+local Plots = require(Shared:WaitForChild("Config"):WaitForChild("Plots")) :: any
 local ProfileQuery = require(Shared:WaitForChild("Logic"):WaitForChild("ProfileQuery")) :: any
 local Species = require(Shared:WaitForChild("Config"):WaitForChild("Species")) :: any
+local StealGuard = require(Shared:WaitForChild("Logic"):WaitForChild("StealGuard")) :: any
 local Transactions = require(Shared:WaitForChild("Logic"):WaitForChild("Transactions")) :: any
 local UITheme = require(Shared:WaitForChild("UITheme")) :: any
 
+local plots: { any } = {}
+local byPlayer: { [Player]: any } = {}
+local insidePlot: { [Player]: number } = {}
+local lastSealAt: { [Player]: number } = {}
+local watching = false
+local activeTicket = 1
+local issuedTicket = 0
+
 local Plot = {}
-local slotCursor = 0
 
-local function material(name: string): Enum.Material
-	return Enum.Material[name]
+local function acquire()
+	issuedTicket += 1
+	local ticket = issuedTicket
+	while activeTicket ~= ticket do
+		task.wait()
+	end
 end
 
-local function makePart(
-	parent: Instance,
-	name: string,
-	size: Vector3,
-	cf: CFrame,
-	materialName: string,
-	colorToken: string,
-	collide: boolean
-): Part
-	local piece = Instance.new("Part")
-	piece.Name = name
-	piece.Anchored = true
-	piece.Size = size
-	piece.CFrame = cf
-	piece.Material = material(materialName)
-	piece.Color = UITheme.color(colorToken)
-	piece.TopSurface = Enum.SurfaceType.Smooth
-	piece.BottomSurface = Enum.SurfaceType.Smooth
-	piece.CanCollide = collide
-	piece.Parent = parent
-	return piece
+local function release()
+	activeTicket += 1
 end
 
-local function candle(parent: Instance, origin: CFrame, localPos: Vector3)
-	local stand = origin * CFrame.new(localPos + Vector3.new(0, 0.5, 0))
-	local stick = makePart(
-		parent,
-		"Candle",
-		Vector3.new(0.35, 0.9, 0.35),
-		stand * CFrame.Angles(0, 0, math.rad(90)),
-		UITheme.materials.candle,
-		"Bone",
-		false
+local function locked(body: () -> ()): (boolean, string?)
+	acquire()
+	local ok, err = pcall(body)
+	release()
+	return ok, if ok then nil else tostring(err)
+end
+
+local function personName(player: Player): string
+	if player.DisplayName ~= "" then
+		return player.DisplayName
+	end
+	return player.Name
+end
+
+local function rootOf(player: Player): BasePart?
+	local character = player.Character
+	if character == nil then
+		return nil
+	end
+	local root = character:FindFirstChild("HumanoidRootPart")
+	if root ~= nil and root:IsA("BasePart") then
+		return root
+	end
+	return nil
+end
+
+local function contains(plot: any, worldPosition: Vector3): boolean
+	local localPos = plot.origin:PointToObjectSpace(worldPosition)
+	local half = Plots.FOOTPRINT / 2
+	return math.abs(localPos.X) <= half
+		and math.abs(localPos.Z) <= half
+		and localPos.Y >= -Plots.STAND_HEIGHT
+		and localPos.Y <= Plots.THRESHOLD_HEIGHT
+end
+
+local function publish(plot: any)
+	plot.model:SetAttribute("PlotIndex", plot.index)
+	plot.model:SetAttribute("OwnerUserId", plot.userId)
+	plot.model:SetAttribute("OwnerName", plot.ownerName)
+	plot.model:SetAttribute("PlotState", plot.state)
+	plot.model:SetAttribute("Sealed", plot.protected == true and plot.state ~= "free")
+	local showSeal = plot.protected == true and plot.state ~= "free"
+	plot.seal.Transparency = if showSeal then Plots.SEAL_TRANSPARENCY else 1
+end
+
+local function setPrompts(plot: any, userId: number)
+	local function apply(plate: ProximityPrompt)
+		plate:SetAttribute("OwnerUserId", userId)
+	end
+	apply(plot.altarPrompt)
+	apply(plot.wildPrompt)
+	for _, pad in plot.pads do
+		apply(pad.prompt)
+		pad.center:SetAttribute("OwnerUserId", userId)
+	end
+	for _, rift in plot.rift do
+		apply(rift.prompt)
+		rift.part:SetAttribute("OwnerUserId", userId)
+	end
+	plot.wildPad:SetAttribute("OwnerUserId", userId)
+end
+
+local function setLivedIn(plot: any, livedIn: boolean)
+	for _, light in plot.lights do
+		light.Enabled = livedIn
+	end
+	for _, flame in plot.flames do
+		flame.Transparency = if livedIn then 0 else 1
+	end
+	for _, door in plot.doors do
+		door.CanCollide = not livedIn
+		door.CanTouch = not livedIn
+		door.Transparency = if livedIn then 1 else 0
+	end
+	plot.spawnLocation.Enabled = livedIn
+end
+
+local function destroyNamed(host: Instance, name: string)
+	local existing = host:FindFirstChild(name)
+	if existing ~= nil then
+		existing:Destroy()
+	end
+end
+
+local function clearCreatures(plot: any)
+	for _, pad in plot.pads do
+		destroyNamed(pad.center, "Creature")
+		pad.center:SetAttribute("beingStolen", false)
+		pad.prompt:SetAttribute("Available", false)
+	end
+	for _, rift in plot.rift do
+		destroyNamed(rift.part, "Creature")
+		rift.prompt:SetAttribute("Available", false)
+	end
+	destroyNamed(plot.wildPad, "Creature")
+	plot.wildPrompt:SetAttribute("Available", false)
+	plot.altarPrompt:SetAttribute("Available", false)
+	plot.tiers:ClearAllChildren()
+end
+
+local function outsideGate(plot: any): CFrame
+	local position =
+		plot.origin:PointToWorldSpace(Vector3.new(0, Plots.STAND_HEIGHT, Plots.LAIR_GATE_Z + Plots.SEAL_PUSH_STUDS))
+	local further = plot.origin:PointToWorldSpace(
+		Vector3.new(0, Plots.STAND_HEIGHT, Plots.LAIR_GATE_Z + Plots.SEAL_PUSH_STUDS + Plots.SEAL_PUSH_STUDS)
 	)
-	stick.Shape = Enum.PartType.Cylinder
-	local flame = makePart(
-		parent,
-		"Flame",
-		Vector3.new(0.25, 0.35, 0.25),
-		origin * CFrame.new(localPos + Vector3.new(0, 1.15, 0)),
-		UITheme.materials.candle,
-		"Candle",
-		false
-	)
-	local light = Instance.new("PointLight")
-	light.Color = UITheme.color("Candle")
-	light.Range = Lair.CANDLE_RANGE
-	light.Brightness = Lair.CANDLE_BRIGHTNESS
-	light.Shadows = true
-	light.Parent = flame
+	return CFrame.lookAt(position, further)
 end
 
-local function prompt(parent: BasePart, ownerUserId: number, kind: string): ProximityPrompt
-	local plate = Instance.new("ProximityPrompt")
-	plate.Name = kind
-	plate.Style = Enum.ProximityPromptStyle.Custom
-	plate.KeyboardKeyCode = Enum.KeyCode.E
-	plate.GamepadKeyCode = Enum.KeyCode.ButtonX
-	plate.HoldDuration = 0
-	plate.RequiresLineOfSight = false
-	plate.MaxActivationDistance = Lair.PURCHASE_PROMPT_DISTANCE
-	plate.ClickablePrompt = true
-	plate:SetAttribute("OwnerUserId", ownerUserId)
-	plate:SetAttribute("Kind", kind)
-	plate:SetAttribute("Available", false)
-	plate.Parent = parent
-	return plate
+local function townEdge(index: number): CFrame
+	local edge = PlotRing.townEdge(index)
+	return CFrame.lookAt(Vector3.new(edge.x, edge.y, edge.z), Vector3.new(0, edge.y, 0))
+end
+
+local function ejectVisitors(plot: any)
+	local ownerId = plot.userId
+	for _, player in Players:GetPlayers() do
+		if player.UserId ~= ownerId then
+			local character = player.Character
+			local root = rootOf(player)
+			if character ~= nil and root ~= nil and contains(plot, root.Position) then
+				character:PivotTo(townEdge(plot.index))
+				insidePlot[player] = nil
+			end
+		end
+	end
+end
+
+local function clearPlot(plot: any)
+	ejectVisitors(plot)
+	clearCreatures(plot)
+	setPrompts(plot, 0)
+	setLivedIn(plot, false)
+	plot.state = "free"
+	plot.userId = 0
+	plot.ownerName = ""
+	plot.protected = false
+	plot.profile = nil
+	publish(plot)
+end
+
+local function snapshot(): any
+	local state = PlotAssign.empty(Plots.COUNT)
+	for _, plot in plots do
+		if plot.state == "owned" or plot.state == "reserved" then
+			state.plots[plot.index] = {
+				state = plot.state,
+				userId = plot.userId,
+			}
+		end
+	end
+	return state
+end
+
+local function friendPlots(player: Player): { number }?
+	local found = {}
+	for _, other in Players:GetPlayers() do
+		if other ~= player then
+			local plot = byPlayer[other]
+			if plot ~= nil then
+				local ok, isFriend = pcall(function()
+					return player:IsFriendsWith(other.UserId)
+				end)
+				if not ok then
+					return nil
+				end
+				if isFriend == true then
+					table.insert(found, plot.index)
+				end
+			end
+		end
+	end
+	return found
+end
+
+local function occupy(plot: any, player: Player)
+	plot.ownerName = personName(player)
+	setPrompts(plot, player.UserId)
+	setLivedIn(plot, true)
+	publish(plot)
+	player:SetAttribute("PlotIndex", plot.index)
+	player.RespawnLocation = plot.spawnLocation
+end
+
+function Plot.build()
+	if #plots > 0 then
+		return
+	end
+	plots = PlotBuilder.build()
+end
+
+function Plot.claim(player: Player): (any?, string)
+	local claimed = nil
+	local why = "full"
+	local ok, err = locked(function()
+		if player.Parent == nil then
+			why = "left"
+			return
+		end
+		local state = snapshot()
+		local friends = nil
+		if PlotAssign.reservedIndex(state, player.UserId) == nil then
+			friends = friendPlots(player)
+			if player.Parent == nil then
+				why = "left"
+				return
+			end
+			state = snapshot()
+		end
+		local index = PlotAssign.choose(state, player.UserId, friends)
+		if index == nil then
+			why = "full"
+			return
+		end
+		local plot = plots[index]
+		plot.generation += 1
+		plot.state = "owned"
+		plot.userId = player.UserId
+		plot.ownerName = personName(player)
+		byPlayer[player] = plot
+		claimed = plot
+		why = "ok"
+	end)
+	if not ok then
+		warn("Plot assignment failed: " .. tostring(err))
+		local partial = byPlayer[player]
+		if partial ~= nil then
+			byPlayer[player] = nil
+			clearPlot(partial)
+		end
+		return nil, "full"
+	end
+	if claimed == nil then
+		return nil, why
+	end
+	occupy(claimed, player)
+	if player.Parent == nil then
+		byPlayer[player] = nil
+		clearPlot(claimed)
+		return nil, "left"
+	end
+	return claimed, "ok"
+end
+
+function Plot.hold(player: Player)
+	local plot = byPlayer[player]
+	byPlayer[player] = nil
+	insidePlot[player] = nil
+	lastSealAt[player] = nil
+	player:SetAttribute("PlotIndex", nil)
+	if plot == nil or plot.userId ~= player.UserId or plot.state ~= "owned" then
+		return
+	end
+	plot.state = "reserved"
+	plot.generation += 1
+	local generation = plot.generation
+	local userId = plot.userId
+	publish(plot)
+	task.delay(Plots.HOLD_SECONDS, function()
+		if plot.generation ~= generation then
+			return
+		end
+		if plot.state ~= "reserved" or plot.userId ~= userId then
+			return
+		end
+		clearPlot(plot)
+	end)
 end
 
 local function replaceCreature(host: Instance, speciesId: string?, cf: CFrame)
@@ -110,275 +331,30 @@ local function replaceCreature(host: Instance, speciesId: string?, cf: CFrame)
 	model:PivotTo(cf)
 end
 
-function Plot.nextOrigin(): CFrame
-	local slot = slotCursor
-	slotCursor += 1
-	local column = slot % 4
-	local row = math.floor(slot / 4)
-	return CFrame.new(column * Lair.PLOT_STRIDE, 0, row * Lair.PLOT_STRIDE)
-end
-
-function Plot.create(ownerUserId: number, origin: CFrame): any
-	local folder = workspace:FindFirstChild("Lairs")
-	if folder == nil then
-		folder = Instance.new("Folder")
-		folder.Name = "Lairs"
-		folder.Parent = workspace
-	end
-
-	local model = Instance.new("Model")
-	model.Name = "Lair_" .. tostring(ownerUserId)
-	model:SetAttribute("OwnerUserId", ownerUserId)
-
-	local halfZ = Lair.FLOOR_SIZE.z / 2
-	local halfX = Lair.FLOOR_SIZE.x / 2
-	local floor = makePart(
-		model,
-		"Floor",
-		Vector3.new(Lair.FLOOR_SIZE.x, Lair.FLOOR_SIZE.y, Lair.FLOOR_SIZE.z),
-		origin * CFrame.new(0, -0.5, 0),
-		UITheme.materials.floor,
-		"Floor",
-		true
-	)
-	model.PrimaryPart = floor
-
-	local wallY = Lair.WALL_HEIGHT / 2
-	makePart(
-		model,
-		"WallNorth",
-		Vector3.new(Lair.FLOOR_SIZE.x, Lair.WALL_HEIGHT, Lair.WALL_THICKNESS),
-		origin * CFrame.new(0, wallY, halfZ),
-		UITheme.materials.wall,
-		"Wall",
-		true
-	)
-	makePart(
-		model,
-		"WallEast",
-		Vector3.new(Lair.WALL_THICKNESS, Lair.WALL_HEIGHT, Lair.FLOOR_SIZE.z),
-		origin * CFrame.new(halfX, wallY, 0),
-		UITheme.materials.wall,
-		"Wall",
-		true
-	)
-	makePart(
-		model,
-		"WallWest",
-		Vector3.new(Lair.WALL_THICKNESS, Lair.WALL_HEIGHT, Lair.FLOOR_SIZE.z),
-		origin * CFrame.new(-halfX, wallY, 0),
-		UITheme.materials.wall,
-		"Wall",
-		true
-	)
-	local gap = Lair.EXIT_GAP
-	local segment = (Lair.FLOOR_SIZE.x - gap) / 2
-	makePart(
-		model,
-		"WallSouthLeft",
-		Vector3.new(segment, Lair.WALL_HEIGHT, Lair.WALL_THICKNESS),
-		origin * CFrame.new(-(gap / 2 + segment / 2), wallY, -halfZ),
-		UITheme.materials.wall,
-		"Wall",
-		true
-	)
-	makePart(
-		model,
-		"WallSouthRight",
-		Vector3.new(segment, Lair.WALL_HEIGHT, Lair.WALL_THICKNESS),
-		origin * CFrame.new(gap / 2 + segment / 2, wallY, -halfZ),
-		UITheme.materials.wall,
-		"Wall",
-		true
-	)
-
-	local wildZ = -halfZ - Economy.WILD_SPAWN_STUDS
-	local pathLength = Economy.WILD_SPAWN_STUDS + 16
-	makePart(
-		model,
-		"Path",
-		Vector3.new(16, 1, pathLength),
-		origin * CFrame.new(0, -0.5, -halfZ - pathLength / 2),
-		UITheme.materials.floor,
-		"Floor",
-		true
-	)
-
-	local belt = makePart(
-		model,
-		"Conveyor",
-		Vector3.new(Lair.CONVEYOR_LENGTH, 0.6, Lair.CONVEYOR_WIDTH),
-		origin * CFrame.new(0, 0.3, Lair.CONVEYOR_Z),
-		UITheme.materials.conveyor,
-		"Ash",
-		true
-	)
-	makePart(
-		model,
-		"RiftTrimLeft",
-		Vector3.new(Lair.CONVEYOR_LENGTH, 0.15, 0.25),
-		origin * CFrame.new(0, 0.65, Lair.CONVEYOR_Z - Lair.CONVEYOR_WIDTH / 2),
-		UITheme.materials.neon,
-		"Rift",
-		false
-	)
-	makePart(
-		model,
-		"RiftTrimRight",
-		Vector3.new(Lair.CONVEYOR_LENGTH, 0.15, 0.25),
-		origin * CFrame.new(0, 0.65, Lair.CONVEYOR_Z + Lair.CONVEYOR_WIDTH / 2),
-		UITheme.materials.neon,
-		"Rift",
-		false
-	)
-
-	local altarStand = origin * CFrame.new(0, 0, Lair.ALTAR_Z)
-	local altar = makePart(
-		model,
-		"Altar",
-		Vector3.new(8, 3, 4),
-		altarStand * CFrame.new(0, 1.5, 0),
-		UITheme.materials.altar,
-		"Altar",
-		true
-	)
-	makePart(
-		model,
-		"AltarLip",
-		Vector3.new(8.4, 0.25, 4.4),
-		altarStand * CFrame.new(0, 3.1, 0),
-		UITheme.materials.padRing,
-		"Gold",
-		false
-	)
-	local altarPrompt = prompt(altar, ownerUserId, "UpgradeAltar")
-	altarPrompt.MaxActivationDistance = Lair.PURCHASE_PROMPT_DISTANCE
-
-	local pads = {}
-	for index, pos in Lair.PAD_POSITIONS do
-		local stand = origin * CFrame.new(pos.x, 0, pos.z)
-		local ring = makePart(
-			model,
-			"PadRing" .. tostring(index),
-			Vector3.new(0.35, Lair.PAD_DIAMETER + 1.6, Lair.PAD_DIAMETER + 1.6),
-			stand * CFrame.new(0, 0.2, 0) * CFrame.Angles(0, 0, math.rad(90)),
-			UITheme.materials.padRing,
-			"Gold",
-			false
+local function rebuildTiers(plot: any, level: number)
+	plot.tiers:ClearAllChildren()
+	for step = 1, level do
+		local shrink = (step - 1) * Plots.ALTAR_TIER_INSET
+		local piece = Instance.new("Part")
+		piece.Name = "AltarTier" .. tostring(step)
+		piece.Anchored = true
+		piece.CanCollide = false
+		piece.CanTouch = false
+		piece.Size = Vector3.new(
+			Plots.ALTAR_SIZE.x - Plots.PAD_RING_MARGIN - shrink,
+			Plots.ALTAR_TIER_HEIGHT,
+			Plots.ALTAR_SIZE.z - Plots.PAD_RING_MARGIN - shrink
 		)
-		ring.Shape = Enum.PartType.Cylinder
-		local center = makePart(
-			model,
-			"Pad" .. tostring(index),
-			Vector3.new(0.45, Lair.PAD_DIAMETER, Lair.PAD_DIAMETER),
-			stand * CFrame.new(0, 0.28, 0) * CFrame.Angles(0, 0, math.rad(90)),
-			UITheme.materials.padCenter,
-			"Floor",
-			false
-		)
-		center.Shape = Enum.PartType.Cylinder
-		center:SetAttribute("OwnerUserId", ownerUserId)
-		center:SetAttribute("PadIndex", index)
-		CollectionService:AddTag(center, "CryptidPad")
-		local padPrompt = prompt(center, ownerUserId, "Pad")
-		table.insert(pads, {
-			index = index,
-			stand = stand,
-			ring = ring,
-			center = center,
-			prompt = padPrompt,
-		})
+		piece.CFrame = plot.altarStand
+			* CFrame.new(
+				0,
+				Plots.FLOOR_THICKNESS + Plots.ALTAR_SIZE.y + Plots.ALTAR_LIP + step * Plots.ALTAR_TIER_HEIGHT,
+				0
+			)
+		piece.Material = Enum.Material[UITheme.materials.altar]
+		piece.Color = UITheme.color("Bone")
+		piece.Parent = plot.tiers
 	end
-
-	local rift = {}
-	for slot = 1, #Species.GUARANTEES do
-		local x = if slot == 1 then -9 else 9
-		local stand = origin * CFrame.new(x, 0.7, Lair.CONVEYOR_Z)
-		local marker = makePart(
-			model,
-			"RiftSlot" .. tostring(slot),
-			Vector3.new(4, 0.2, 4),
-			stand,
-			UITheme.materials.conveyor,
-			"Ash",
-			false
-		)
-		marker:SetAttribute("OwnerUserId", ownerUserId)
-		marker:SetAttribute("Slot", slot)
-		CollectionService:AddTag(marker, "CryptidRift")
-		local riftPrompt = prompt(marker, ownerUserId, "BuyRift")
-		riftPrompt:SetAttribute("Slot", slot)
-		table.insert(rift, {
-			slot = slot,
-			stand = stand * CFrame.new(0, 0.2, 0),
-			part = marker,
-			prompt = riftPrompt,
-		})
-	end
-
-	local wildStand = origin * CFrame.new(0, 0, wildZ)
-	local wildPad = makePart(
-		model,
-		"WildSpawn",
-		Vector3.new(0.3, Lair.WILD_CLEARING_RADIUS * 2, Lair.WILD_CLEARING_RADIUS * 2),
-		wildStand * CFrame.new(0, 0.2, 0) * CFrame.Angles(0, 0, math.rad(90)),
-		UITheme.materials.padCenter,
-		"Ash",
-		false
-	)
-	wildPad.Shape = Enum.PartType.Cylinder
-	wildPad:SetAttribute("OwnerUserId", ownerUserId)
-	CollectionService:AddTag(wildPad, "CryptidWild")
-	local wildPrompt = prompt(wildPad, ownerUserId, "Catch")
-	wildPrompt.MaxActivationDistance = Lair.CATCH_PROMPT_DISTANCE
-
-	local spawn = Instance.new("SpawnLocation")
-	spawn.Name = "LairSpawn"
-	spawn.Size = Vector3.new(6, 1, 6)
-	spawn.Anchored = true
-	spawn.CanCollide = false
-	spawn.Transparency = 1
-	spawn.Duration = 0
-	spawn.Neutral = true
-	local spawnPos = origin:PointToWorldSpace(Vector3.new(0, 3, Lair.SPAWN_Z))
-	local lookPos = origin:PointToWorldSpace(Vector3.new(0, 3, 0))
-	spawn.CFrame = CFrame.lookAt(spawnPos, lookPos)
-	spawn.Parent = model
-
-	local candleSpots = {
-		Vector3.new(-40, 0, 36),
-		Vector3.new(40, 0, 36),
-		Vector3.new(0, 0, Lair.SPAWN_Z),
-		Vector3.new(-20, 0, Lair.CONVEYOR_Z),
-		Vector3.new(20, 0, Lair.CONVEYOR_Z),
-		Vector3.new(0, 0, Lair.ALTAR_Z + 3),
-		Vector3.new(-8, 0, -halfZ),
-		Vector3.new(8, 0, -halfZ),
-		Vector3.new(0, 0, (-halfZ + wildZ) / 2),
-		Vector3.new(-4, 0, wildZ),
-		Vector3.new(4, 0, wildZ),
-	}
-	for _, pos in Lair.PAD_POSITIONS do
-		table.insert(candleSpots, Vector3.new(pos.x + 5, 0, pos.z + 5))
-	end
-	for _, spot in candleSpots do
-		candle(model, origin, spot)
-	end
-
-	model.Parent = folder
-	return {
-		model = model,
-		origin = origin,
-		pads = pads,
-		rift = rift,
-		altar = altar,
-		altarPrompt = altarPrompt,
-		wildPad = wildPad,
-		wildStand = wildStand,
-		wildPrompt = wildPrompt,
-		spawnLocation = spawn,
-		belt = belt,
-	}
 end
 
 local function guidePart(plot: any, guide: string): BasePart?
@@ -406,7 +382,20 @@ local function guidePart(plot: any, guide: string): BasePart?
 end
 
 function Plot.sync(plot: any, profile: any, guideValue: ObjectValue)
+	plot.profile = profile
+	plot.protected = StealGuard.isProtected(profile)
+	publish(plot)
+	rebuildTiers(plot, profile.upgrades.boneAltar)
+
 	for _, pad in plot.pads do
+		pad.center:SetAttribute("beingStolen", false)
+		if PlotRing.isSealedPad(pad.index) then
+			pad.center:SetAttribute("Sealed", true)
+			replaceCreature(pad.center, nil, pad.stand)
+			pad.prompt:SetAttribute("Available", false)
+			pad.ring.Color = UITheme.color("BoneDim")
+			continue
+		end
 		local instanceId = ProfileQuery.padAt(profile, pad.index)
 		local speciesId = nil
 		if instanceId ~= nil then
@@ -415,22 +404,22 @@ function Plot.sync(plot: any, profile: any, guideValue: ObjectValue)
 				speciesId = record.speciesId
 			end
 		end
-		replaceCreature(pad.center, speciesId, pad.stand * CFrame.new(0, 0, 0))
-		local locked = pad.index > profile.padsUnlocked
+		replaceCreature(pad.center, speciesId, pad.stand)
+		local lockedPad = pad.index > profile.padsUnlocked
 		local nextPad = pad.index == profile.padsUnlocked + 1
 		local cost = Economy.PAD_COST[pad.index]
-		if locked and nextPad and type(cost) == "number" and profile.cash + 1e-9 >= cost then
+		if lockedPad and nextPad and type(cost) == "number" and profile.cash + 1e-9 >= cost then
 			pad.ring.Color = UITheme.color("Blood")
 		else
 			pad.ring.Color = UITheme.color("Gold")
 		end
 		pad.prompt:SetAttribute("Pad", pad.index)
-		if locked and nextPad then
+		if lockedPad and nextPad and type(cost) == "number" then
 			pad.prompt:SetAttribute("Kind", "UnlockPad")
 			pad.prompt:SetAttribute("Available", true)
 			pad.prompt.ActionText = "Carve"
 			pad.prompt.ObjectText = NumberFormat.formatCash(cost)
-		elseif not locked and instanceId == nil then
+		elseif not lockedPad and instanceId == nil then
 			local goal = OnboardingGoals.view(profile)
 			local wantsPlace = goal.actionKind == "place"
 				and goal.actionPad == pad.index
@@ -486,10 +475,83 @@ function Plot.sync(plot: any, profile: any, guideValue: ObjectValue)
 	guideValue.Value = guidePart(plot, goal.guide)
 end
 
-function Plot.destroy(plot: any)
-	if plot.model ~= nil then
-		plot.model:Destroy()
+local function plotAt(position: Vector3): any?
+	for _, plot in plots do
+		if contains(plot, position) then
+			return plot
+		end
 	end
+	return nil
+end
+
+local function push(character: Model, cf: CFrame)
+	character:PivotTo(cf)
+end
+
+local function noteSeal(player: Player)
+	local now = os.clock()
+	local previous = lastSealAt[player]
+	if previous ~= nil and now - previous < Plots.SEAL_TOAST_COOLDOWN then
+		return
+	end
+	lastSealAt[player] = now
+	local pulse = player:GetAttribute("SealPulse")
+	if type(pulse) ~= "number" then
+		pulse = 0
+	end
+	player:SetAttribute("SealPulse", pulse + 1)
+end
+
+function Plot.start(getSession: (Player) -> any?)
+	if watching then
+		return
+	end
+	watching = true
+	task.spawn(function()
+		while watching do
+			task.wait(Plots.WATCH_SECONDS)
+			for _, player in Players:GetPlayers() do
+				local root = rootOf(player)
+				local character = player.Character
+				if root == nil or character == nil then
+					insidePlot[player] = nil
+					continue
+				end
+				local plot = plotAt(root.Position)
+				if plot == nil then
+					insidePlot[player] = nil
+					continue
+				end
+				local session = getSession(player)
+				local owns = plot.userId == player.UserId and plot.state ~= "free"
+				if owns then
+					insidePlot[player] = plot.index
+					continue
+				end
+				local visitor = if session ~= nil then session.profile else nil
+				local owner = if plot.state == "free" then nil else plot.profile
+				if visitor == nil then
+					continue
+				end
+				if not PlotAccess.mayEnter(visitor, owner, false) then
+					push(character, outsideGate(plot))
+					insidePlot[player] = nil
+					if PlotAccess.blocksWithSeal(visitor, owner, false) then
+						noteSeal(player)
+					end
+					continue
+				end
+				if insidePlot[player] ~= plot.index then
+					PlotSignals.fire(plot.index, player)
+				end
+				insidePlot[player] = plot.index
+			end
+		end
+	end)
+end
+
+function Plot.spawnCFrame(plot: any): CFrame
+	return plot.spawnLocation.CFrame
 end
 
 return Plot
