@@ -188,6 +188,11 @@ function OnboardingGoals.view(profile: any): any
 		view.guide = "pad:4"
 	else
 		view.progressText = moneyPair(profile.cash, Economy.WARD_CANDLES_COST)
+		view.actionKind = "none"
+		if profile.cash + 1e-9 >= Economy.WARD_CANDLES_COST then
+			view.buttonText = Onboarding.WARD_LOCKED_LABEL
+			view.buttonEnabled = false
+		end
 		view.guide = "none"
 		view.showArrow = false
 		view.showSkip = false

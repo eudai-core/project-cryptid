@@ -41,6 +41,9 @@ Check.test("species and economy match spec 01", function()
 	Check.eq(Species.get(Species.RIFT_2_ID).displayName, "Hidebehind")
 	Check.eq(Species.get(Species.RIFT_2_ID).baseIncome, 4)
 	Check.eq(Species.get(Species.RIFT_2_ID).riftPrice, 75)
+	Check.eq(Species.WILD_ID, "hodag")
+	Check.eq(Species.get(Species.WILD_ID).displayName, "Hodag")
+	Check.eq(Species.get(Species.WILD_ID).rarity, "Common")
 	Check.eq(Species.get(Species.WILD_ID).baseIncome, 5)
 	Check.eq(Economy.STARTING_CASH, 25)
 	Check.eq(Economy.PAD_COST[3], 120)
@@ -57,7 +60,7 @@ Check.test("species and economy match spec 01", function()
 	Check.eq(Onboarding.GOAL_ONE_SECONDS, 5)
 	Check.eq(Onboarding.SKIP_LABEL, "Skip the rite")
 	Check.eq(Onboarding.BIND_HINT, "Carve a circle to bind it.")
-	Check.eq(Save.DATA_VERSION, 1)
+	Check.eq(Save.DATA_VERSION, 2)
 	Check.eq(Save.AUTOSAVE_SECONDS, 60)
 	Check.eq(Save.KICK_LOAD_FAILED, "The ledger would not open. Rejoin.")
 end)
@@ -65,7 +68,7 @@ end)
 Check.test("QA1 fresh profile is the starter lair", function()
 	local profile = fresh()
 	Check.eq(profile.cash, 25)
-	Check.eq(profile.totalEarned, 25)
+	Check.eq(profile.totalEarned, 0)
 	Check.eq(profile.padsUnlocked, 2)
 	Check.eq(profile.onboarding.step, 1)
 	Check.eq(profile.onboarding.starterGranted, true)
@@ -85,7 +88,7 @@ Check.test("QA2 ten idle seconds credits exactly twenty dollars", function()
 	local gained = Transactions.creditIncome(profile, 10)
 	Check.eq(gained, 20)
 	Check.eq(profile.cash, 45)
-	Check.eq(profile.totalEarned, 45)
+	Check.eq(profile.totalEarned, 20)
 	Check.eq(profile.onboarding.step, 2)
 	Check.eq(profile.onboarding.playSeconds, 10)
 end)
@@ -161,11 +164,18 @@ Check.test("QA3 through QA8 purchase chain", function()
 	Check.eq(done.showArrow, false)
 	Check.contains(done.progressText, "$1,200")
 	Check.eq(done.buttonText, "")
+	Check.eq(done.buttonEnabled, false)
+	profile.cash = 1200
+	local funded = OnboardingGoals.view(profile)
+	Check.eq(funded.progressText, "$1,200 / $1,200")
+	Check.eq(funded.buttonText, Onboarding.WARD_LOCKED_LABEL)
+	Check.eq(funded.buttonEnabled, false)
+	Check.eq(funded.actionKind, "none")
 	local snap = Snapshot.build(profile, 0, 2)
 	Check.near(snap.incomePerSecond, 17.5)
 	Check.eq(snap.pads[2].displayName, "Fresno Nightcrawler")
 	Check.eq(snap.pads[3].displayName, "Hidebehind")
-	Check.eq(snap.pads[4].displayName, "Wild Common")
+	Check.eq(snap.pads[4].displayName, "Hodag")
 	Check.near(snap.pads[4].income, 6.25)
 end)
 
@@ -233,7 +243,7 @@ Check.test("QA13 debounce and a second buy cannot double charge", function()
 	Check.eq(ProfileQuery.countSpecies(profile, Species.RIFT_1_ID), 1)
 end)
 
-Check.test("QA19 skip grants unclaimed rift cryptids and keeps cash", function()
+Check.test("QA19 skip grants unclaimed rift cryptids and the Hodag, and keeps cash", function()
 	local profile = fresh()
 	local serial = 0
 	local ok = Transactions.skip(profile, 5, function()
@@ -244,14 +254,22 @@ Check.test("QA19 skip grants unclaimed rift cryptids and keeps cash", function()
 	Check.eq(profile.onboarding.step, 8)
 	Check.eq(profile.onboarding.skipped, true)
 	Check.eq(profile.cash, 25)
+	Check.eq(profile.totalEarned, 0)
 	Check.eq(profile.padsUnlocked, 2)
+	Check.eq(profile.upgrades.boneAltar, 0)
 	Check.eq(ProfileQuery.countSpecies(profile, Species.RIFT_1_ID), 1)
 	Check.eq(ProfileQuery.countSpecies(profile, Species.RIFT_2_ID), 1)
-	Check.eq(ProfileQuery.hasSource(profile, "wild"), false)
+	Check.eq(ProfileQuery.countSpecies(profile, Species.WILD_ID), 1)
+	Check.eq(ProfileQuery.instanceOfSpecies(profile, Species.WILD_ID) ~= nil, true)
+	local hodagId = ProfileQuery.instanceOfSource(profile, "wild")
+	Check.eq(profile.cryptids[hodagId].speciesId, "hodag")
+	Check.eq(profile.cryptids[hodagId].source, "wild")
 	Check.eq(ProfileQuery.padOfInstance(profile, "grant-1"), nil)
+	Check.eq(ProfileQuery.padOfInstance(profile, hodagId :: string), nil)
 	local snap = Snapshot.build(profile, 0, 1)
-	Check.eq(#snap.inventory, 2)
+	Check.eq(#snap.inventory, 3)
 	Check.eq(#snap.rift, 0)
+	Check.eq(snap.goal.progressText, "$25 / $1,200")
 	Check.eq(
 		Transactions.skip(profile, 6, function()
 			return "again"
@@ -259,6 +277,26 @@ Check.test("QA19 skip grants unclaimed rift cryptids and keeps cash", function()
 		false
 	)
 	Check.eq(ProfileQuery.countSpecies(profile, Species.RIFT_1_ID), 1)
+	Check.eq(ProfileQuery.countSpecies(profile, Species.WILD_ID), 1)
+
+	local already = fresh()
+	already.cryptids["kept-hodag"] = {
+		speciesId = "hodag",
+		mutation = "",
+		traits = {},
+		acquiredAt = 0,
+		source = "wild",
+	}
+	Check.eq(
+		Transactions.skip(already, 7, function()
+			serial += 1
+			return "extra-" .. tostring(serial)
+		end),
+		true
+	)
+	Check.eq(ProfileQuery.countSpecies(already, Species.WILD_ID), 1)
+	Check.eq(already.cash, 25)
+	Check.eq(already.upgrades.boneAltar, 0)
 end)
 
 Check.test("QA20 steal protection ends at step 8 or five minutes", function()
@@ -306,7 +344,7 @@ Check.test("schema migration keeps cash and rejects corrupt or newer saves", fun
 	migrated.cash = 5
 	Check.eq(profile.cash, 80)
 
-	profile.dataVersion = 2
+	profile.dataVersion = 3
 	Check.eq(Schema.migrate(profile), nil)
 	Check.eq(Schema.migrate({}), nil)
 	Check.eq(Schema.migrate("ledger"), nil)
@@ -320,6 +358,38 @@ Check.test("schema migration keeps cash and rejects corrupt or newer saves", fun
 	Check.eq(roundTrip.pads["1"], "starter")
 	Check.eq(roundTrip.cryptids.starter.source, "starter")
 	Check.eq(roundTrip.onboarding.starterGranted, true)
+	Check.eq(roundTrip.totalEarned, 0)
+	Check.eq(roundTrip.dataVersion, 2)
+end)
+
+Check.test("v1 saves drop the starting grant from totalEarned and rename the old wild id", function()
+	local legacy = fresh()
+	legacy.dataVersion = 1
+	legacy.cash = 45
+	legacy.totalEarned = 45
+	legacy.cryptids.oldwild = {
+		speciesId = "wild_common",
+		mutation = "",
+		traits = {},
+		acquiredAt = 4,
+		source = "wild",
+	}
+	local migrated = Schema.migrate(legacy)
+	Check.eq(migrated.dataVersion, 2)
+	Check.eq(migrated.cash, 45)
+	Check.eq(migrated.totalEarned, 20)
+	Check.eq(migrated.cryptids.oldwild.speciesId, "hodag")
+	Check.eq(legacy.cryptids.oldwild.speciesId, "wild_common")
+	Check.eq(legacy.totalEarned, 45)
+
+	local again = Schema.migrate(migrated)
+	Check.eq(again.totalEarned, 20)
+
+	local grantOnly = fresh()
+	grantOnly.dataVersion = 1
+	grantOnly.totalEarned = 10
+	local clamped = Schema.migrate(grantOnly)
+	Check.eq(clamped.totalEarned, 0)
 end)
 
 Check.test("starter grant happens once", function()

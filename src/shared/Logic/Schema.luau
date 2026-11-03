@@ -44,7 +44,11 @@ local function cryptidFrom(raw: any): any?
 	if type(raw) ~= "table" then
 		return nil
 	end
-	if type(raw.speciesId) ~= "string" or Species.get(raw.speciesId) == nil then
+	local speciesId = raw.speciesId
+	if speciesId == Species.LEGACY_WILD_ID then
+		speciesId = Species.WILD_ID
+	end
+	if type(speciesId) ~= "string" or Species.get(speciesId) == nil then
 		return nil
 	end
 	if type(raw.source) ~= "string" or SOURCES[raw.source] ~= true then
@@ -78,7 +82,7 @@ local function cryptidFrom(raw: any): any?
 		mutation = raw.mutation
 	end
 	return {
-		speciesId = raw.speciesId,
+		speciesId = speciesId,
 		mutation = mutation,
 		traits = traits,
 		acquiredAt = acquiredAt,
@@ -218,7 +222,18 @@ function Schema.migrate(raw: any): any?
 	if version > Save.DATA_VERSION or version < 1 then
 		return nil
 	end
-	return normalizeV1(raw)
+	local profile = normalizeV1(raw)
+	if profile == nil then
+		return nil
+	end
+	if version < 2 then
+		local incomeOnly = profile.totalEarned - Economy.STARTING_CASH
+		if incomeOnly < 0 then
+			incomeOnly = 0
+		end
+		profile.totalEarned = Money.round(incomeOnly)
+	end
+	return profile
 end
 
 function Schema.newProfile(now: number, starterInstanceId: string): any
@@ -227,7 +242,7 @@ function Schema.newProfile(now: number, starterInstanceId: string): any
 	return {
 		dataVersion = Save.DATA_VERSION,
 		cash = Economy.STARTING_CASH,
-		totalEarned = Economy.STARTING_CASH,
+		totalEarned = 0,
 		padsUnlocked = Economy.STARTING_PADS_UNLOCKED,
 		pads = {
 			["1"] = starterInstanceId,

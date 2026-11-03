@@ -469,7 +469,8 @@ function Plot.sync(plot: any, profile: any, guideValue: ObjectValue)
 	replaceCreature(plot.wildPad, if showWild then Species.WILD_ID else nil, plot.wildStand)
 	plot.wildPrompt:SetAttribute("Available", showWild)
 	plot.wildPrompt.ActionText = "Catch"
-	plot.wildPrompt.ObjectText = "Wild Common"
+	local wildSpecies = Species.get(Species.WILD_ID)
+	plot.wildPrompt.ObjectText = wildSpecies.displayName
 
 	local nextAltar = profile.upgrades.boneAltar + 1
 	local altarCost = Economy.ALTAR_COST[nextAltar]

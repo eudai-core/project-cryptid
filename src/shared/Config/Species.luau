@@ -24,14 +24,15 @@ local BY_ID: { [string]: SpeciesRecord } = {
 	mothman_hatchling = record("mothman_hatchling", "Mothman Hatchling", 2, nil),
 	fresno_nightcrawler = record("fresno_nightcrawler", "Fresno Nightcrawler", 3, 50),
 	hidebehind = record("hidebehind", "Hidebehind", 4, 75),
-	wild_common = record("wild_common", "Wild Common", 5, nil),
+	hodag = record("hodag", "Hodag", 5, nil),
 }
 
 local Species = {
 	STARTER_ID = "mothman_hatchling",
 	RIFT_1_ID = "fresno_nightcrawler",
 	RIFT_2_ID = "hidebehind",
-	WILD_ID = "wild_common",
+	WILD_ID = "hodag",
+	LEGACY_WILD_ID = "wild_common",
 	GUARANTEES = table.freeze({
 		table.freeze({
 			slot = 1,

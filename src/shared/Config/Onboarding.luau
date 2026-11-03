@@ -7,6 +7,7 @@ local Onboarding = {
 	STEP_ONE_PROGRESS = "The coffers are stirring.",
 	CATCH_PROGRESS = "0 / 1",
 	PLACE_PROGRESS = "Bind your catch.",
+	WARD_LOCKED_LABEL = "The wax is not yet cast.",
 	HEADLINES = table.freeze({
 		[1] = "Your first familiar stirs. Watch it feed your coffers.",
 		[2] = "The Rift offers a creature. Claim it.",

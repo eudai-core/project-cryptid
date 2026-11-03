@@ -1,6 +1,6 @@
 # Spec 01: Occult theme and the first three minutes
 
-This is the implementation note for Spec 01 v1.1. The place is server-authoritative: the client displays replicated state and sends intents. It never decides cash, rewards, prices, or rolls. There are no paid products.
+This is the implementation note for Spec 01 v1.2. The place is server-authoritative: the client displays replicated state and sends intents. It never decides cash, rewards, prices, or rolls. There are no paid products.
 
 ## How to play it in Studio
 
@@ -16,15 +16,15 @@ The rite, in order:
 3. Carve Pad 3 for $120.
 4. Claim the Hidebehind for $75. It binds to Pad 3 ($4/s).
 5. Raise Bone Altar I for $300. All pad income is multiplied by 1.25.
-6. Equip the Lantern and catch the wild creature 20 studs outside the exit. Hold still within 12 studs for 3 seconds.
-7. Carve Pad 4 for $400 and bind the catch. Income becomes $17.50/s.
-8. The Ward Candles goal shows $1,200. The gold guide beam hides. Skip (`Skip the rite`) jumps here and puts any unclaimed Fresno Nightcrawler or Hidebehind in inventory.
+6. Equip the Lantern and catch the Hodag 20 studs outside the exit. Hold still within 12 studs for 3 seconds.
+7. Carve Pad 4 for $400 and bind the Hodag on any pad. Income becomes $17.50/s.
+8. The Ward Candles goal shows `$X / $1,200`. At $1,200 or more the disabled button reads "The wax is not yet cast". The gold guide beam hides. Skip (`Skip the rite`) jumps here and puts any unclaimed Fresno Nightcrawler, Hidebehind, and Hodag in inventory. It does not grant cash, pads, or altar levels.
 
 Use the banner button or the in-world prompt (E). Both send the same remote. The server checks the type, the rate limit, ownership, and the price again.
 
 ## Session lock
 
-Profiles live in the DataStore `ProjectCryptid_Player_v1`, key `player_<userId>`. The document is `{ lockJobId, lockExpiresAt, profile }`. The profile itself starts at `dataVersion` 1.
+Profiles live in the DataStore `ProjectCryptid_Player_v1`, key `player_<userId>`. The document is `{ lockJobId, lockExpiresAt, profile }`. New profiles are `dataVersion` 2. `totalEarned` is lifetime income and starts at 0, so the $25 grant is not counted. A version 1 save counted that grant, so loading one subtracts $25 from `totalEarned` once and floors at 0. Loading a version 2 save does not subtract again. A cryptid still stored as `wild_common` is renamed to `hodag` on load. The original document is not edited in place; a failed migration does not write.
 
 This is a purpose-built `UpdateAsync` lock, not ProfileStore. The save is one small document and the lock rules are covered by Lune tests. A later spec can swap in ProfileStore without changing the profile shape.
 
@@ -46,7 +46,7 @@ This is a purpose-built `UpdateAsync` lock, not ProfileStore. The save is one sm
 | 5 | Rift #2 costs $75; income `+$9/s` | Lune chain. Studio: claim the Hidebehind. |
 | 6 | Bone Altar I costs $300; server income $11.25/s | Lune chain (`Income.perSecond` is 11.25). The plaque shows `+$11.25/s`. |
 | 7 | Catch and place → `+$17.50/s` | Lune chain, including the wild catch sitting in inventory until Pad 4 is carved. Studio: walk the lantern out the exit, catch, carve, bind. |
-| 8 | Step 8 shows Ward Candles at $1,200 and hides the arrow | Lune chain asserts the headline, `$1,200`, an empty button, and `showArrow = false`. Studio: confirm the beam is gone. |
+| 8 | Step 8 shows Ward Candles `$X / $1,200` and hides the arrow | Lune chain asserts the headline, the formatted progress, a disabled button, and `showArrow = false`. At $1,200 the button reads "The wax is not yet cast" and does not buy. Studio: confirm the beam is gone. |
 | 9 | Steps 1–7 in ≤ 3:30 | Lune `QA9` simulates the income waits (no walking) and asserts the clock stays under 210 s. Studio: play without skipping and time the rite. Walking is not simulated. |
 | 10 | Leave at step 4 and rejoin | Lune: migration keeps cash, pads, and step. Studio: leave on the Hidebehind goal with API access on, rejoin, and confirm the offer is back if it was not bought. |
 | 11 | Second join after completion does not grant another starter | Lune `starter grant happens once` and the session document test that a second job cannot replace an existing profile. Studio: finish the rite, rejoin, confirm one Mothman Hatchling and no replay of goals 1–7. The Ward Candles line stays. |
@@ -57,31 +57,30 @@ This is a purpose-built `UpdateAsync` lock, not ProfileStore. The save is one sm
 | 16 | Oswald for numbers, nothing under 14 px | Tokens lock Oswald and the 14 px minimum. Studio: phone emulator on the plaque, banner, and pad plates. |
 | 17 | Reduced motion | Lune `QA17` checks durations. Studio: press **Steady gaze** and confirm the banner does not slide, the cash does not roll, and the `+$` floater does not appear. |
 | 18 | Number format | Lune `QA18`: `$9,999`, `$12.3K`, `$1.23M`, plus `$4.50B`, `$1.00Dc`, `$1.0e34`. |
-| 19 | Skip the rite | Lune `QA19`. Studio: press Skip on a fresh profile. Step 8, cash still $25, both rift creatures in inventory, no second copies. |
+| 19 | Skip the rite | Lune `QA19`. Studio: press Skip on a fresh profile. Step 8, cash still $25, Fresno Nightcrawler, Hidebehind, and Hodag in inventory, no pads or altar granted, no second copies. |
 | 20 | No stealing before step 8 or 5:00 | Lune `QA20`. There is no steal remote in this spec. `StealGuard.canSteal` is the gate a later spec must call. |
 
 ## Known gaps
 
-- Ward Candles is a visible price only. Paying $1,200 does nothing yet, because defences are a later spec.
+- Ward Candles shows `$X / $1,200`. At $1,200 the button is disabled and reads "The wax is not yet cast". It still cannot be bought; defences are a later spec.
 - There is no sell price, so there is no sell remote. `Transactions.canSell` stays false until step 8.
 - The candle-snuff sound has no asset id. Goal completion flashes the banner stroke gold.
 - The sigil and the disabled mark are text glyphs (`✶`, `⊘`). Parchment and 9-slice frames wait on asset ids.
 - Pad nameplates are local to the owner.
-- The wild tutorial creature is not a named grimoire entry yet.
+- The Hodag still needs a line in the grimoire when that list is written. Id `hodag`, Common, $5/s.
 
-## Open questions
+## Resolved questions
 
-These are the defaults chosen where the spec left a choice.
+Spec 01 v1.2 answered the open questions from the first build. These stay as approved:
 
-- Tutorial wild catch id is `wild_common`, shown as **Wild Common**, Common, **$5/s**. It is not Fresno or Hidebehind, because those already have their own incomes.
-- Mobile plaque text is 22 px cash and 14 px income. A 28 px line plus a 16 px line does not fit in 240×60.
-- The `Dc` suffix covers `$1.00Dc` up to just under `$10Dc` (the 1e33 tier). `$1.0e34` and above use scientific notation. `999,999` rounds to `$1.00M` instead of `$1000.0K`.
-- Billboards show income after the Bone Altar multiplier.
-- Goal 7 completes when Pad 4 is unlocked and the wild catch stands on any open pad.
-- Skip does not grant the wild catch, cash, pads, or the altar.
+- The tutorial catch is the Hodag (`hodag`).
+- Skip grants an unowned Hodag plus the unowned rift pair. It grants no cash, pads, or altar levels.
+- `totalEarned` is income only. Version 1 saves subtract the $25 grant once on load.
+- Ward Candles progress is `$X / $1,200` from the shared formatter. At $1,200 or more the disabled BoneDim button reads "The wax is not yet cast".
+- Mobile plaque text is 22 px cash and 14 px income.
+- The `Dc` suffix covers the 1e33 tier. `$1.0e34` and above use scientific notation. `999,999` rounds to `$1.00M`.
+- Billboards show income after the Bone Altar multiplier. Goal 7 completes when Pad 4 is unlocked and the Hodag stands on any pad.
 - Bone Altar II can be bought ($1,500, ×1.50). Level III and higher are rejected.
 - Income keeps auto-crediting after the rite.
-- `totalEarned` includes the starting $25.
-- The floor uses Soot and the ambient light is `#141210` so the lair is readable. Candle lights stay `#FFB36B`, range 12, brightness 1.2.
-- A locked session uses `The ledger is open elsewhere. Rejoin.`
-- Studio without DataStore API access does not retry the full backoff. A published server still does.
+- The floor uses Soot and the ambient light is `#141210`. Candle lights stay `#FFB36B`, range 12, brightness 1.2.
+- A locked session uses `The ledger is open elsewhere. Rejoin.` Studio without DataStore API access uses an ephemeral profile and does not write.

@@ -183,6 +183,12 @@ function Transactions.skip(profile: any, now: number, makeId: () -> string): (bo
 			end
 		end
 	end
+	if not ProfileQuery.ownsSpecies(profile, Species.WILD_ID) then
+		local instanceId = makeId()
+		if not addCryptid(profile, instanceId, Species.WILD_ID, "wild", now) then
+			return false, "id"
+		end
+	end
 	profile.onboarding.step = 8
 	profile.onboarding.skipped = true
 	return true, "ok"
