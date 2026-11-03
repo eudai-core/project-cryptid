@@ -9,27 +9,30 @@ local UITheme = require(Shared:WaitForChild("UITheme")) :: any
 local LightingSetup = {}
 
 function LightingSetup.apply()
+	local lighting = UITheme.lighting
 	Lighting.Ambient = UITheme.color("Ambient")
-	Lighting.OutdoorAmbient = UITheme.color("Ambient")
-	Lighting.Brightness = 0.2
-	Lighting.ClockTime = 1
-	Lighting.GeographicLatitude = 0
-	Lighting.GlobalShadows = true
+	Lighting.OutdoorAmbient = UITheme.color("OutdoorAmbient")
+	Lighting.Brightness = lighting.brightness
+	Lighting.ExposureCompensation = lighting.exposureCompensation
+	Lighting.ClockTime = lighting.clockTime
+	Lighting.GeographicLatitude = lighting.geographicLatitude
+	Lighting.GlobalShadows = lighting.globalShadows
+	Lighting.Technology = Enum.Technology[lighting.technology]
 	Lighting.FogColor = UITheme.color("Void")
-	Lighting.FogStart = 90
-	Lighting.FogEnd = 240
+	Lighting.FogStart = lighting.fogStart
+	Lighting.FogEnd = lighting.fogEnd
 
 	local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere")
 	if atmosphere == nil then
 		atmosphere = Instance.new("Atmosphere")
 		atmosphere.Parent = Lighting
 	end
-	atmosphere.Density = 0.35
-	atmosphere.Offset = 0.1
+	atmosphere.Density = lighting.atmosphereDensity
+	atmosphere.Offset = lighting.atmosphereOffset
 	atmosphere.Color = UITheme.color("Void")
 	atmosphere.Decay = UITheme.color("Ash")
-	atmosphere.Glare = 0
-	atmosphere.Haze = 0.8
+	atmosphere.Glare = lighting.atmosphereGlare
+	atmosphere.Haze = lighting.atmosphereHaze
 
 	local baseplate = workspace:FindFirstChild("Baseplate")
 	if baseplate ~= nil then

@@ -138,7 +138,7 @@ function Plot.create(ownerUserId: number, origin: CFrame): any
 		Vector3.new(Lair.FLOOR_SIZE.x, Lair.FLOOR_SIZE.y, Lair.FLOOR_SIZE.z),
 		origin * CFrame.new(0, -0.5, 0),
 		UITheme.materials.floor,
-		"Soot",
+		"Floor",
 		true
 	)
 	model.PrimaryPart = floor
@@ -150,7 +150,7 @@ function Plot.create(ownerUserId: number, origin: CFrame): any
 		Vector3.new(Lair.FLOOR_SIZE.x, Lair.WALL_HEIGHT, Lair.WALL_THICKNESS),
 		origin * CFrame.new(0, wallY, halfZ),
 		UITheme.materials.wall,
-		"Ambient",
+		"Wall",
 		true
 	)
 	makePart(
@@ -159,7 +159,7 @@ function Plot.create(ownerUserId: number, origin: CFrame): any
 		Vector3.new(Lair.WALL_THICKNESS, Lair.WALL_HEIGHT, Lair.FLOOR_SIZE.z),
 		origin * CFrame.new(halfX, wallY, 0),
 		UITheme.materials.wall,
-		"Ambient",
+		"Wall",
 		true
 	)
 	makePart(
@@ -168,7 +168,7 @@ function Plot.create(ownerUserId: number, origin: CFrame): any
 		Vector3.new(Lair.WALL_THICKNESS, Lair.WALL_HEIGHT, Lair.FLOOR_SIZE.z),
 		origin * CFrame.new(-halfX, wallY, 0),
 		UITheme.materials.wall,
-		"Ambient",
+		"Wall",
 		true
 	)
 	local gap = Lair.EXIT_GAP
@@ -179,7 +179,7 @@ function Plot.create(ownerUserId: number, origin: CFrame): any
 		Vector3.new(segment, Lair.WALL_HEIGHT, Lair.WALL_THICKNESS),
 		origin * CFrame.new(-(gap / 2 + segment / 2), wallY, -halfZ),
 		UITheme.materials.wall,
-		"Ambient",
+		"Wall",
 		true
 	)
 	makePart(
@@ -188,7 +188,7 @@ function Plot.create(ownerUserId: number, origin: CFrame): any
 		Vector3.new(segment, Lair.WALL_HEIGHT, Lair.WALL_THICKNESS),
 		origin * CFrame.new(gap / 2 + segment / 2, wallY, -halfZ),
 		UITheme.materials.wall,
-		"Ambient",
+		"Wall",
 		true
 	)
 
@@ -200,7 +200,7 @@ function Plot.create(ownerUserId: number, origin: CFrame): any
 		Vector3.new(16, 1, pathLength),
 		origin * CFrame.new(0, -0.5, -halfZ - pathLength / 2),
 		UITheme.materials.floor,
-		"Soot",
+		"Floor",
 		true
 	)
 
@@ -239,7 +239,7 @@ function Plot.create(ownerUserId: number, origin: CFrame): any
 		Vector3.new(8, 3, 4),
 		altarStand * CFrame.new(0, 1.5, 0),
 		UITheme.materials.altar,
-		"Ash",
+		"Altar",
 		true
 	)
 	makePart(
@@ -273,7 +273,7 @@ function Plot.create(ownerUserId: number, origin: CFrame): any
 			Vector3.new(0.45, Lair.PAD_DIAMETER, Lair.PAD_DIAMETER),
 			stand * CFrame.new(0, 0.28, 0) * CFrame.Angles(0, 0, math.rad(90)),
 			UITheme.materials.padCenter,
-			"Soot",
+			"Floor",
 			false
 		)
 		center.Shape = Enum.PartType.Cylinder

@@ -37,7 +37,11 @@ local palette = table.freeze({
 
 local world = table.freeze({
 	Candle = "FFB36B",
-	Ambient = "141210",
+	Ambient = "2C2622",
+	OutdoorAmbient = "221E1B",
+	Floor = "3A342F",
+	Wall = "1C1917",
+	Altar = "403932",
 })
 
 local UITheme = {
@@ -103,6 +107,20 @@ local UITheme = {
 		mobileWidthBreakpoint = 700,
 		overlayTransparency = 0.15,
 		beamWidth = 0.3,
+	}),
+	lighting = table.freeze({
+		brightness = 0.65,
+		exposureCompensation = 0.35,
+		clockTime = 1,
+		geographicLatitude = 0,
+		globalShadows = true,
+		fogStart = 140,
+		fogEnd = 380,
+		atmosphereDensity = 0.18,
+		atmosphereOffset = 0.22,
+		atmosphereHaze = 0.3,
+		atmosphereGlare = 0,
+		technology = "Future",
 	}),
 	materials = table.freeze({
 		floor = "Slate",
