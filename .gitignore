@@ -1,0 +1,32 @@
+# Built Roblox places and models
+*.rbxl
+*.rbxlx
+*.rbxm
+*.rbxmx
+
+# Studio lock files created beside open places and models
+*.rbxl.lock
+*.rbxlx.lock
+*.rbxm.lock
+*.rbxmx.lock
+
+# Rojo
+sourcemap.json
+
+# Wally install output
+Packages/
+DevPackages/
+
+# Toolchain manager caches (manifests stay committed)
+.rokit/
+.aftman/
+
+# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini
+ehthumbs.db
+
+# Editor swap files
+*.swp
+*~
