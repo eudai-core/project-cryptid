@@ -12,6 +12,7 @@
 
 # Rojo
 sourcemap.json
+*.log
 
 # Wally install output
 Packages/
