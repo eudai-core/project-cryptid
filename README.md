@@ -28,6 +28,45 @@ rojo build -o ProjectCryptid.rbxlx
 
 Open `ProjectCryptid.rbxlx` in Roblox Studio. Built place files are gitignored.
 
+`ReplicatedStorage.BuildSha` is `dev` in that build. QA reads the attribute in the edit session (`inspect path=ReplicatedStorage`) to see which commit is loaded. There is no separate generated file: the value is a committed project attribute, and the stamp script below rewrites that one string in the working copy.
+
+The Integration Engineer stamps the commit before building a place that will be tested. A GitHub zip has no `.git` directory, so pass the commit from the archive name:
+
+```powershell
+.\scripts\stamp-build.ps1 -Sha <commit>
+rojo build -o ProjectCryptid.rbxlx
+```
+
+From a git checkout the script can read `HEAD` itself:
+
+```bash
+./scripts/stamp-build.sh
+rojo build -o ProjectCryptid.rbxlx
+```
+
+`BUILD_SHA` is used when no argument is passed. If no commit can be resolved, the attribute stays `dev`. Do not commit a stamped SHA. Put the working copy back with `./scripts/stamp-build.sh dev` or `.\scripts\stamp-build.ps1 -Sha dev`. `rojo build -o ProjectCryptid.rbxlx` without the script still builds, and the attribute is `dev`.
+
+## Studio playtests
+
+Start a bot playtest with `args=qa:<seconds>` (for example `args=qa:300`). `ServerScriptService.Dev.StudioTestWatchdog` ends that session itself, so nobody has to press Stop if the bridge drops. It does nothing in a live server, and nothing when the argument is missing, so a manual Play is left alone.
+
+The seconds are clamped to 1–1800. The ops guide does not name a range; 1800 is thirty minutes, and `0` is raised to 1 so a typo cannot end the test before the bridge reconnects. A `qa:` argument with no usable number uses 300. A suffix such as `qa:420:plots3` uses 420. The output shows both moments:
+
+```text
+[Cryptid:Watchdog] armed for 300s (args "qa:300")
+[Cryptid:Watchdog] ending bot playtest after 300s
+```
+
+`GetTestArgs` returns the value as it was passed. The wrapper passes one string, so a table argument does not arm the watchdog.
+
+An unpublished Studio place cannot call the DataStore API. The server then uses an in-memory mock, once, and the real load, save, and release path still runs (session lock and migrations included). A live or published server never installs the mock. The Output window shows this warning a single time:
+
+```text
+[Cryptid:DataStore] Studio has no DataStore API access. Using an in-memory mock store. This session is not saved to a live DataStore.
+```
+
+Any other DataStore error is still reported as `Ledger read failed` and, after the retries, kicks the player. The mock is not a substitute for those failures.
+
 ## Live sync
 
 ```bash
@@ -60,6 +99,6 @@ stylua --check src
 lune run tests/run.luau
 ```
 
-Lune runs the pure-logic tests (cash format, income, onboarding, schema, session lock, plot ring, assignment, migration, and the Pale Pedlar). It does not need Studio. Studio steps are in [`docs/spec-01.md`](docs/spec-01.md), [`docs/spec-02.md`](docs/spec-02.md), and [`docs/spec-03.md`](docs/spec-03.md).
+Lune runs the pure-logic tests (cash format, income, onboarding, schema, session lock, plot ring, assignment, migration, the Pale Pedlar, the playtest watchdog budget, and the ledger against the in-memory DataStore). It does not need Studio. Studio steps are in [`docs/spec-01.md`](docs/spec-01.md), [`docs/spec-02.md`](docs/spec-02.md), and [`docs/spec-03.md`](docs/spec-03.md).
 
 `selene.toml` sets `std = "roblox"`. `stylua.toml` is the formatter config.

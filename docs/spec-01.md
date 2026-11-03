@@ -6,7 +6,7 @@ This is the implementation note for Spec 01 v1.2. The place is server-authoritat
 
 1. From the repo root, `rojo build -o ProjectCryptid.rbxlx` (or `rojo serve` and connect the plugin).
 2. Open the place and press Play. The lair is built when the server starts. Edit mode is an empty place on purpose.
-3. Enable **Studio access to API services** when you want the ledger to persist. Without it, Studio runs an ephemeral profile and does not write a DataStore, so a failed load cannot overwrite a real save. A published server does not do this: after three failed reads it kicks with `The ledger would not open. Rejoin.`
+3. Enable **Studio access to API services** when you want the ledger to persist to Roblox. Without it, Studio uses an in-memory mock DataStore, so session locking and migrations still run, and warns once. That mock is not a live DataStore. Any other DataStore error is a failed load: after three attempts the player is kicked with `The ledger would not open. Rejoin.` A published server never uses the mock.
 4. A fresh profile starts at **$25** with a **Mothman Hatchling** already on Pad 1, earning **$2/s**. Income is credited every 1.0 second. There is no collect button.
 
 The rite, in order:
@@ -83,4 +83,4 @@ Spec 01 v1.2 answered the open questions from the first build. These stay as app
 - Bone Altar II can be bought ($1,500, ×1.50). Level III and higher are rejected.
 - Income keeps auto-crediting after the rite.
 - Candle light stays `#FFB36B`. After the dark-lair playtest, ambient is `#2C2622`, outdoor ambient `#221E1B`, exposure `0.35`, brightness `0.65`, candle range 18 and brightness 2. Floor and altar stone are lifted warm charcoals (`#3A342F`, `#403932`); walls stay `#1C1917`.
-- A locked session uses `The ledger is open elsewhere. Rejoin.` Studio without DataStore API access uses an ephemeral profile and does not write.
+- A locked session uses `The ledger is open elsewhere. Rejoin.` Studio without DataStore API access uses the in-memory mock and warns once: `[Cryptid:DataStore] Studio has no DataStore API access. Using an in-memory mock store. This session is not saved to a live DataStore.`
