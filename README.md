@@ -2,7 +2,7 @@
 
 Project Cryptid is a Roblox cryptid-collecting tycoon with a dark occult horror theme. Players find cryptids and build a tycoon around what they uncover.
 
-This repository is a [Rojo](https://rojo.space/) project: Luau source on disk builds into a place file you can open in Roblox Studio. Spec 01 (the shared occult theme and the first three minutes) is described in [`docs/spec-01.md`](docs/spec-01.md). Spec 02 (one walled lair plot per player) is described in [`docs/spec-02.md`](docs/spec-02.md).
+This repository is a [Rojo](https://rojo.space/) project: Luau source on disk builds into a place file you can open in Roblox Studio. Spec 01 (the shared occult theme and the first three minutes) is described in [`docs/spec-01.md`](docs/spec-01.md). Spec 02 (one walled lair plot per player) is described in [`docs/spec-02.md`](docs/spec-02.md). Spec 03 (Hollowmere and the Pale Pedlar) is described in [`docs/spec-03.md`](docs/spec-03.md).
 
 ## Prerequisites
 
@@ -60,6 +60,6 @@ stylua --check src
 lune run tests/run.luau
 ```
 
-Lune runs the pure-logic tests (cash format, income, onboarding, schema, session lock, plot ring, assignment, and migration). It does not need Studio. Studio steps are in [`docs/spec-01.md`](docs/spec-01.md) and [`docs/spec-02.md`](docs/spec-02.md).
+Lune runs the pure-logic tests (cash format, income, onboarding, schema, session lock, plot ring, assignment, migration, and the Pale Pedlar). It does not need Studio. Studio steps are in [`docs/spec-01.md`](docs/spec-01.md), [`docs/spec-02.md`](docs/spec-02.md), and [`docs/spec-03.md`](docs/spec-03.md).
 
 `selene.toml` sets `std = "roblox"`. `stylua.toml` is the formatter config.

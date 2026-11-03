@@ -7,6 +7,7 @@ require("./economy_onboarding.spec")
 require("./session_document.spec")
 require("./theme_and_source.spec")
 require("./plots.spec")
+require("./town.spec")
 
 local Check = require("./check")
 Check.finish()

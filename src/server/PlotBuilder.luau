@@ -10,6 +10,8 @@ local PlotRing = require(Shared:WaitForChild("Logic"):WaitForChild("PlotRing")) 
 local Plots = require(Shared:WaitForChild("Config"):WaitForChild("Plots")) :: any
 local UITheme = require(Shared:WaitForChild("UITheme")) :: any
 
+local TownBuilder = require(script.Parent:WaitForChild("TownBuilder"))
+
 local PlotBuilder = {}
 
 local function material(name: string): Enum.Material
@@ -622,6 +624,7 @@ function PlotBuilder.build(): { any }
 	local plotsFolder = folder(workspace, "Plots")
 	local town = folder(workspace, "Town")
 	PlotBuilder.buildGround(town)
+	TownBuilder.build(town)
 	local plots = {}
 	for index = 1, Plots.COUNT do
 		plots[index] = PlotBuilder.buildPlot(plotsFolder, index)

@@ -6,6 +6,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local DataStoreGateway = require(script.Parent:WaitForChild("DataStoreGateway"))
+local Pedlar = require(script.Parent:WaitForChild("Pedlar"))
 local Plot = require(script.Parent:WaitForChild("Plot"))
 local Remotes = require(script.Parent:WaitForChild("Remotes"))
 local Debounce = require(Shared:WaitForChild("Logic"):WaitForChild("Debounce")) :: any
@@ -15,6 +16,8 @@ local Plots = require(Shared:WaitForChild("Config"):WaitForChild("Plots")) :: an
 local Income = require(Shared:WaitForChild("Logic"):WaitForChild("Income")) :: any
 local Names = require(Shared:WaitForChild("Config"):WaitForChild("Remotes")) :: any
 local ProfileQuery = require(Shared:WaitForChild("Logic"):WaitForChild("ProfileQuery")) :: any
+local Shop = require(Shared:WaitForChild("Config"):WaitForChild("Shop")) :: any
+local ShopStock = require(Shared:WaitForChild("Logic"):WaitForChild("ShopStock")) :: any
 local RemoteArgs = require(Shared:WaitForChild("Logic"):WaitForChild("RemoteArgs")) :: any
 local Save = require(Shared:WaitForChild("Config"):WaitForChild("Save")) :: any
 local Schema = require(Shared:WaitForChild("Logic"):WaitForChild("Schema")) :: any
@@ -364,6 +367,67 @@ local function onReturn(session: any)
 	character:PivotTo(Plot.spawnCFrame(session.plot))
 end
 
+local function notePedlar(session: any, message: string)
+	session.pedlarToken += 1
+	session.player:SetAttribute("PedlarNotice", message)
+	session.player:SetAttribute("PedlarNoticeToken", session.pedlarToken)
+end
+
+local function onPedlarBuy(session: any, rotationId: any, slot: any)
+	if not allowRequest(session) then
+		return
+	end
+	local parsedSlot = RemoteArgs.pedlarSlot(slot)
+	local parsedRotation = RemoteArgs.rotationId(rotationId)
+	if parsedSlot == nil or parsedRotation == nil then
+		return
+	end
+	local serverRotation = ShopStock.rotationId(os.time(), Shop.ROTATION_SECONDS)
+	local refusal = ShopStock.refusal(parsedRotation, serverRotation)
+	if refusal ~= nil then
+		notePedlar(session, refusal)
+		publish(session, 0)
+		return
+	end
+	if not allowPurchase(session) then
+		return
+	end
+	local offers = Pedlar.offers()
+	if offers == nil then
+		return
+	end
+	local ok = Transactions.buyPedlar(
+		session.profile,
+		serverRotation,
+		parsedSlot,
+		offers,
+		os.time(),
+		HttpService:GenerateGUID(false)
+	)
+	commit(session, ok)
+end
+
+local function onBind(session: any, enabled: any)
+	if not allowRequest(session) then
+		return
+	end
+	local flag = RemoteArgs.flag(enabled)
+	if flag == nil then
+		return
+	end
+	local now = os.clock()
+	local allowed, at = Debounce.allow(session.lastBindAt, now, Economy.PURCHASE_DEBOUNCE_SECONDS)
+	if not allowed then
+		return
+	end
+	session.lastBindAt = at
+	if not Transactions.setBindAtOnce(session.profile, flag) then
+		return
+	end
+	publish(session, 0)
+	queueSave(session)
+end
+
 local function onReducedMotion(session: any, enabled: any)
 	if not allowRequest(session) then
 		return
@@ -404,6 +468,8 @@ local function bind(folder: Folder)
 	listen(Names.COMPLETE_CATCH, onCompleteCatch)
 	listen(Names.REDUCED_MOTION, onReducedMotion)
 	listen(Names.RETURN_TO_LAIR, onReturn)
+	listen(Names.PEDLAR_BUY, onPedlarBuy)
+	listen(Names.BIND_AT_ONCE, onBind)
 end
 
 local function startLoops(session: any)
@@ -541,6 +607,8 @@ function PlayerSession.onPlayer(player: Player)
 		catchStart = nil,
 		catchToken = 0,
 		lastReturnAt = nil,
+		lastBindAt = nil,
+		pedlarToken = 0,
 		workers = 0,
 		plot = plot,
 		snapshot = snapshot,
@@ -574,6 +642,14 @@ function PlayerSession.onRemoving(player: Player)
 		DataStoreGateway.release(player.UserId, session.profile)
 	end
 	Plot.hold(player)
+end
+
+function PlayerSession.republish()
+	for _, session in sessions do
+		if session.alive then
+			publish(session, 0)
+		end
+	end
 end
 
 function PlayerSession.shutdown()

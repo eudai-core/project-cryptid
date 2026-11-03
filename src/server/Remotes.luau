@@ -24,6 +24,8 @@ function Remotes.create(): Folder
 		Names.COMPLETE_CATCH,
 		Names.REDUCED_MOTION,
 		Names.RETURN_TO_LAIR,
+		Names.PEDLAR_BUY,
+		Names.BIND_AT_ONCE,
 	}
 	for _, name in names do
 		local remote = Instance.new("RemoteEvent")

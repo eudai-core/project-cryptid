@@ -4,6 +4,7 @@ local Lighting = game:GetService("Lighting")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Town = require(Shared:WaitForChild("Config"):WaitForChild("Town")) :: any
 local UITheme = require(Shared:WaitForChild("UITheme")) :: any
 
 local LightingSetup = {}
@@ -32,6 +33,11 @@ function LightingSetup.apply()
 	atmosphere.Decay = UITheme.color("Ash")
 	atmosphere.Glare = lighting.atmosphereGlare
 	atmosphere.Haze = lighting.atmosphereHaze
+	local townAir = Town.ATMOSPHERE
+	atmosphere.Density = townAir.density
+	atmosphere.Color = UITheme.color(townAir.color)
+	atmosphere.Decay = UITheme.color(townAir.decay)
+	atmosphere.Haze = townAir.haze
 
 	local baseplate = workspace:FindFirstChild("Baseplate")
 	if baseplate ~= nil then

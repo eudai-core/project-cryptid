@@ -1,6 +1,6 @@
 --!strict
 
-export type CryptidSource = "starter" | "rift" | "wild"
+export type CryptidSource = "starter" | "rift" | "wild" | "pedlar"
 
 export type CryptidRecord = {
 	speciesId: string,
@@ -31,6 +31,11 @@ export type Profile = {
 	firstJoinUnix: number,
 	settings: {
 		reducedMotion: boolean,
+		bindAtOnce: boolean,
+	},
+	shop: {
+		lastRotationId: number,
+		boughtSlots: { boolean },
 	},
 	base: {
 		defences: { [number]: string },

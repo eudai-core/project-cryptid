@@ -11,6 +11,9 @@ end
 local Economy = import("../Config/Economy", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Economy")
 end)
+local Shop = import("../Config/Shop", function()
+	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Shop")
+end)
 local Species = import("../Config/Species", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Species")
 end)
@@ -87,6 +90,11 @@ function Snapshot.build(profile: any, lastCredit: number, revision: number): any
 		return a.instanceId < b.instanceId
 	end)
 
+	local pedlarBought = {}
+	for slot = 1, Shop.SLOT_COUNT do
+		pedlarBought[slot] = profile.shop.boughtSlots[slot] == true
+	end
+
 	local rift = {}
 	for _, offer in Transactions.currentOffers(profile) do
 		local species = Species.get(offer.speciesId)
@@ -112,6 +120,11 @@ function Snapshot.build(profile: any, lastCredit: number, revision: number): any
 		goal = goal,
 		guide = goal.guide,
 		stealProtected = StealGuard.isProtected(profile),
+		pedlar = {
+			lastRotationId = profile.shop.lastRotationId,
+			boughtSlots = pedlarBought,
+			bindAtOnce = profile.settings.bindAtOnce == true,
+		},
 	}
 end
 
