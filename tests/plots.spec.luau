@@ -8,6 +8,7 @@ local serde = require("@lune/serde")
 local Check = require("./check")
 local Debounce = require("../src/shared/Logic/Debounce")
 local HudSlots = require("../src/shared/Logic/HudSlots")
+local SpawnSafety = require("../src/shared/Logic/SpawnSafety")
 local Economy = require("../src/shared/Config/Economy")
 local Income = require("../src/shared/Logic/Income")
 local Lair = require("../src/shared/Config/Lair")
@@ -347,6 +348,43 @@ Check.test("the wild spawn is 20 studs outside the wild gate and past the wilds 
 	local spawn = PlotRing.spawnLocal()
 	Check.eq(spawn.z, Plots.SPAWN_Z)
 	Check.eq(Plots.ALTAR_Z < spawn.z, true)
+end)
+
+Check.test("a spawn stands on a solid floor and the plot move waits for that floor", function()
+	local half = Plots.FALLBACK_SIZE / 2
+	local stand = { x = 0, y = Plots.FALLBACK_THICKNESS + Plots.STAND_HEIGHT, z = 0 }
+	Check.eq(
+		SpawnSafety.aboveBox(stand, -half, half, -half, half, Plots.FALLBACK_THICKNESS, Plots.SPAWN_RAY_STUDS),
+		true
+	)
+	local void = { x = 0, y = -400, z = 0 }
+	Check.eq(
+		SpawnSafety.aboveBox(void, -half, half, -half, half, Plots.FALLBACK_THICKNESS, Plots.SPAWN_RAY_STUDS),
+		false
+	)
+	local slabHalf = Plots.FOOTPRINT / 2
+	for index = 1, Plots.COUNT do
+		local worldSpawn = PlotRing.toWorld(index, PlotRing.spawnLocal())
+		local localSpawn = PlotRing.toLocal(index, worldSpawn)
+		Check.eq(
+			SpawnSafety.aboveSlab(localSpawn, slabHalf, Plots.FLOOR_THICKNESS, Plots.SPAWN_RAY_STUDS),
+			true,
+			tostring(index)
+		)
+	end
+	Check.eq(SpawnSafety.placeTarget(false, true), "fallback")
+	Check.eq(SpawnSafety.placeTarget(true, false), "fallback")
+	Check.eq(SpawnSafety.placeTarget(true, true), "plot")
+	Check.eq(Plots.SPAWN_CHECK_SECONDS, 10)
+	local builder = fs.readFile("src/server/PlotBuilder.luau")
+	local ground = string.match(builder, "function PlotBuilder.buildGround%(.-%\nfunction PlotBuilder.buildPlot")
+	Check.truthy(ground)
+	Check.eq(string.find(ground :: string, "Cylinder", 1, true), nil)
+	Check.eq(string.find(ground :: string, "TownPlatform", 1, true) ~= nil, true)
+	Check.eq(string.find(ground :: string, "TownSpawn", 1, true) ~= nil, true)
+	Check.eq(string.find(ground :: string, "Neutral = true", 1, true) ~= nil, true)
+	local lighting = fs.readFile("src/server/LightingSetup.luau")
+	Check.eq(string.find(lighting, "StreamingEnabled = false", 1, true) ~= nil, true)
 end)
 
 Check.test("the home beam tip is inside the clear fog band from the town edge", function()

@@ -46,7 +46,7 @@ A player who has not finished onboarding (step under 8 and under 5:00) has a sea
 
 ## How to test in Studio
 
-1. `rojo build -o ProjectCryptid.rbxlx` and open the place. Turn on **Studio access to API services** when the rejoin tests should persist cash.
+1. `rojo build -o ProjectCryptid.rbxlx` and open the place. Turn on **Studio access to API services** when the rejoin tests should persist cash. Press Play. The server output should print `PASS spawn <name> health 100 floor <part> <distance> studs` about 10 seconds later. `FAIL spawn` means the body is dead or a downward ray of 12 studs hit no solid floor. The character should be standing, not on the death screen.
 2. Use **Test → Start Server** with 1 player, then add players from the server window. Stopping a solo Play session also stops the server, which drops the in-memory 30 second reservation.
 3. One player: the server log is quiet, the player stands on Plot 1 at the north gate looking toward the altar, and the banner reads "Your Lair". The gold beam rises above that gate.
 4. Walk the spec 01 rite on that plot: claim, carve, altar, lantern, catch outside the Wild Gate, bind. The guide beam stays inside the plot except for the catch, which points through the Wild Gate.

@@ -213,17 +213,37 @@ local function gate(
 end
 
 function PlotBuilder.buildGround(town: Folder)
-	local ground = makePart(
+	makePart(
 		town,
 		"Ground",
-		Vector3.new(Plots.GROUND_THICKNESS, Plots.GROUND_RADIUS * 2, Plots.GROUND_RADIUS * 2),
+		Vector3.new(Plots.GROUND_RADIUS * 2, Plots.GROUND_THICKNESS, Plots.GROUND_RADIUS * 2),
 		CFrame.new(0, -Plots.GROUND_THICKNESS / 2, 0),
 		UITheme.materials.floor,
 		"Wall",
 		true
 	)
-	ground.Shape = Enum.PartType.Cylinder
-	ground.CFrame = CFrame.new(0, -Plots.GROUND_THICKNESS / 2, 0) * CFrame.Angles(0, 0, math.rad(90))
+	makePart(
+		town,
+		"TownPlatform",
+		Vector3.new(Plots.FALLBACK_SIZE, Plots.FALLBACK_THICKNESS, Plots.FALLBACK_SIZE),
+		CFrame.new(0, Plots.FALLBACK_THICKNESS / 2, 0),
+		UITheme.materials.floor,
+		"Floor",
+		true
+	)
+	local spawn = Instance.new("SpawnLocation")
+	spawn.Name = "TownSpawn"
+	spawn.Size = Vector3.new(6, 1, 6)
+	spawn.Anchored = true
+	spawn.CanCollide = false
+	spawn.CanTouch = false
+	spawn.CanQuery = false
+	spawn.Transparency = 1
+	spawn.Duration = 0
+	spawn.Neutral = true
+	spawn.Enabled = true
+	spawn.CFrame = CFrame.new(0, Plots.FALLBACK_THICKNESS + 0.5, 0)
+	spawn.Parent = town
 end
 
 function PlotBuilder.buildPlot(parent: Folder, index: number): any
@@ -434,6 +454,7 @@ function PlotBuilder.buildPlot(parent: Folder, index: number): any
 	spawn.Anchored = true
 	spawn.CanCollide = false
 	spawn.CanTouch = false
+	spawn.CanQuery = false
 	spawn.Transparency = 1
 	spawn.Duration = 0
 	spawn.Neutral = false
@@ -469,7 +490,7 @@ function PlotBuilder.buildPlot(parent: Folder, index: number): any
 	)
 	threshold.Transparency = 1
 	threshold.CanTouch = true
-	threshold.CanQuery = true
+	threshold.CanQuery = false
 	threshold.CastShadow = false
 
 	local lights = {}

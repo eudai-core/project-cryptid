@@ -7,6 +7,12 @@
       "$className": "ServerScriptService",
       "$path": "src/server"
     },
+    "Workspace": {
+      "$className": "Workspace",
+      "$properties": {
+        "StreamingEnabled": false
+      }
+    },
     "Players": {
       "$className": "Players",
       "$properties": {

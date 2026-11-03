@@ -50,6 +50,19 @@ function PlotRing.axes(index: number): Axes
 	}
 end
 
+function PlotRing.toLocal(index: number, worldPoint: Vec3): Vec3
+	local center = PlotRing.center(index)
+	local axes = PlotRing.axes(index)
+	local dx = worldPoint.x - center.x
+	local dy = worldPoint.y - center.y
+	local dz = worldPoint.z - center.z
+	return vec(
+		dx * axes.x.x + dy * axes.x.y + dz * axes.x.z,
+		dx * axes.y.x + dy * axes.y.y + dz * axes.y.z,
+		dx * axes.z.x + dy * axes.z.y + dz * axes.z.z
+	)
+end
+
 function PlotRing.toWorld(index: number, localPoint: Vec3): Vec3
 	local center = PlotRing.center(index)
 	local axes = PlotRing.axes(index)

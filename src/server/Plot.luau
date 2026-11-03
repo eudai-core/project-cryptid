@@ -22,6 +22,7 @@ local UITheme = require(Shared:WaitForChild("UITheme")) :: any
 
 local plots: { any } = {}
 local byPlayer: { [Player]: any } = {}
+local townSpawn: SpawnLocation? = nil
 local insidePlot: { [Player]: number } = {}
 local lastSealAt: { [Player]: number } = {}
 local watching = false
@@ -116,7 +117,8 @@ local function setLivedIn(plot: any, livedIn: boolean)
 		door.CanTouch = not livedIn
 		door.Transparency = if livedIn then 1 else 0
 	end
-	plot.spawnLocation.Enabled = livedIn
+	plot.spawnLocation.Enabled = false
+	plot.spawnLocation.Neutral = false
 end
 
 local function destroyNamed(host: Instance, name: string)
@@ -223,7 +225,19 @@ local function occupy(plot: any, player: Player)
 	setLivedIn(plot, true)
 	publish(plot)
 	player:SetAttribute("PlotIndex", plot.index)
-	player.RespawnLocation = plot.spawnLocation
+	local fallback = Plot.fallbackSpawn()
+	if fallback ~= nil then
+		player.RespawnLocation = fallback
+	end
+end
+
+function Plot.fallbackSpawn(): SpawnLocation?
+	return townSpawn
+end
+
+function Plot.floorReady(plot: any): boolean
+	local floor = plot.model:FindFirstChild("Floor")
+	return plot.model.Parent ~= nil and floor ~= nil and floor:IsA("BasePart") and floor.Anchored and floor.CanCollide
 end
 
 function Plot.build()
@@ -231,6 +245,42 @@ function Plot.build()
 		return
 	end
 	plots = PlotBuilder.build()
+	local town = workspace:FindFirstChild("Town")
+	local spawn = if town ~= nil then town:FindFirstChild("TownSpawn") else nil
+	if spawn ~= nil and spawn:IsA("SpawnLocation") then
+		townSpawn = spawn
+	end
+end
+
+function Plot.tryPlace(player: Player, character: Model): boolean
+	local plot = byPlayer[player]
+	if plot == nil or not Plot.floorReady(plot) then
+		return false
+	end
+	local spawnPart = plot.spawnLocation
+	if workspace.StreamingEnabled then
+		local streamed = pcall(function()
+			player:RequestStreamAroundAsync(spawnPart.Position)
+		end)
+		if not streamed or not Plot.floorReady(plot) then
+			return false
+		end
+	end
+	character:PivotTo(spawnPart.CFrame)
+	local root = rootOf(player)
+	if root ~= nil then
+		root.AssemblyLinearVelocity = Vector3.zero
+		root.AssemblyAngularVelocity = Vector3.zero
+	end
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	if humanoid == nil or humanoid.Health <= 0 or root == nil then
+		return false
+	end
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	params.FilterDescendantsInstances = { character }
+	local hit = workspace:Raycast(root.Position, Vector3.new(0, -Plots.SPAWN_RAY_STUDS, 0), params)
+	return hit ~= nil and hit.Instance.CanCollide
 end
 
 function Plot.claim(player: Player): (any?, string)

@@ -446,12 +446,17 @@ local function startLoops(session: any)
 end
 
 local function pivot(session: any, character: Model)
-	task.defer(function()
-		if character.Parent == nil or session.plot == nil then
-			return
+	task.spawn(function()
+		for _ = 1, Plots.SPAWN_ATTEMPTS do
+			if character.Parent == nil or not session.alive then
+				return
+			end
+			if Plot.tryPlace(session.player, character) then
+				syncLantern(session)
+				return
+			end
+			task.wait(Plots.SPAWN_RETRY_SECONDS)
 		end
-		character:PivotTo(session.plot.spawnLocation.CFrame)
-		syncLantern(session)
 	end)
 end
 
@@ -465,6 +470,10 @@ end
 function PlayerSession.onPlayer(player: Player)
 	if sessions[player] ~= nil then
 		return
+	end
+	local fallback = Plot.fallbackSpawn()
+	if fallback ~= nil then
+		player.RespawnLocation = fallback
 	end
 	local created = Schema.newProfile(os.time(), HttpService:GenerateGUID(false))
 	local loaded = DataStoreGateway.load(player.UserId, created)

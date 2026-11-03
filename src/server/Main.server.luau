@@ -9,11 +9,13 @@ local LightingSetup = require(script.Parent:WaitForChild("LightingSetup"))
 local PlayerSession = require(script.Parent:WaitForChild("PlayerSession"))
 local Plot = require(script.Parent:WaitForChild("Plot"))
 local Remotes = require(script.Parent:WaitForChild("Remotes"))
+local SpawnCheck = require(script.Parent:WaitForChild("SpawnCheck"))
 
 print(GameInfo.name .. " server started")
 
 LightingSetup.apply()
 Plot.build()
+SpawnCheck.start()
 local folder = Remotes.create()
 PlayerSession.start(folder)
 
