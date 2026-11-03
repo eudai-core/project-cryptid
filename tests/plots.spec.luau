@@ -2,10 +2,12 @@
 
 _G.LUNE = true
 
+local fs = require("@lune/fs")
 local serde = require("@lune/serde")
 
 local Check = require("./check")
 local Debounce = require("../src/shared/Logic/Debounce")
+local HudSlots = require("../src/shared/Logic/HudSlots")
 local Economy = require("../src/shared/Config/Economy")
 local Income = require("../src/shared/Logic/Income")
 local Lair = require("../src/shared/Config/Lair")
@@ -170,7 +172,14 @@ Check.test("QA10 and QA11 the seal blocks protected lairs and finished players m
 	Check.eq(PlotAccess.mayEnter(visitor, nil, false), false)
 	visitor.onboarding.step = 2
 	Check.eq(PlotAccess.mayEnter(visitor, owner, false), false)
+	Check.eq(PlotAccess.toastFor(visitor, owner, false), "Finish your own rite first.")
+	visitor.onboarding.step = 8
+	owner.onboarding.step = 1
+	Check.eq(PlotAccess.toastFor(visitor, owner, false), "A warding seal holds this lair.")
+	Check.eq(PlotAccess.toastFor(visitor, owner, true), nil)
 	Check.eq(Plots.SEAL_TOAST, "A warding seal holds this lair.")
+	Check.eq(Plots.RITE_TOAST, "Finish your own rite first.")
+	Check.eq(Plots.SEAL_TOAST_COOLDOWN, 3)
 end)
 
 Check.test("QA12 return to lair refuses a second press inside 10 seconds", function()
@@ -228,10 +237,30 @@ end)
 Check.test("QA15 income is only credited while the owner is present", function()
 	Check.eq(PlotAssign.earns("present"), true)
 	Check.eq(PlotAssign.earns("reserved"), false)
+	Check.eq(PlotAssign.earns("clear"), false)
 	local profile = Schema.newProfile(1, "starter")
 	local gained = Transactions.creditIncome(profile, 1)
 	Check.eq(gained, Income.perSecond(profile))
-	Check.eq(PlotAssign.earns("clear"), false)
+	local heldCash = profile.cash
+	local bystander = Schema.newProfile(1, "other")
+	local bystanderCash = bystander.cash
+	if PlotAssign.earns("reserved") then
+		Transactions.creditIncome(profile, Plots.HOLD_SECONDS)
+		Transactions.creditIncome(bystander, Plots.HOLD_SECONDS)
+	end
+	Check.eq(profile.cash, heldCash)
+	Check.eq(bystander.cash, bystanderCash)
+	local session = fs.readFile("src/server/PlayerSession.luau")
+	local aliveAt = string.find(session, "session.alive = false", 1, true)
+	local holdAt = string.find(session, "Plot.hold(player)", 1, true)
+	local loopAt = string.find(session, "while session.alive do", 1, true)
+	local creditAt = string.find(session, "Transactions.creditIncome", 1, true)
+	Check.truthy(aliveAt)
+	Check.truthy(holdAt)
+	Check.truthy(loopAt)
+	Check.truthy(creditAt)
+	Check.eq((aliveAt :: number) < (holdAt :: number), true)
+	Check.eq((loopAt :: number) < (creditAt :: number), true)
 end)
 
 Check.test("friend plots win over the lowest free plot and ties take the low index", function()
@@ -318,6 +347,42 @@ Check.test("the wild spawn is 20 studs outside the wild gate and past the wilds 
 	local spawn = PlotRing.spawnLocal()
 	Check.eq(spawn.z, Plots.SPAWN_Z)
 	Check.eq(Plots.ALTAR_Z < spawn.z, true)
+end)
+
+Check.test("the home beam tip is inside the clear fog band from the town edge", function()
+	Check.eq(UITheme.lighting.fogStart, 140)
+	Check.eq(UITheme.lighting.fogEnd, 380)
+	Check.near(PlotRing.townEdgeToCentre(), 140, 1e-6)
+	local slant = PlotRing.homeBeamTipDistance()
+	Check.eq(slant < UITheme.lighting.fogStart, true)
+	Check.eq(slant < UITheme.lighting.fogEnd, true)
+end)
+
+Check.test("the slot to the right of both lair buttons stays empty", function()
+	local hud = Plots.RETURN_BUTTON
+	Check.eq(hud.occupiedSlots, 2)
+	Check.eq(HudSlots.origin(0), hud.margin)
+	Check.eq(HudSlots.origin(1), hud.margin + hud.width + hud.gap)
+	local rites = HudSlots.ritesOrigin()
+	Check.eq(rites, HudSlots.origin(2))
+	Check.eq(rites >= HudSlots.origin(1) + hud.width + hud.gap, true)
+	local files = {}
+	local function walk(dir: string)
+		for _, name in fs.readDir(dir) do
+			local path = dir .. "/" .. name
+			if fs.isDir(path) then
+				walk(path)
+			elseif string.match(name, "%.luau$") ~= nil then
+				table.insert(files, path)
+			end
+		end
+	end
+	walk("src/client")
+	for _, path in files do
+		local text = fs.readFile(path)
+		Check.eq(string.find(text, "HudSlots.origin(2)", 1, true), nil, path)
+		Check.eq(string.find(text, "HudSlots.ritesOrigin", 1, true), nil, path)
+	end
 end)
 
 Check.test("brightened lair lighting from the playtest is still the theme", function()

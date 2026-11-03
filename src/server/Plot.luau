@@ -488,7 +488,7 @@ local function push(character: Model, cf: CFrame)
 	character:PivotTo(cf)
 end
 
-local function noteSeal(player: Player)
+local function noteSeal(player: Player, message: string)
 	local now = os.clock()
 	local previous = lastSealAt[player]
 	if previous ~= nil and now - previous < Plots.SEAL_TOAST_COOLDOWN then
@@ -499,6 +499,7 @@ local function noteSeal(player: Player)
 	if type(pulse) ~= "number" then
 		pulse = 0
 	end
+	player:SetAttribute("SealMessage", message)
 	player:SetAttribute("SealPulse", pulse + 1)
 end
 
@@ -536,8 +537,9 @@ function Plot.start(getSession: (Player) -> any?)
 				if not PlotAccess.mayEnter(visitor, owner, false) then
 					push(character, outsideGate(plot))
 					insidePlot[player] = nil
-					if PlotAccess.blocksWithSeal(visitor, owner, false) then
-						noteSeal(player)
+					local toast = PlotAccess.toastFor(visitor, owner, false)
+					if toast ~= nil then
+						noteSeal(player, toast)
 					end
 					continue
 				end

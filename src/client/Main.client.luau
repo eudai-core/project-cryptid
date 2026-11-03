@@ -18,6 +18,7 @@ local WorldBoards = require(script.Parent:WaitForChild("WorldBoards"))
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Economy = require(Shared:WaitForChild("Config"):WaitForChild("Economy")) :: any
+local HudSlots = require(Shared:WaitForChild("Logic"):WaitForChild("HudSlots")) :: any
 local GameInfo = require(Shared:WaitForChild("GameInfo")) :: any
 local Plots = require(Shared:WaitForChild("Config"):WaitForChild("Plots")) :: any
 local Names = require(Shared:WaitForChild("Config"):WaitForChild("Remotes")) :: any
@@ -89,8 +90,8 @@ SealToast.mount(gui, player)
 local steady = UiFactory.button(gui, UITheme.text.minSize)
 steady.Name = "ReducedMotion"
 steady.AnchorPoint = Vector2.new(0, 1)
-steady.Position = UDim2.new(0, hud.margin + hud.width + hud.gap, 1, -hud.margin)
-steady.Size = UDim2.fromOffset(168, 32)
+steady.Position = UDim2.new(0, HudSlots.origin(1), 1, -hud.margin)
+steady.Size = UDim2.fromOffset(hud.width, hud.steadyHeight)
 steady.BackgroundColor3 = UITheme.color("Soot")
 steady.TextColor3 = UITheme.color("BoneDim")
 ThemeBind.apply(steady, "body", UITheme.text.minSize)

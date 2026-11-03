@@ -101,4 +101,16 @@ function PlotRing.radius(point: Vec3): number
 	return math.sqrt(point.x * point.x + point.z * point.z)
 end
 
+function PlotRing.townEdgeToCentre(): number
+	return Plots.RING_RADIUS - Plots.TOWN_RADIUS
+end
+
+function PlotRing.homeBeamTipDistance(): number
+	local horizontal = Plots.RING_RADIUS - Plots.LAIR_GATE_Z - Plots.TOWN_RADIUS
+	local gateY = Plots.FLOOR_THICKNESS + Plots.WALL_HEIGHT - Plots.LINTEL_HEIGHT / 2
+	local tipY = gateY + Plots.BANNER_LIFT + Plots.HOME_BEAM_HEIGHT
+	local rise = tipY - Plots.STAND_HEIGHT
+	return math.sqrt(horizontal * horizontal + rise * rise)
+end
+
 return PlotRing

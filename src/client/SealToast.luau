@@ -16,14 +16,26 @@ function SealToast.mount(parent: Instance, player: Player)
 	label.Position = UDim2.new(0.5, 0, 0, Plots.TOAST_TOP)
 	label.Size = UDim2.fromOffset(440, 28)
 	label.BackgroundTransparency = 1
-	label.Text = Plots.SEAL_TOAST
+	label.Text = ""
 	label.TextColor3 = UITheme.color("BoneDim")
 	label.TextXAlignment = Enum.TextXAlignment.Center
 	label.Visible = false
 	label.Parent = parent
 	ThemeBind.apply(label, "body", UITheme.fonts.body.mobile)
 	local token = 0
-	player:GetAttributeChangedSignal("SealPulse"):Connect(function()
+	local function applyMessage()
+		local message = player:GetAttribute("SealMessage")
+		if type(message) ~= "string" or message == "" then
+			return
+		end
+		label.Text = message
+		label.TextColor3 = UITheme.color("BoneDim")
+	end
+	local function show()
+		applyMessage()
+		if label.Text == "" then
+			return
+		end
 		token += 1
 		local shown = token
 		label.Visible = true
@@ -32,7 +44,9 @@ function SealToast.mount(parent: Instance, player: Player)
 				label.Visible = false
 			end
 		end)
-	end)
+	end
+	player:GetAttributeChangedSignal("SealPulse"):Connect(show)
+	player:GetAttributeChangedSignal("SealMessage"):Connect(show)
 end
 
 return SealToast
