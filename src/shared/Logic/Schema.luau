@@ -1,0 +1,284 @@
+--!strict
+
+local function import(lunePath: string, getRoblox: () -> any): any
+	-- selene: allow(global_usage)
+	if _G.LUNE == true then
+		return require(lunePath)
+	end
+	return require(getRoblox())
+end
+
+local Economy = import("../Config/Economy", function()
+	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Economy")
+end)
+local Save = import("../Config/Save", function()
+	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Save")
+end)
+local Species = import("../Config/Species", function()
+	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Species")
+end)
+local Money = import("./Money", function()
+	return script.Parent:WaitForChild("Money")
+end)
+
+local SOURCES = {
+	starter = true,
+	rift = true,
+	wild = true,
+}
+
+local Schema = {}
+
+function Schema.deepCopy(value: any): any
+	if type(value) ~= "table" then
+		return value
+	end
+	local copy = {}
+	for key, child in value do
+		copy[Schema.deepCopy(key)] = Schema.deepCopy(child)
+	end
+	return copy
+end
+
+local function cryptidFrom(raw: any): any?
+	if type(raw) ~= "table" then
+		return nil
+	end
+	if type(raw.speciesId) ~= "string" or Species.get(raw.speciesId) == nil then
+		return nil
+	end
+	if type(raw.source) ~= "string" or SOURCES[raw.source] ~= true then
+		return nil
+	end
+	local traits = {}
+	if raw.traits == nil then
+		traits = {}
+	elseif type(raw.traits) ~= "table" then
+		return nil
+	else
+		for _, trait in raw.traits do
+			if type(trait) ~= "string" or #trait > 32 then
+				return nil
+			end
+			table.insert(traits, trait)
+		end
+	end
+	local acquiredAt = raw.acquiredAt
+	if acquiredAt == nil then
+		acquiredAt = 0
+	end
+	if not Money.isFinite(acquiredAt) then
+		return nil
+	end
+	local mutation = ""
+	if raw.mutation ~= nil then
+		if type(raw.mutation) ~= "string" or #raw.mutation > 32 then
+			return nil
+		end
+		mutation = raw.mutation
+	end
+	return {
+		speciesId = raw.speciesId,
+		mutation = mutation,
+		traits = traits,
+		acquiredAt = acquiredAt,
+		source = raw.source,
+	}
+end
+
+local function normalizeV1(raw: any): any?
+	if not Money.isFinite(raw.cash) or raw.cash < 0 then
+		return nil
+	end
+	if not Money.isFinite(raw.totalEarned) or raw.totalEarned < 0 then
+		return nil
+	end
+	if type(raw.padsUnlocked) ~= "number" or raw.padsUnlocked ~= math.floor(raw.padsUnlocked) then
+		return nil
+	end
+	if raw.padsUnlocked < 1 or raw.padsUnlocked > Economy.MAX_PADS then
+		return nil
+	end
+	if type(raw.pads) ~= "table" or type(raw.cryptids) ~= "table" then
+		return nil
+	end
+	if type(raw.upgrades) ~= "table" or type(raw.upgrades.boneAltar) ~= "number" then
+		return nil
+	end
+	local altar = raw.upgrades.boneAltar
+	if altar ~= math.floor(altar) or altar < 0 or altar > Economy.MAX_ALTAR_LEVEL then
+		return nil
+	end
+	if type(raw.onboarding) ~= "table" then
+		return nil
+	end
+	local step = raw.onboarding.step
+	if type(step) ~= "number" or step ~= math.floor(step) or step < 0 or step > 8 then
+		return nil
+	end
+	if step == 0 then
+		step = 1
+	end
+	if type(raw.onboarding.starterGranted) ~= "boolean" or type(raw.onboarding.skipped) ~= "boolean" then
+		return nil
+	end
+	local playSeconds = raw.onboarding.playSeconds
+	if playSeconds == nil then
+		playSeconds = 0
+	end
+	if not Money.isFinite(playSeconds) or playSeconds < 0 then
+		return nil
+	end
+	if not Money.isFinite(raw.firstJoinUnix) then
+		return nil
+	end
+	local reducedMotion = false
+	if raw.settings == nil then
+		reducedMotion = false
+	elseif type(raw.settings) ~= "table" then
+		return nil
+	else
+		local flag = raw.settings.reducedMotion
+		if flag == nil then
+			reducedMotion = false
+		elseif type(flag) ~= "boolean" then
+			return nil
+		else
+			reducedMotion = flag
+		end
+	end
+
+	local cryptids = {}
+	for instanceId, record in raw.cryptids do
+		if type(instanceId) ~= "string" or #instanceId < 1 or #instanceId > 64 then
+			return nil
+		end
+		if string.match(instanceId, "^[%w%-]+$") == nil then
+			return nil
+		end
+		local cryptid = cryptidFrom(record)
+		if cryptid == nil then
+			return nil
+		end
+		cryptids[instanceId] = cryptid
+	end
+
+	local pads = {}
+	local seen: { [string]: boolean } = {}
+	for key, value in raw.pads do
+		local index: number? = nil
+		if type(key) == "number" and key == math.floor(key) then
+			index = key
+		elseif type(key) == "string" and string.match(key, "^%d+$") ~= nil then
+			index = tonumber(key)
+		else
+			return nil
+		end
+		if index == nil or index < 1 or index > Economy.MAX_PADS or type(value) ~= "string" then
+			return nil
+		end
+		if cryptids[value] == nil or seen[value] == true then
+			return nil
+		end
+		seen[value] = true
+		pads[tostring(index)] = value
+	end
+
+	return {
+		dataVersion = Save.DATA_VERSION,
+		cash = Money.round(raw.cash),
+		totalEarned = Money.round(raw.totalEarned),
+		padsUnlocked = raw.padsUnlocked,
+		pads = pads,
+		cryptids = cryptids,
+		upgrades = {
+			boneAltar = altar,
+		},
+		onboarding = {
+			step = step,
+			starterGranted = raw.onboarding.starterGranted,
+			skipped = raw.onboarding.skipped,
+			playSeconds = playSeconds,
+		},
+		firstJoinUnix = raw.firstJoinUnix,
+		settings = {
+			reducedMotion = reducedMotion,
+		},
+	}
+end
+
+function Schema.migrate(raw: any): any?
+	if type(raw) ~= "table" then
+		return nil
+	end
+	local version = raw.dataVersion
+	if type(version) ~= "number" or version ~= math.floor(version) then
+		return nil
+	end
+	if version > Save.DATA_VERSION or version < 1 then
+		return nil
+	end
+	return normalizeV1(raw)
+end
+
+function Schema.newProfile(now: number, starterInstanceId: string): any
+	local starter = Species.get(Species.STARTER_ID)
+	assert(starter ~= nil, "starter species missing")
+	return {
+		dataVersion = Save.DATA_VERSION,
+		cash = Economy.STARTING_CASH,
+		totalEarned = Economy.STARTING_CASH,
+		padsUnlocked = Economy.STARTING_PADS_UNLOCKED,
+		pads = {
+			["1"] = starterInstanceId,
+		},
+		cryptids = {
+			[starterInstanceId] = {
+				speciesId = Species.STARTER_ID,
+				mutation = "",
+				traits = {},
+				acquiredAt = now,
+				source = "starter",
+			},
+		},
+		upgrades = {
+			boneAltar = 0,
+		},
+		onboarding = {
+			step = 1,
+			starterGranted = true,
+			skipped = false,
+			playSeconds = 0,
+		},
+		firstJoinUnix = now,
+		settings = {
+			reducedMotion = false,
+		},
+	}
+end
+
+function Schema.ensureStarter(profile: any, now: number, starterInstanceId: string): boolean
+	if profile.onboarding.starterGranted == true then
+		return false
+	end
+	if profile.cryptids[starterInstanceId] ~= nil then
+		return false
+	end
+	profile.cryptids[starterInstanceId] = {
+		speciesId = Species.STARTER_ID,
+		mutation = "",
+		traits = {},
+		acquiredAt = now,
+		source = "starter",
+	}
+	if profile.pads["1"] == nil then
+		profile.pads["1"] = starterInstanceId
+	end
+	profile.onboarding.starterGranted = true
+	if profile.onboarding.step < 1 then
+		profile.onboarding.step = 1
+	end
+	return true
+end
+
+return Schema

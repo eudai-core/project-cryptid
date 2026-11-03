@@ -2,7 +2,7 @@
 
 Project Cryptid is a Roblox cryptid-collecting tycoon with a dark occult horror theme. Players find cryptids and build a tycoon around what they uncover.
 
-This repository is a [Rojo](https://rojo.space/) project: Luau source on disk builds into a place file you can open in Roblox Studio. The scripts in this scaffold are placeholders so the project builds. Gameplay lands in later changes.
+This repository is a [Rojo](https://rojo.space/) project: Luau source on disk builds into a place file you can open in Roblox Studio. Spec 01 (the shared occult theme and the first three minutes) is described in [`docs/spec-01.md`](docs/spec-01.md).
 
 ## Prerequisites
 
@@ -10,7 +10,7 @@ This repository is a [Rojo](https://rojo.space/) project: Luau source on disk bu
 - Roblox Studio
 - The Rojo Studio plugin, for live sync
 
-Rojo, Selene, and StyLua are pinned in [`rokit.toml`](rokit.toml). [Rokit](https://github.com/rojo-rbx/rokit) installs that pin file:
+Rojo, Selene, StyLua, and Lune are pinned in [`rokit.toml`](rokit.toml). [Rokit](https://github.com/rojo-rbx/rokit) installs that pin file:
 
 ```bash
 rokit install
@@ -48,15 +48,18 @@ In Studio, connect with the Rojo plugin.
 
 | File | Built instance |
 | --- | --- |
-| `src/server/Main.server.luau` | `Script` |
-| `src/client/Main.client.luau` | `LocalScript` |
-| `src/shared/GameInfo.luau` | `ModuleScript` |
+| `*.server.luau` | `Script` |
+| `*.client.luau` | `LocalScript` |
+| other `*.luau` | `ModuleScript` |
 
-## Lint and format
+## Lint, format, and tests
 
 ```bash
 selene src
 stylua --check src
+lune run tests/run.luau
 ```
+
+Lune runs the pure-logic tests (cash format, income, onboarding, schema, session lock). It does not need Studio. Studio steps for the rest of Spec 01 are in [`docs/spec-01.md`](docs/spec-01.md).
 
 `selene.toml` sets `std = "roblox"`. `stylua.toml` is the formatter config.
