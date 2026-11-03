@@ -32,6 +32,12 @@ end)
 local ShopStock = import("./ShopStock", function()
 	return script.Parent:WaitForChild("ShopStock")
 end)
+local RemoteArgs = import("./RemoteArgs", function()
+	return script.Parent:WaitForChild("RemoteArgs")
+end)
+local Town = import("../Config/Town", function()
+	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Town")
+end)
 local OnboardingGoals = import("./OnboardingGoals", function()
 	return script.Parent:WaitForChild("OnboardingGoals")
 end)
@@ -249,9 +255,13 @@ function Transactions.buyPedlar(
 	rotationId: number,
 	slot: number,
 	offers: any,
+	distance: number?,
 	now: number,
 	newId: string
 ): (boolean, string)
+	if not RemoteArgs.withinDistance(distance, Town.BUY_DISTANCE) then
+		return false, "range"
+	end
 	if profile.onboarding.step < Shop.GATE_STEP then
 		return false, "onboarding"
 	end
@@ -275,7 +285,7 @@ function Transactions.buyPedlar(
 	if ShopLedger.slotBought(profile.shop.lastRotationId, profile.shop.boughtSlots, rotationId, slot) then
 		return false, "bought"
 	end
-	local price = ShopStock.price(species.rarity)
+	local price = ShopStock.priceFor(offer.speciesId)
 	if profile.cash + 1e-9 < price then
 		return false, "afford"
 	end

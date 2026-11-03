@@ -7,6 +7,7 @@ local serde = require("@lune/serde")
 
 local Check = require("./check")
 local Income = require("../src/shared/Logic/Income")
+local Lanterns = require("../src/shared/Config/Lanterns")
 local PlotRing = require("../src/shared/Logic/PlotRing")
 local Plots = require("../src/shared/Config/Plots")
 local RemoteArgs = require("../src/shared/Logic/RemoteArgs")
@@ -100,8 +101,13 @@ Check.test("QA1 the well is at the origin and roads match the plot angles", func
 	end
 	local arc = 2 * TownLayout.openingHalfAngle() * Plots.TOWN_RADIUS
 	Check.near(arc, Town.ROAD_WIDTH, 0.1)
-	Check.eq(Town.OUTER_SURFACE, 0)
-	Check.eq(Town.FLOOR_Y, -1)
+	Check.eq(Town.OUTER_SURFACE, Town.FLOOR_Y)
+	Check.eq(Town.FLOOR_Y, 0.4)
+	local padHalf = 3
+	local wellNear = Town.WELL_OFFSET - Town.WELL_DIAMETER / 2
+	Check.eq(wellNear > padHalf, true)
+	local candleNear = Town.WELL_OFFSET - Town.WELL_CANDLE_RADIUS
+	Check.eq(candleNear > padHalf, true)
 end)
 
 Check.test("QA2 only the pedlar and the shrine are live", function()
@@ -226,23 +232,32 @@ Check.test("QA6 a hundred thousand rolls stay inside the published odds", functi
 	end
 end)
 
-Check.test("QA7 every offer is priced at base income times payback", function()
+Check.test("QA7 every offer is priced at that species income times rarity payback", function()
+	Check.eq(ShopStock.priceFor("mothman_hatchling"), 60)
+	Check.eq(ShopStock.priceFor("fresno_nightcrawler"), 90)
+	Check.eq(ShopStock.priceFor("hidebehind"), 120)
+	Check.eq(ShopStock.priceFor("hodag"), 150)
 	for rarity, price in SPEC_PRICE do
-		Check.eq(ShopStock.price(rarity), price, rarity)
 		local row = Shop.RARITIES[rarity]
+		Check.eq(ShopStock.rarityPrice(rarity), price, rarity)
 		Check.eq(row.baseIncome * row.paybackSeconds, price)
+		if rarity ~= "Common" then
+			for _, id in ShopPools[rarity] do
+				Check.eq(ShopStock.priceFor(id), price, id)
+			end
+		end
 	end
 	for rotationId = 1, 40 do
 		local rolled = ShopRoll.generate(rotationId)
 		for _, offer in rolled.offers do
-			Check.eq(offer.price, ShopStock.price(offer.rarity), offer.speciesId)
-			Check.eq(offer.mutation, "")
 			local species = Species.get(offer.speciesId)
 			Check.truthy(species)
+			Check.eq(offer.price, ShopStock.priceFor(offer.speciesId), offer.speciesId)
+			Check.eq(offer.price, species.baseIncome * Shop.RARITIES[species.rarity].paybackSeconds)
+			Check.eq(offer.mutation, "")
 			Check.eq(species.rarity, offer.rarity)
 		end
 	end
-	Check.eq(Species.get("mothman_hatchling").baseIncome, 2)
 	Check.eq(Income.contribution("mothman_hatchling", 0), 2)
 end)
 
@@ -251,7 +266,7 @@ Check.test("QA8 a slot can be bought once per rotation", function()
 	local stock = ShopRoll.generate(15)
 	local price = stock.bySlot[1].price
 	local before = profile.cash
-	local ok, reason = Transactions.buyPedlar(profile, 15, 1, stock.bySlot, 20, "pedlar-1")
+	local ok, reason = Transactions.buyPedlar(profile, 15, 1, stock.bySlot, Town.BUY_DISTANCE, 20, "pedlar-1")
 	Check.eq(ok, true, reason)
 	Check.eq(profile.cash, before - price)
 	Check.eq(profile.cryptids["pedlar-1"].source, "pedlar")
@@ -259,13 +274,13 @@ Check.test("QA8 a slot can be bought once per rotation", function()
 	Check.eq(profile.shop.boughtSlots[1], true)
 	Check.eq(profile.shop.lastRotationId, 15)
 	local held = profile.cash
-	local again, againReason = Transactions.buyPedlar(profile, 15, 1, stock.bySlot, 21, "pedlar-2")
+	local again, againReason = Transactions.buyPedlar(profile, 15, 1, stock.bySlot, Town.BUY_DISTANCE, 21, "pedlar-2")
 	Check.eq(again, false)
 	Check.eq(againReason, "bought")
 	Check.eq(profile.cash, held)
 	Check.eq(profile.cryptids["pedlar-2"], nil)
 	local saved = Schema.migrate(profile)
-	local rejoined, rejoinReason = Transactions.buyPedlar(saved, 15, 1, stock.bySlot, 22, "pedlar-3")
+	local rejoined, rejoinReason = Transactions.buyPedlar(saved, 15, 1, stock.bySlot, Town.BUY_DISTANCE, 22, "pedlar-3")
 	Check.eq(rejoined, false)
 	Check.eq(rejoinReason, "bought")
 	Check.eq(saved.cash, held)
@@ -282,7 +297,7 @@ Check.test("QA9 a stale rotation is refused with the pedlar line", function()
 	profile.shop.boughtSlots[3] = true
 	profile.cash = 0
 	local stock = ShopRoll.generate(5)
-	local ok, reason = Transactions.buyPedlar(profile, 5, 1, stock.bySlot, 1, "too-poor")
+	local ok, reason = Transactions.buyPedlar(profile, 5, 1, stock.bySlot, Town.BUY_DISTANCE, 1, "too-poor")
 	Check.eq(ok, false)
 	Check.eq(reason, "afford")
 	Check.eq(profile.cash, 0)
@@ -296,7 +311,7 @@ Check.test("QA10 the pedlar stays shut before onboarding step 8", function()
 	profile.onboarding.step = 7
 	local before = profile.cash
 	local stock = ShopRoll.generate(3)
-	local ok, reason = Transactions.buyPedlar(profile, 3, 1, stock.bySlot, 1, "early")
+	local ok, reason = Transactions.buyPedlar(profile, 3, 1, stock.bySlot, Town.BUY_DISTANCE, 1, "early")
 	Check.eq(ok, false)
 	Check.eq(reason, "onboarding")
 	Check.eq(profile.cash, before)
@@ -304,8 +319,32 @@ Check.test("QA10 the pedlar stays shut before onboarding step 8", function()
 	Check.eq(Shop.UNMARKED, "The Pedlar ignores the unmarked.")
 	Check.eq(Shop.GATE_STEP, 8)
 	profile.onboarding.step = 8
-	local opened = Transactions.buyPedlar(profile, 3, 1, stock.bySlot, 1, "late")
+	local opened = Transactions.buyPedlar(profile, 3, 1, stock.bySlot, Town.BUY_DISTANCE, 1, "late")
 	Check.eq(opened, true)
+end)
+
+Check.test("a pedlar buy past 12 studs is refused and does not charge", function()
+	Check.eq(Town.BUY_DISTANCE, 12)
+	Check.eq(Town.PROMPT_DISTANCE, 10)
+	local profile = rich()
+	local stock = ShopRoll.generate(8)
+	local before = profile.cash
+	local far, farReason = Transactions.buyPedlar(profile, 8, 1, stock.bySlot, 12.01, 1, "far")
+	Check.eq(far, false)
+	Check.eq(farReason, "range")
+	Check.eq(profile.cash, before)
+	Check.eq(profile.cryptids.far, nil)
+	Check.eq(profile.shop.boughtSlots[1], false)
+	local missing, missingReason = Transactions.buyPedlar(profile, 8, 1, stock.bySlot, nil, 1, "missing")
+	Check.eq(missing, false)
+	Check.eq(missingReason, "range")
+	Check.eq(profile.cash, before)
+	local near = Transactions.buyPedlar(profile, 8, 1, stock.bySlot, 12, 1, "near")
+	Check.eq(near, true)
+	Check.eq(profile.cash, before - stock.bySlot[1].price)
+	local session = fs.readFile("src/server/PlayerSession.luau")
+	Check.contains(session, "Town.BUY_DISTANCE")
+	Check.contains(session, "pedlarDistance")
 end)
 
 Check.test("QA11 the town never calls MarketplaceService", function()
@@ -345,37 +384,54 @@ Check.test("QA12 the odds view is the four columns and each sums to 100", functi
 	Check.eq(string.find(client, "only 1 left", 1, true), nil)
 end)
 
-Check.test("QA13 fog overrides are the town values and rift green is limited", function()
+Check.test("QA13 the live atmosphere is the playtest fog and rift green is limited", function()
 	Check.eq(UITheme.lighting.atmosphereDensity, 0.18)
 	Check.eq(UITheme.lighting.atmosphereHaze, 0.3)
-	Check.eq(UITheme.lighting.fogStart, 140)
-	Check.eq(UITheme.lighting.fogEnd, 380)
-	Check.eq(Town.ATMOSPHERE.density, 0.38)
-	Check.eq(Town.ATMOSPHERE.haze, 1.5)
-	Check.eq(Town.ATMOSPHERE.color, "Ash")
-	Check.eq(Town.ATMOSPHERE.decay, "Void")
+	Check.eq(UITheme.lighting.atmosphereColor, "Ash")
+	Check.eq(UITheme.lighting.atmosphereDecay, "Void")
+	Check.eq(UITheme.lighting.fogStart, 250)
+	Check.eq(UITheme.lighting.fogEnd, 1100)
+	Check.eq(UITheme.lighting.fogColor, "Ash")
+	Check.eq(UITheme.lighting.atmosphereOffset, 0)
+	Check.eq(UITheme.lighting.atmosphereGlare, 0)
+	Check.eq(UITheme.lighting.brightness, 1.5)
+	Check.eq(UITheme.lighting.exposureCompensation, 0.3)
+	Check.eq(UITheme.palette.LightAmbient, "3C3734")
+	Check.eq(UITheme.palette.LightOutdoor, "5F5852")
 	Check.eq(UITheme.palette.Ash, "1A1719")
 	Check.eq(UITheme.palette.Void, "0B0A0C")
 	Check.eq(UITheme.world.Candle, "FFB36B")
-	Check.eq(Town.LAMP_RANGE, 14)
-	Check.eq(Town.LAMP_BRIGHTNESS, 1)
+	Check.eq(Lanterns.RANGE, 16)
+	Check.eq(Lanterns.BRIGHTNESS, 1.2)
+	Check.eq(Lanterns.SHADOWS, false)
 	Check.eq(Town.LAMP_SPACING, 18)
 	Check.eq(Town.LAMP_COUNT % Town.FLICKER_STRIDE, 0)
 	Check.eq(Town.FLICKER_MIN, 0.2)
 	Check.eq(Town.FLICKER_MAX, 0.6)
 	local lighting = fs.readFile("src/server/LightingSetup.luau")
-	Check.contains(lighting, "townAir.density")
-	Check.contains(lighting, "townAir.haze")
+	Check.contains(lighting, "lighting.atmosphereDensity")
+	Check.contains(lighting, "lighting.atmosphereHaze")
+	Check.contains(lighting, "lighting.atmosphereColor")
+	Check.contains(lighting, "lighting.atmosphereDecay")
+	Check.eq(string.find(lighting, "townAir", 1, true), nil)
+	Check.eq(string.find(lighting, "1.5", 1, true), nil)
+	local sources = {}
+	filesUnder("src", sources)
+	for _, path in sources do
+		local text = fs.readFile(path)
+		Check.eq(string.find(text, "haze = 1.5", 1, true), nil, path)
+		Check.eq(string.find(text, "atmosphereHaze = 1.5", 1, true), nil, path)
+	end
 	local builder = fs.readFile("src/server/TownBuilder.luau")
 	local pedlar = fs.readFile("src/server/Pedlar.luau")
-	local riftLines = 0
-	for line in string.gmatch(builder, "[^\n]+") do
-		if string.match(line, '^%s*"Rift",%s*$') ~= nil then
-			riftLines += 1
-		end
-	end
-	Check.eq(riftLines, 1)
-	Check.eq(count(pedlar, 'UITheme.color("Rift")'), 1)
+	Check.eq(string.find(builder, "materials.neon", 1, true), nil)
+	Check.eq(string.find(builder, "LightEmission", 1, true), nil)
+	Check.eq(string.find(pedlar, "LightEmission", 1, true), nil)
+	Check.eq(string.find(pedlar, 'UITheme.color("Rift")', 1, true), nil)
+	Check.eq(Lanterns.RIFT_PARTICLE_COLOR, "Rift")
+	Check.eq(Lanterns.RIFT_SURFACE, "RiftDim")
+	Check.eq(UITheme.palette.Rift, "7FA34A")
+	Check.eq(UITheme.palette.RiftDim, "4F6B34")
 	Check.eq(string.find(builder, "purple", 1, true), nil)
 	Check.eq(string.find(pedlar, "purple", 1, true), nil)
 	for _, hex in UITheme.palette do
@@ -391,8 +447,12 @@ Check.test("QA14 the shrine prompt is the spec 04 hook", function()
 	Check.contains(shrine, "Town.SHRINE_BODY")
 	Check.contains(shrine, "function SkillTree.mount")
 	Check.eq(Town.SHRINE_TITLE, "Skill Shrine")
+	Check.eq(Town.SHRINE_UNMARKED, "The shrine is silent to the unmarked.")
 	Check.contains(Town.SHRINE_BODY, "skill tree")
+	Check.contains(shrine, "Town.SHRINE_UNMARKED")
+	Check.contains(shrine, "Shop.GATE_STEP")
 	local interactions = fs.readFile("src/client/Interactions.luau")
+	Check.contains(interactions, 'kindName == "Pedlar" or kindName == "SkillShrine"')
 	Check.contains(interactions, "SkillShrine")
 	Check.contains(interactions, "town.onShrine")
 	local session = fs.readFile("src/server/PlayerSession.luau")
@@ -459,20 +519,20 @@ end)
 Check.test("buying rolls into the next rotation and bind at once uses the first empty pad", function()
 	local profile = rich()
 	local stock = ShopRoll.generate(9)
-	local first = Transactions.buyPedlar(profile, 9, 2, stock.bySlot, 1, "bound-off")
+	local first = Transactions.buyPedlar(profile, 9, 2, stock.bySlot, Town.BUY_DISTANCE, 1, "bound-off")
 	Check.eq(first, true)
 	Check.eq(profile.pads["2"], nil)
 	Check.eq(profile.settings.bindAtOnce, false)
 	local nextStock = ShopRoll.generate(10)
 	profile.settings.bindAtOnce = true
-	local second, reason = Transactions.buyPedlar(profile, 10, 2, nextStock.bySlot, 2, "bound-on")
+	local second, reason = Transactions.buyPedlar(profile, 10, 2, nextStock.bySlot, Town.BUY_DISTANCE, 2, "bound-on")
 	Check.eq(second, true, reason)
 	Check.eq(profile.pads["2"], "bound-on")
 	Check.eq(profile.shop.lastRotationId, 10)
 	Check.eq(profile.shop.boughtSlots[2], true)
 	Check.eq(profile.shop.boughtSlots[1], false)
 	profile.pads["2"] = "bound-on"
-	local third = Transactions.buyPedlar(profile, 10, 4, nextStock.bySlot, 3, "held")
+	local third = Transactions.buyPedlar(profile, 10, 4, nextStock.bySlot, Town.BUY_DISTANCE, 3, "held")
 	Check.eq(third, true)
 	Check.eq(profile.pads["1"], "starter")
 	Check.eq(profile.pads["2"], "bound-on")
@@ -561,4 +621,19 @@ Check.test("v3 saves gain an empty shop and bind at once without rewriting the o
 	Check.eq(lean >= Town.LEAN_MIN, true)
 	Check.eq(lean <= Town.LEAN_MAX, true)
 	Check.eq(math.abs(TownLayout.leanDegrees(8)) <= Town.LEAN_MAX, true)
+	Check.eq(Town.WISP.rate, 2)
+	Check.eq(Town.WISP.transparency >= 0.8, true)
+	Check.eq(Town.WISP.wallCount, Plots.COUNT)
+	Check.eq(Town.WISP.wallCount + Plots.COUNT, 16)
+	local edge = Town.WISP.wildPast
+	Check.eq(math.abs(Plots.WILD_GATE_Z - edge) > Plots.FOOTPRINT / 2, true)
+	for index = 1, Town.WISP.wallCount do
+		local theta = math.rad(TownLayout.districtAngle(index))
+		local point = {
+			x = Plots.TOWN_RADIUS * math.sin(theta),
+			z = Plots.TOWN_RADIUS * math.cos(theta),
+		}
+		Check.near(TownLayout.radius(point), Plots.TOWN_RADIUS, 0.01)
+		Check.eq(TownLayout.radius(point) > Town.DISTRICT_RADIUS, true)
+	end
 end)

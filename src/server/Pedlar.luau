@@ -8,39 +8,38 @@ local ShopRoll = require(script.Parent:WaitForChild("ShopRoll"))
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Shop = require(Shared:WaitForChild("Config"):WaitForChild("Shop")) :: any
 local ShopStock = require(Shared:WaitForChild("Logic"):WaitForChild("ShopStock")) :: any
-local UITheme = require(Shared:WaitForChild("UITheme")) :: any
 
 local cached: any = nil
 local glowToken = 0
 
 local Pedlar = {}
 
-local function lanternLight(): PointLight?
+local function stockGlow(): ParticleEmitter?
 	local tagged = CollectionService:GetTagged("PedlarLantern")
 	local host = tagged[1]
 	if host == nil then
 		return nil
 	end
-	local light = host:FindFirstChildOfClass("PointLight")
-	if light == nil then
+	local emitter = host:FindFirstChild("StockGlow")
+	if emitter == nil or not emitter:IsA("ParticleEmitter") then
 		return nil
 	end
-	return light
+	return emitter
 end
 
 local function glow()
-	local light = lanternLight()
-	if light == nil then
+	local emitter = stockGlow()
+	if emitter == nil then
 		return
 	end
 	glowToken += 1
 	local token = glowToken
-	light.Color = UITheme.color("Rift")
+	emitter.Enabled = true
 	task.delay(Shop.GLOW_SECONDS, function()
-		if token ~= glowToken or light.Parent == nil then
+		if token ~= glowToken or emitter.Parent == nil then
 			return
 		end
-		light.Color = UITheme.color("Candle")
+		emitter.Enabled = false
 	end)
 end
 

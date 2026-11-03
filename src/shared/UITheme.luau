@@ -34,6 +34,8 @@ local palette = table.freeze({
 	RiftDim = "4F6B34",
 	Moss = "5E7A4A",
 	TarnishedSilver = "8C9AA3",
+	LightAmbient = "3C3734",
+	LightOutdoor = "5F5852",
 })
 
 local world = table.freeze({
@@ -117,17 +119,22 @@ local UITheme = {
 		beamWidth = 0.3,
 	}),
 	lighting = table.freeze({
-		brightness = 0.65,
-		exposureCompensation = 0.35,
+		brightness = 1.5,
+		exposureCompensation = 0.3,
 		clockTime = 1,
 		geographicLatitude = 0,
 		globalShadows = true,
-		fogStart = 140,
-		fogEnd = 380,
+		ambient = "LightAmbient",
+		outdoorAmbient = "LightOutdoor",
+		fogStart = 250,
+		fogEnd = 1100,
+		fogColor = "Ash",
 		atmosphereDensity = 0.18,
-		atmosphereOffset = 0.22,
+		atmosphereOffset = 0,
 		atmosphereHaze = 0.3,
 		atmosphereGlare = 0,
+		atmosphereColor = "Ash",
+		atmosphereDecay = "Void",
 		-- Lighting.Technology is not scriptable. default.project.json writes Future.
 		technology = "Future",
 	}),

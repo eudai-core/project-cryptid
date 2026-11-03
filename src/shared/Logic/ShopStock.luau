@@ -11,6 +11,9 @@ end
 local Shop = import("../Config/Shop", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Shop")
 end)
+local Species = import("../Config/Species", function()
+	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Species")
+end)
 
 local ShopStock = {}
 
@@ -53,12 +56,24 @@ function ShopStock.formatCountdown(seconds: number): string
 	return string.format("%d:%02d", minutes, secs)
 end
 
-function ShopStock.price(rarity: string): number
+function ShopStock.rarityPrice(rarity: string): number
 	local row = Shop.RARITIES[rarity]
 	if row == nil then
 		return 0
 	end
 	return row.baseIncome * row.paybackSeconds
+end
+
+function ShopStock.priceFor(speciesId: string): number
+	local species = Species.get(speciesId)
+	if species == nil then
+		return 0
+	end
+	local row = Shop.RARITIES[species.rarity]
+	if row == nil then
+		return 0
+	end
+	return species.baseIncome * row.paybackSeconds
 end
 
 function ShopStock.oddsColumns(): { any }

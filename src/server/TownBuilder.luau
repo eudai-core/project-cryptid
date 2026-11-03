@@ -5,11 +5,14 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Lair = require(Shared:WaitForChild("Config"):WaitForChild("Lair")) :: any
+local Lanterns = require(Shared:WaitForChild("Config"):WaitForChild("Lanterns")) :: any
 local Plots = require(Shared:WaitForChild("Config"):WaitForChild("Plots")) :: any
 local Shop = require(Shared:WaitForChild("Config"):WaitForChild("Shop")) :: any
 local Town = require(Shared:WaitForChild("Config"):WaitForChild("Town")) :: any
 local TownLayout = require(Shared:WaitForChild("Logic"):WaitForChild("TownLayout")) :: any
 local UITheme = require(Shared:WaitForChild("UITheme")) :: any
+local RiftGlow = require(script.Parent:WaitForChild("RiftGlow"))
+local Wisp = require(script.Parent:WaitForChild("Wisp"))
 
 local TownBuilder = {}
 
@@ -101,54 +104,23 @@ local function plate(host: BasePart, kind: string, actionText: string)
 	prompt.Parent = host
 end
 
-local function sinkGround(town: Folder)
-	local ground = town:FindFirstChild("Ground")
-	if ground == nil or not ground:IsA("BasePart") then
-		return
-	end
-	local substrateTop = Town.FLOOR_Y - Town.COBBLE_THICKNESS
-	ground.CFrame = CFrame.new(0, substrateTop - ground.Size.X / 2, 0) * CFrame.Angles(0, 0, math.rad(90))
-end
-
-local function berm(town: Folder)
-	local folder = Instance.new("Folder")
-	folder.Name = "Berm"
-	folder.Parent = town
-	local inner = Plots.TOWN_RADIUS
-	local outer = Plots.GROUND_RADIUS
-	local segments = Town.BERM_SEGMENTS
-	local angle = (2 * math.pi) / segments
-	local length = outer - inner
-	local mid = (inner + outer) / 2
-	local width = 2 * outer * math.sin(angle / 2) + 0.4
-	local substrateTop = Town.FLOOR_Y - Town.COBBLE_THICKNESS
-	local height = Town.OUTER_SURFACE - substrateTop
-	local y = substrateTop + height / 2
-	for index = 1, segments do
-		local theta = (index - 0.5) * angle
-		local x = mid * math.sin(theta)
-		local z = mid * math.cos(theta)
-		local cf = CFrame.lookAt(Vector3.new(x, y, z), Vector3.new(0, y, 0))
-		part(folder, "Berm", Vector3.new(width, height, length), cf, UITheme.materials.floor, "Wall", true)
-	end
-end
-
 local function cobble(town: Folder)
 	local thickness = Town.COBBLE_THICKNESS
 	local diameter = Plots.TOWN_RADIUS * 2
+	local centerY = Town.FLOOR_Y - thickness / 2
 	local disc = part(
 		town,
 		"Cobble",
 		Vector3.new(thickness, diameter, diameter),
-		CFrame.new(0, Town.FLOOR_Y - thickness / 2, 0),
+		CFrame.new(0, centerY, 0),
 		UITheme.materials.cobble,
 		"Soot",
 		true
 	)
-	uprightCylinder(disc, CFrame.new(0, Town.FLOOR_Y - thickness / 2, 0))
+	uprightCylinder(disc, CFrame.new(0, centerY, 0))
 end
 
-local function candleAt(parent: Instance, position: Vector3): PointLight
+local function candleAt(parent: Instance, position: Vector3)
 	local stick = part(
 		parent,
 		"Candle",
@@ -159,7 +131,7 @@ local function candleAt(parent: Instance, position: Vector3): PointLight
 		false
 	)
 	uprightCylinder(stick, CFrame.new(position + Vector3.new(0, Lair.CANDLE_STICK.y / 2, 0)))
-	local flame = part(
+	part(
 		parent,
 		"Flame",
 		Vector3.new(Lair.CANDLE_FLAME.x, Lair.CANDLE_FLAME.y, Lair.CANDLE_FLAME.z),
@@ -168,13 +140,6 @@ local function candleAt(parent: Instance, position: Vector3): PointLight
 		"Candle",
 		false
 	)
-	local light = Instance.new("PointLight")
-	light.Color = UITheme.color("Candle")
-	light.Range = Town.WELL_LIGHT_RANGE
-	light.Brightness = Town.WELL_LIGHT_BRIGHTNESS
-	light.Shadows = true
-	light.Parent = flame
-	return light
 end
 
 local function well(town: Folder)
@@ -227,7 +192,6 @@ local function well(town: Folder)
 	emitter.Color = ColorSequence.new(UITheme.color("Ash"))
 	emitter.Size = NumberSequence.new(0.12)
 	emitter.Transparency = NumberSequence.new(0.25)
-	emitter.LightEmission = 0
 	emitter.Parent = drip
 	local rim = Town.WELL_HEIGHT / 2
 	for index = 1, Town.WELL_CANDLES do
@@ -238,6 +202,8 @@ local function well(town: Folder)
 		)
 	end
 	model.Parent = town
+	local baseY = Plots.FALLBACK_THICKNESS + Town.WELL_HEIGHT / 2
+	model:PivotTo(CFrame.new(Town.WELL_OFFSET, baseY, 0))
 end
 
 local function roads(town: Folder)
@@ -332,10 +298,22 @@ local function flicker(light: PointLight)
 			if light.Parent == nil then
 				break
 			end
-			light.Brightness = Town.LAMP_BRIGHTNESS
+			light.Brightness = Lanterns.BRIGHTNESS
 			task.wait(Town.FLICKER_GAP)
 		end
 	end)
+end
+
+local function wallWisps(town: Folder)
+	local folder = Instance.new("Folder")
+	folder.Name = "Wisps"
+	folder.Parent = town
+	local radius = Plots.TOWN_RADIUS
+	for index = 1, Town.WISP.wallCount do
+		local theta = math.rad(TownLayout.districtAngle(index))
+		local cf = CFrame.new(radius * math.sin(theta), Town.WISP.lift, radius * math.cos(theta))
+		Wisp.attach(folder, "WallWisp", cf)
+	end
 end
 
 local function lamps(town: Folder)
@@ -347,6 +325,10 @@ local function lamps(town: Folder)
 	for index = 1, Town.LAMP_COUNT do
 		local theta = (index - 1) * (2 * math.pi / Town.LAMP_COUNT)
 		local position = Vector3.new(radius * math.sin(theta), y, radius * math.cos(theta))
+		local platformHalf = Plots.FALLBACK_SIZE / 2
+		if math.abs(position.X) <= platformHalf and math.abs(position.Z) <= platformHalf then
+			continue
+		end
 		local post = part(
 			folder,
 			"LampPost",
@@ -360,10 +342,10 @@ local function lamps(town: Folder)
 		local headCf = CFrame.new(position + Vector3.new(0, Town.LAMP_HEIGHT / 2 + 0.6, 0))
 		local head = part(folder, "Lamp", Vector3.new(1.1, 1.3, 1.1), headCf, UITheme.materials.iron, "Ash", false)
 		local light = Instance.new("PointLight")
-		light.Color = UITheme.color("Candle")
-		light.Range = Town.LAMP_RANGE
-		light.Brightness = Town.LAMP_BRIGHTNESS
-		light.Shadows = true
+		light.Color = UITheme.color(Lanterns.COLOR_TOKEN)
+		light.Range = Lanterns.RANGE
+		light.Brightness = Lanterns.BRIGHTNESS
+		light.Shadows = Lanterns.SHADOWS
 		light.Parent = head
 		if index % Town.FLICKER_STRIDE == 0 then
 			flicker(light)
@@ -470,17 +452,19 @@ local function buildStall(parent: Folder, spec: any, index: number)
 			"PedlarLantern",
 			Vector3.new(0.9, 1.2, 0.9),
 			CFrame.new(0, Town.STALL_HEIGHT - 1.6, -Town.STALL_DEPTH / 2 - 1.1),
-			UITheme.materials.iron,
-			"Ash",
+			UITheme.materials[Lanterns.RIFT_MATERIAL],
+			Lanterns.RIFT_SURFACE,
 			false
 		)
 		local light = Instance.new("PointLight")
 		light.Name = "StockLight"
-		light.Color = UITheme.color("Candle")
-		light.Range = Town.LAMP_RANGE
-		light.Brightness = Town.LAMP_BRIGHTNESS
-		light.Shadows = true
+		light.Color = UITheme.color(Lanterns.COLOR_TOKEN)
+		light.Range = Lanterns.RANGE
+		light.Brightness = Lanterns.BRIGHTNESS
+		light.Shadows = Lanterns.SHADOWS
 		light.Parent = lantern
+		local motes = RiftGlow.attach(lantern, false, false)
+		motes.Name = "StockGlow"
 		CollectionService:AddTag(lantern, "PedlarLantern")
 		CollectionService:AddTag(model, "PedlarStall")
 		plate(floor, "Pedlar", Shop.PROMPT)
@@ -601,12 +585,13 @@ local function buildReserved(town: Folder, spec: any)
 			"RiftGlow",
 			Vector3.new(0.35, Town.PIT_DIAMETER + 1.4, Town.PIT_DIAMETER + 1.4),
 			cf * CFrame.new(0, 0.55, 0),
-			UITheme.materials.neon,
-			"Rift",
+			UITheme.materials[Lanterns.RIFT_MATERIAL],
+			Lanterns.RIFT_SURFACE,
 			false
 		)
 		uprightCylinder(glow, cf * CFrame.new(0, 0.55, 0))
 		glow.Transparency = 0.45
+		RiftGlow.attach(glow, true, true)
 	else
 		cornerPosts(footprint, 2.2)
 		local reach = Town.RESERVED_SIZE / 2 - 1
@@ -650,12 +635,11 @@ local function buildReserved(town: Folder, spec: any)
 end
 
 function TownBuilder.build(town: Folder)
-	sinkGround(town)
-	berm(town)
 	cobble(town)
 	well(town)
 	roads(town)
 	wall(town)
+	wallWisps(town)
 	lamps(town)
 	local districts = Instance.new("Folder")
 	districts.Name = "Districts"

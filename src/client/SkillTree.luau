@@ -1,17 +1,19 @@
 --!strict
 
+local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Motion = require(script.Parent:WaitForChild("Motion"))
 local ThemeBind = require(script.Parent:WaitForChild("ThemeBind"))
 local UiFactory = require(script.Parent:WaitForChild("UiFactory"))
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Shop = require(Shared:WaitForChild("Config"):WaitForChild("Shop")) :: any
 local Town = require(Shared:WaitForChild("Config"):WaitForChild("Town")) :: any
 local UITheme = require(Shared:WaitForChild("UITheme")) :: any
 
 local SkillTree = {}
 
-function SkillTree.mount(parent: Instance, isReduced: () -> boolean): { open: () -> () }
+function SkillTree.mount(parent: Instance, player: Player, isReduced: () -> boolean): { open: () -> () }
 	local root = Instance.new("CanvasGroup")
 	root.Name = "SkillTree"
 	root.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -67,8 +69,52 @@ function SkillTree.mount(parent: Instance, isReduced: () -> boolean): { open: ()
 		setOpen(false)
 	end)
 
+	local function attachUnmarked(model: Instance)
+		local adornee: BasePart? = nil
+		if model:IsA("Model") then
+			adornee = model.PrimaryPart
+		end
+		if adornee == nil then
+			local plinth = model:FindFirstChild("Plinth")
+			if plinth ~= nil and plinth:IsA("BasePart") then
+				adornee = plinth
+			end
+		end
+		if adornee == nil then
+			return
+		end
+		local billboard = Instance.new("BillboardGui")
+		billboard.Name = "Unmarked"
+		billboard.Size = UDim2.fromOffset(320, 36)
+		billboard.StudsOffset = Vector3.new(0, 6, 0)
+		billboard.AlwaysOnTop = false
+		billboard.LightInfluence = 0
+		billboard.MaxDistance = 70
+		billboard.Adornee = adornee
+		billboard.Parent = parent
+		local label = UiFactory.label(billboard, "body", UITheme.text.minSize, "BoneDim")
+		label.Size = UDim2.fromScale(1, 1)
+		label.TextXAlignment = Enum.TextXAlignment.Center
+		label.Text = Town.SHRINE_UNMARKED
+		local function refresh()
+			local step = player:GetAttribute("OnboardingStep")
+			billboard.Enabled = type(step) ~= "number" or step < Shop.GATE_STEP
+		end
+		refresh()
+		player:GetAttributeChangedSignal("OnboardingStep"):Connect(refresh)
+	end
+
+	for _, model in CollectionService:GetTagged("SkillShrine") do
+		attachUnmarked(model)
+	end
+	CollectionService:GetInstanceAddedSignal("SkillShrine"):Connect(attachUnmarked)
+
 	return {
 		open = function()
+			local step = player:GetAttribute("OnboardingStep")
+			if type(step) ~= "number" or step < Shop.GATE_STEP then
+				return
+			end
 			setOpen(true)
 		end,
 	}

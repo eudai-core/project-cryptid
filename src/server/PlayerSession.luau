@@ -1,5 +1,6 @@
 --!strict
 
+local CollectionService = game:GetService("CollectionService")
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -18,6 +19,7 @@ local Names = require(Shared:WaitForChild("Config"):WaitForChild("Remotes")) :: 
 local ProfileQuery = require(Shared:WaitForChild("Logic"):WaitForChild("ProfileQuery")) :: any
 local Shop = require(Shared:WaitForChild("Config"):WaitForChild("Shop")) :: any
 local ShopStock = require(Shared:WaitForChild("Logic"):WaitForChild("ShopStock")) :: any
+local Town = require(Shared:WaitForChild("Config"):WaitForChild("Town")) :: any
 local RemoteArgs = require(Shared:WaitForChild("Logic"):WaitForChild("RemoteArgs")) :: any
 local Save = require(Shared:WaitForChild("Config"):WaitForChild("Save")) :: any
 local Schema = require(Shared:WaitForChild("Logic"):WaitForChild("Schema")) :: any
@@ -373,6 +375,15 @@ local function notePedlar(session: any, message: string)
 	session.player:SetAttribute("PedlarNoticeToken", session.pedlarToken)
 end
 
+local function pedlarDistance(player: Player): number?
+	local tagged = CollectionService:GetTagged("PedlarStall")
+	local model = tagged[1]
+	if model == nil or not model:IsA("Model") then
+		return nil
+	end
+	return distanceTo(player, model.PrimaryPart)
+end
+
 local function onPedlarBuy(session: any, rotationId: any, slot: any)
 	if not allowRequest(session) then
 		return
@@ -389,6 +400,10 @@ local function onPedlarBuy(session: any, rotationId: any, slot: any)
 		publish(session, 0)
 		return
 	end
+	local distance = pedlarDistance(session.player)
+	if not RemoteArgs.withinDistance(distance, Town.BUY_DISTANCE) then
+		return
+	end
 	if not allowPurchase(session) then
 		return
 	end
@@ -401,6 +416,7 @@ local function onPedlarBuy(session: any, rotationId: any, slot: any)
 		serverRotation,
 		parsedSlot,
 		offers,
+		distance,
 		os.time(),
 		HttpService:GenerateGUID(false)
 	)

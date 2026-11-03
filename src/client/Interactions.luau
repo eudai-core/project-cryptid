@@ -80,7 +80,8 @@ function Interactions.start(player: Player, remotes: Folder, names: any, beginCa
 			if not publicPrompt then
 				allowed = allowed and owner == player.UserId
 			end
-			if inst:GetAttribute("Kind") == "Pedlar" then
+			local kindName = inst:GetAttribute("Kind")
+			if kindName == "Pedlar" or kindName == "SkillShrine" then
 				local step = player:GetAttribute("OnboardingStep")
 				if type(step) ~= "number" or step < Shop.GATE_STEP then
 					allowed = false

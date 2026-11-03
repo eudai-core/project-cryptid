@@ -221,7 +221,7 @@ local function beginCatch()
 	end)
 end
 
-local skill = SkillTree.mount(gui, isReduced)
+local skill = SkillTree.mount(gui, player, isReduced)
 local pedlar = PedlarShop.mount(gui, player, remotes :: Folder, Names, isReduced)
 TownDress.start()
 Interactions.start(player, remotes :: Folder, Names, beginCatch, {

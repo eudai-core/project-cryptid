@@ -92,7 +92,7 @@ function ShopRoll.generate(rotationId: number, pools: any?): any
 			displayName = if species ~= nil then species.displayName else speciesId,
 			rarity = rarity,
 			rolledRarity = rolled,
-			price = ShopStock.price(rarity),
+			price = ShopStock.priceFor(speciesId),
 			mutation = "",
 		}
 		table.insert(offers, offer)

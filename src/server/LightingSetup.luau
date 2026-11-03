@@ -4,21 +4,20 @@ local Lighting = game:GetService("Lighting")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
-local Town = require(Shared:WaitForChild("Config"):WaitForChild("Town")) :: any
 local UITheme = require(Shared:WaitForChild("UITheme")) :: any
 
 local LightingSetup = {}
 
 function LightingSetup.apply()
 	local lighting = UITheme.lighting
-	Lighting.Ambient = UITheme.color("Ambient")
-	Lighting.OutdoorAmbient = UITheme.color("OutdoorAmbient")
+	Lighting.Ambient = UITheme.color(lighting.ambient)
+	Lighting.OutdoorAmbient = UITheme.color(lighting.outdoorAmbient)
 	Lighting.Brightness = lighting.brightness
 	Lighting.ExposureCompensation = lighting.exposureCompensation
 	Lighting.ClockTime = lighting.clockTime
 	Lighting.GeographicLatitude = lighting.geographicLatitude
 	Lighting.GlobalShadows = lighting.globalShadows
-	Lighting.FogColor = UITheme.color("Void")
+	Lighting.FogColor = UITheme.color(lighting.fogColor)
 	Lighting.FogStart = lighting.fogStart
 	Lighting.FogEnd = lighting.fogEnd
 
@@ -29,15 +28,10 @@ function LightingSetup.apply()
 	end
 	atmosphere.Density = lighting.atmosphereDensity
 	atmosphere.Offset = lighting.atmosphereOffset
-	atmosphere.Color = UITheme.color("Void")
-	atmosphere.Decay = UITheme.color("Ash")
+	atmosphere.Color = UITheme.color(lighting.atmosphereColor)
+	atmosphere.Decay = UITheme.color(lighting.atmosphereDecay)
 	atmosphere.Glare = lighting.atmosphereGlare
 	atmosphere.Haze = lighting.atmosphereHaze
-	local townAir = Town.ATMOSPHERE
-	atmosphere.Density = townAir.density
-	atmosphere.Color = UITheme.color(townAir.color)
-	atmosphere.Decay = UITheme.color(townAir.decay)
-	atmosphere.Haze = townAir.haze
 
 	local baseplate = workspace:FindFirstChild("Baseplate")
 	if baseplate ~= nil then
