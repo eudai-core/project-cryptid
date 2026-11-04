@@ -78,7 +78,7 @@ local Species = {
 		table.freeze({
 			slot = 2,
 			speciesId = "hidebehind",
-			pad = 3,
+			pad = 4,
 		}),
 	}),
 }

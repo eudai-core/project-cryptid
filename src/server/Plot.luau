@@ -7,7 +7,10 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local CryptidModel = require(script.Parent:WaitForChild("CryptidModel"))
 local PlotBuilder = require(script.Parent:WaitForChild("PlotBuilder"))
 local PlotSignals = require(script.Parent:WaitForChild("PlotSignals"))
+local AltarTier = require(Shared:WaitForChild("Logic"):WaitForChild("AltarTier")) :: any
+local BoneAltar = require(Shared:WaitForChild("Config"):WaitForChild("BoneAltar")) :: any
 local Economy = require(Shared:WaitForChild("Config"):WaitForChild("Economy")) :: any
+local Onboarding = require(Shared:WaitForChild("Config"):WaitForChild("Onboarding")) :: any
 local NumberFormat = require(Shared:WaitForChild("Logic"):WaitForChild("NumberFormat")) :: any
 local OnboardingGoals = require(Shared:WaitForChild("Logic"):WaitForChild("OnboardingGoals")) :: any
 local PlotAccess = require(Shared:WaitForChild("Logic"):WaitForChild("PlotAccess")) :: any
@@ -381,17 +384,13 @@ end
 local function rebuildTiers(plot: any, level: number)
 	plot.tiers:ClearAllChildren()
 	for step = 1, level do
-		local shrink = (step - 1) * Plots.ALTAR_TIER_INSET
+		local width, height, depth = AltarTier.size(step)
 		local piece = Instance.new("Part")
 		piece.Name = "AltarTier" .. tostring(step)
 		piece.Anchored = true
 		piece.CanCollide = false
 		piece.CanTouch = false
-		piece.Size = Vector3.new(
-			Plots.ALTAR_SIZE.x - Plots.PAD_RING_MARGIN - shrink,
-			Plots.ALTAR_TIER_HEIGHT,
-			Plots.ALTAR_SIZE.z - Plots.PAD_RING_MARGIN - shrink
-		)
+		piece.Size = Vector3.new(width, height, depth)
 		piece.CFrame = plot.altarStand
 			* CFrame.new(
 				0,
@@ -497,11 +496,15 @@ function Plot.sync(plot: any, profile: any, guideValue: ObjectValue)
 			rift.prompt:SetAttribute("Available", true)
 			rift.prompt:SetAttribute("Slot", offer.slot)
 			rift.prompt.ActionText = "Claim"
-			rift.prompt.ObjectText = NumberFormat.formatCash(offer.price)
+			if offer.pad > profile.padsUnlocked then
+				rift.prompt.ObjectText = Onboarding.NEEDS_CIRCLE
+			else
+				rift.prompt.ObjectText = NumberFormat.formatCash(offer.price)
+			end
 		end
 	end
 
-	local showWild = profile.onboarding.step == 6 and not ProfileQuery.hasSource(profile, "wild")
+	local showWild = profile.onboarding.step == Onboarding.CATCH_STEP and not ProfileQuery.hasSource(profile, "wild")
 	replaceCreature(plot.wildPad, if showWild then Species.WILD_ID else nil, plot.wildStand)
 	plot.wildPrompt:SetAttribute("Available", showWild)
 	plot.wildPrompt.ActionText = "Catch"
@@ -509,7 +512,7 @@ function Plot.sync(plot: any, profile: any, guideValue: ObjectValue)
 	plot.wildPrompt.ObjectText = wildSpecies.displayName
 
 	local nextAltar = profile.upgrades.boneAltar + 1
-	local altarCost = Economy.ALTAR_COST[nextAltar]
+	local altarCost = BoneAltar.cost(nextAltar, BoneAltar.rebirths(profile))
 	if type(altarCost) == "number" then
 		plot.altarPrompt:SetAttribute("Available", true)
 		plot.altarPrompt.ActionText = "Raise"

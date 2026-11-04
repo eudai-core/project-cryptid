@@ -13,6 +13,7 @@ local Plot = require(script.Parent:WaitForChild("Plot"))
 local Remotes = require(script.Parent:WaitForChild("Remotes"))
 local Debounce = require(Shared:WaitForChild("Logic"):WaitForChild("Debounce")) :: any
 local Economy = require(Shared:WaitForChild("Config"):WaitForChild("Economy")) :: any
+local Onboarding = require(Shared:WaitForChild("Config"):WaitForChild("Onboarding")) :: any
 local Lair = require(Shared:WaitForChild("Config"):WaitForChild("Lair")) :: any
 local Plots = require(Shared:WaitForChild("Config"):WaitForChild("Plots")) :: any
 local Income = require(Shared:WaitForChild("Logic"):WaitForChild("Income")) :: any
@@ -116,7 +117,7 @@ local function makeLantern(): Tool
 end
 
 local function syncLantern(session: any)
-	if session.profile.onboarding.step < 6 then
+	if session.profile.onboarding.step < Onboarding.CATCH_STEP then
 		return
 	end
 	local player = session.player
@@ -149,6 +150,7 @@ local function publish(session: any, credit: number)
 		now = offeringNow,
 		dailyAutoOpen = session.dailyAutoOpen == true,
 		silentNotice = session.silentNotice or 0,
+		revealSerial = session.revealSerial or 0,
 	})
 	local player = session.player
 	player:SetAttribute("Cash", profile.cash)
@@ -368,7 +370,7 @@ local function onBeginCatch(session: any)
 	if not allowRequest(session) or session.catchBusy then
 		return
 	end
-	if session.profile.onboarding.step ~= 6 or ProfileQuery.hasSource(session.profile, "wild") then
+	if session.profile.onboarding.step ~= Onboarding.CATCH_STEP or ProfileQuery.hasSource(session.profile, "wild") then
 		return
 	end
 	if session.catchStart ~= nil then
@@ -413,6 +415,9 @@ local function onCompleteCatch(session: any)
 	end
 	session.catchStart = nil
 	local ok = Transactions.grantWild(session.profile, os.time(), HttpService:GenerateGUID(false))
+	if ok == true then
+		session.revealSerial = (session.revealSerial or 0) + 1
+	end
 	commit(session, ok)
 end
 
@@ -775,6 +780,7 @@ function PlayerSession.onPlayer(player: Player)
 		revision = 0,
 		catchStart = nil,
 		catchToken = 0,
+		revealSerial = 0,
 		lastReturnAt = nil,
 		lastBindAt = nil,
 		pedlarToken = 0,

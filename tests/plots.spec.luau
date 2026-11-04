@@ -9,6 +9,7 @@ local Check = require("./check")
 local Debounce = require("../src/shared/Logic/Debounce")
 local HudSlots = require("../src/shared/Logic/HudSlots")
 local SpawnSafety = require("../src/shared/Logic/SpawnSafety")
+local AltarTier = require("../src/shared/Logic/AltarTier")
 local Economy = require("../src/shared/Config/Economy")
 local Income = require("../src/shared/Logic/Income")
 local Lair = require("../src/shared/Config/Lair")
@@ -292,14 +293,14 @@ Check.test("reservation beats a nearby friend", function()
 end)
 
 Check.test("migration from v2 lands on the current data version and keeps the ledger", function()
-	Check.eq(Save.DATA_VERSION, 5)
+	Check.eq(Save.DATA_VERSION, 6)
 	local v2 = Schema.newProfile(9, "starter")
 	v2.dataVersion = 2
 	v2.totalEarned = 40
 	v2.cash = 65
 	v2.base = nil
 	local migrated = Schema.migrate(v2)
-	Check.eq(migrated.dataVersion, 5)
+	Check.eq(migrated.dataVersion, 6)
 	Check.eq(migrated.totalEarned, 40)
 	Check.eq(migrated.cash, 65)
 	Check.eq(next(migrated.base.defences), nil)
@@ -311,7 +312,7 @@ Check.test("migration from v2 lands on the current data version and keeps the le
 	v1.totalEarned = 45
 	v1.cash = 45
 	local fromV1 = Schema.migrate(v1)
-	Check.eq(fromV1.dataVersion, 5)
+	Check.eq(fromV1.dataVersion, 6)
 	Check.eq(fromV1.totalEarned, 20)
 	Check.eq(next(fromV1.base.defences), nil)
 
@@ -327,14 +328,14 @@ Check.test("migration from v2 lands on the current data version and keeps the le
 	Check.eq(corrupt.base.defences, "no")
 
 	local future = Schema.newProfile(9, "starter")
-	future.dataVersion = 6
+	future.dataVersion = 7
 	Check.eq(Schema.migrate(future), nil)
 
 	local encoded = serde.encode("json", Schema.newProfile(9, "starter"))
 	Check.eq(string.find(encoded, "plotIndex", 1, true), nil)
 	Check.eq(string.find(encoded, "PlotIndex", 1, true), nil)
 	local decoded = Schema.migrate(serde.decode("json", encoded))
-	Check.eq(decoded.dataVersion, 5)
+	Check.eq(decoded.dataVersion, 6)
 	Check.eq(next(decoded.base.defences), nil)
 end)
 
@@ -563,4 +564,15 @@ Check.test("lair stone stays the playtest colours and the live light follows v1.
 	Check.eq(UITheme.lighting.atmosphereGlare, 0)
 	Check.eq(UITheme.lighting.atmosphereColor, "Ash")
 	Check.eq(UITheme.lighting.atmosphereDecay, "Void")
+end)
+
+Check.test("altar tiers stay positive through level X", function()
+	local earlyShrink = Plots.ALTAR_TIER_INSET
+	Check.eq(AltarTier.span(Plots.ALTAR_SIZE.z, earlyShrink), Plots.ALTAR_SIZE.z - Plots.PAD_RING_MARGIN - earlyShrink)
+	local topShrink = (Economy.MAX_ALTAR_LEVEL - 1) * Plots.ALTAR_TIER_INSET
+	Check.eq(AltarTier.span(Plots.ALTAR_SIZE.z, topShrink), Plots.ALTAR_TIER_MIN)
+	local width, height, depth = AltarTier.size(Economy.MAX_ALTAR_LEVEL)
+	Check.eq(width > 0, true)
+	Check.eq(height > 0, true)
+	Check.eq(depth > 0, true)
 end)

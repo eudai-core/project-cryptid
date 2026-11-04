@@ -8,8 +8,17 @@ local function import(lunePath: string, getRoblox: () -> any): any
 	return require(getRoblox())
 end
 
+local Analytics = import("../Config/Analytics", function()
+	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Analytics")
+end)
+local BoneAltar = import("../Config/BoneAltar", function()
+	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("BoneAltar")
+end)
 local Economy = import("../Config/Economy", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Economy")
+end)
+local Onboarding = import("../Config/Onboarding", function()
+	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Onboarding")
 end)
 local Shop = import("../Config/Shop", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Shop")
@@ -132,13 +141,23 @@ function Transactions.unlockPad(profile: any, index: number): (boolean, string)
 	end
 	profile.cash = Money.round(profile.cash - cost)
 	profile.padsUnlocked = index
+	if index == Onboarding.HODAG_PAD then
+		local wildId = ProfileQuery.instanceOfSource(profile, "wild")
+		if
+			wildId ~= nil
+			and ProfileQuery.padOfInstance(profile, wildId) == nil
+			and profile.pads[tostring(index)] == nil
+		then
+			profile.pads[tostring(index)] = wildId
+		end
+	end
 	OnboardingGoals.advance(profile)
 	return true, "ok"
 end
 
 function Transactions.upgradeBoneAltar(profile: any): (boolean, string)
 	local nextLevel = profile.upgrades.boneAltar + 1
-	local cost = Economy.ALTAR_COST[nextLevel]
+	local cost = BoneAltar.cost(nextLevel, BoneAltar.rebirths(profile))
 	if type(cost) ~= "number" then
 		return false, "max"
 	end
@@ -176,7 +195,7 @@ function Transactions.place(profile: any, instanceId: string, padIndex: number):
 end
 
 function Transactions.grantWild(profile: any, now: number, newId: string): (boolean, string)
-	if profile.onboarding.step ~= 6 then
+	if profile.onboarding.step ~= Onboarding.CATCH_STEP then
 		return false, "step"
 	end
 	if ProfileQuery.hasSource(profile, "wild") then
@@ -189,27 +208,28 @@ function Transactions.grantWild(profile: any, now: number, newId: string): (bool
 	return true, "ok"
 end
 
-function Transactions.skip(profile: any, now: number, makeId: () -> string): (boolean, string)
+function Transactions.skip(profile: any, now: number, makeId: () -> string): (boolean, string, { any })
 	if profile.onboarding.step >= 8 then
-		return false, "done"
+		return false, "done", {}
 	end
+	local fromStep = profile.onboarding.step
 	for _, guarantee in Species.GUARANTEES do
 		if not ProfileQuery.ownsSpecies(profile, guarantee.speciesId) then
 			local instanceId = makeId()
 			if not addCryptid(profile, instanceId, guarantee.speciesId, "rift", now) then
-				return false, "id"
+				return false, "id", {}
 			end
 		end
 	end
 	if not ProfileQuery.ownsSpecies(profile, Species.WILD_ID) then
 		local instanceId = makeId()
 		if not addCryptid(profile, instanceId, Species.WILD_ID, "wild", now) then
-			return false, "id"
+			return false, "id", {}
 		end
 	end
 	profile.onboarding.step = 8
 	profile.onboarding.skipped = true
-	return true, "ok"
+	return true, "ok", Analytics.eventsForTransition(fromStep, 8, true)
 end
 
 function Transactions.creditIncome(

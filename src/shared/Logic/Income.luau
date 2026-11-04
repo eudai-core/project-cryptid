@@ -8,8 +8,8 @@ local function import(lunePath: string, getRoblox: () -> any): any
 	return require(getRoblox())
 end
 
-local Economy = import("../Config/Economy", function()
-	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Economy")
+local BoneAltar = import("../Config/BoneAltar", function()
+	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("BoneAltar")
 end)
 local Species = import("../Config/Species", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Species")
@@ -23,23 +23,16 @@ end)
 
 local Income = {}
 
-function Income.multiplier(altarLevel: number): number
-	local level = altarLevel
-	if level < 0 then
-		level = 0
-	end
-	if level > Economy.MAX_ALTAR_LEVEL then
-		level = Economy.MAX_ALTAR_LEVEL
-	end
-	return 1 + Economy.ALTAR_BONUS_PER_LEVEL * level
+function Income.multiplier(altarLevel: number, l3: boolean?): number
+	return BoneAltar.multiplier(altarLevel, l3 == true)
 end
 
-function Income.contribution(speciesId: string, altarLevel: number): number
+function Income.contribution(speciesId: string, altarLevel: number, l3: boolean?): number
 	local species = Species.get(speciesId)
 	if species == nil then
 		return 0
 	end
-	return Money.round(species.baseIncome * Income.multiplier(altarLevel))
+	return Money.round(species.baseIncome * Income.multiplier(altarLevel, l3 == true))
 end
 
 function Income.perSecond(profile: any): number
@@ -56,7 +49,7 @@ function Income.perSecond(profile: any): number
 			end
 		end
 	end
-	return Money.round(base * Income.multiplier(profile.upgrades.boneAltar))
+	return Money.round(base * Income.multiplier(profile.upgrades.boneAltar, BoneAltar.l3Owned(profile)))
 end
 
 return Income
