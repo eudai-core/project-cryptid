@@ -8,6 +8,9 @@ local function import(lunePath: string, getRoblox: () -> any): any
 	return require(getRoblox())
 end
 
+local SaveGuard = import("./SaveGuard", function()
+	return script.Parent:WaitForChild("SaveGuard")
+end)
 local Schema = import("./Schema", function()
 	return script.Parent:WaitForChild("Schema")
 end)
@@ -29,9 +32,19 @@ end
 local function sealed(profile: any, jobId: string, now: number, ttl: number): any
 	return {
 		lockJobId = jobId,
+		lockTimestamp = now,
+		lockLeaseSeconds = ttl,
 		lockExpiresAt = now + ttl,
 		profile = profile,
 	}
+end
+
+local function guard(old: any, profile: any, rebirth: boolean): (any?, string)
+	local reason = SaveGuard.rejection(old.profile, profile, rebirth)
+	if reason ~= nil then
+		return nil, reason
+	end
+	return nil, ""
 end
 
 function SessionDocument.buildWrite(
@@ -61,7 +74,14 @@ function SessionDocument.buildWrite(
 	return sealed(profile, jobId, now, ttl), "loaded"
 end
 
-function SessionDocument.buildSave(old: any, jobId: string, now: number, ttl: number, profile: any): (any?, string)
+function SessionDocument.buildSave(
+	old: any,
+	jobId: string,
+	now: number,
+	ttl: number,
+	profile: any,
+	rebirth: boolean?
+): (any?, string)
 	if type(old) ~= "table" then
 		return nil, "lost"
 	end
@@ -71,21 +91,42 @@ function SessionDocument.buildSave(old: any, jobId: string, now: number, ttl: nu
 	if type(profile) ~= "table" then
 		return nil, "corrupt"
 	end
+	local _, reason = guard(old, profile, rebirth == true)
+	if reason ~= "" then
+		return nil, reason
+	end
 	return sealed(profile, jobId, now, ttl), "saved"
 end
 
-function SessionDocument.buildRelease(old: any, jobId: string, profile: any): (any?, string)
+function SessionDocument.buildRenew(old: any, jobId: string, now: number, ttl: number): (any?, string)
+	if type(old) ~= "table" or old.lockJobId ~= jobId then
+		return nil, "lost"
+	end
+	if type(old.profile) ~= "table" then
+		return nil, "corrupt"
+	end
+	return sealed(old.profile, jobId, now, ttl), "renewed"
+end
+
+function SessionDocument.buildRelease(old: any, jobId: string, profile: any, rebirth: boolean?): (any?, string)
 	if type(old) ~= "table" or old.lockJobId ~= jobId then
 		return nil, "lost"
 	end
 	if type(profile) ~= "table" then
 		return nil, "corrupt"
 	end
+	local _, reason = guard(old, profile, rebirth == true)
+	if reason ~= "" then
+		return nil, reason
+	end
 	return {
 		lockJobId = "",
+		lockTimestamp = 0,
+		lockLeaseSeconds = 0,
 		lockExpiresAt = 0,
 		profile = profile,
-	}, "released"
+	},
+		"released"
 end
 
 return SessionDocument

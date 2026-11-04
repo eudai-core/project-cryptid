@@ -62,7 +62,7 @@ Check.test("species and economy match spec 01", function()
 	Check.eq(Onboarding.BIND_HINT, "Carve a circle to bind it.")
 	Check.eq(Save.DATA_VERSION, 4)
 	Check.eq(Save.AUTOSAVE_SECONDS, 60)
-	Check.eq(Save.KICK_LOAD_FAILED, "The ledger would not open. Rejoin.")
+	Check.eq(Save.KICK_LOAD_FAILED, "The ledger would not open. Your progress is safe. Rejoin.")
 end)
 
 Check.test("QA1 fresh profile is the starter lair", function()

@@ -50,7 +50,7 @@ rojo build -o ProjectCryptid.rbxlx
 
 Start a bot playtest with `args=qa:<seconds>` (for example `args=qa:300`). `ServerScriptService.Dev.StudioTestWatchdog` ends that session itself, so nobody has to press Stop if the bridge drops. It does nothing in a live server, and nothing when the argument is missing, so a manual Play is left alone.
 
-The seconds are clamped to 1–1800. The ops guide does not name a range; 1800 is thirty minutes, and `0` is raised to 1 so a typo cannot end the test before the bridge reconnects. A `qa:` argument with no usable number uses 300. A suffix such as `qa:420:plots3` uses 420. The output shows both moments:
+The seconds are clamped to 1–1800. The ops guide does not name a range; 1800 is thirty minutes, and `0` is raised to 1 so a typo cannot end the test before the bridge reconnects. A `qa:` argument with no usable number uses 300. A suffix such as `qa:420:plots3` uses 420. In Studio only, `qa:<seconds>:loadfail` kicks before the ledger opens, `qa:<seconds>:foreignlock` plants a fresh lock from another job, and `qa:<seconds>:foreignlock:stale` plants an already expired one. Those three do nothing in a live server. The output shows both moments:
 
 ```text
 [Cryptid:Watchdog] armed for 300s (args "qa:300")
@@ -75,7 +75,7 @@ rojo serve
 
 In Studio, connect with the Rojo plugin.
 
-`servePlaceIds` in `default.project.json` is `null` on purpose. The place id is not known yet, so this is a TODO. When the experience exists, set `servePlaceIds` to an array of place ids, for example `[123456789]`, so Rojo refuses to live-sync this project into a different place. JSON has no comments, which is why the reminder lives here instead of in the project file.
+`servePlaceIds` in `default.project.json` stays `null`. The live place id is not set, and a plain `rojo serve` must not attach to the private test universe. That universe is place `80631305127330`, with Studio API access on. Serve it with `rojo serve serve.test.project.json`. The in-memory mock must not warn there. What the mock cannot prove is listed in [`docs/published-place-checklist.md`](docs/published-place-checklist.md).
 
 ## Folder layout
 
