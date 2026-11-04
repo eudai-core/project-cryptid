@@ -383,8 +383,33 @@ Check.test("a spawn stands on a solid floor and the plot move waits for that flo
 	Check.eq(string.find(ground :: string, "TownPlatform", 1, true) ~= nil, true)
 	Check.eq(string.find(ground :: string, "TownSpawn", 1, true) ~= nil, true)
 	Check.eq(string.find(ground :: string, "Neutral = true", 1, true) ~= nil, true)
-	local lighting = fs.readFile("src/server/LightingSetup.luau")
-	Check.eq(string.find(lighting, "StreamingEnabled = false", 1, true) ~= nil, true)
+end)
+
+Check.test("Technology and StreamingEnabled live in the place file, not in scripts", function()
+	local project = serde.decode("json", fs.readFile("default.project.json"))
+	Check.eq(project.tree.Workspace["$properties"].StreamingEnabled, false)
+	Check.eq(project.tree.Lighting["$properties"].Technology, "Future")
+	Check.eq(UITheme.lighting.technology, project.tree.Lighting["$properties"].Technology)
+	local files = {}
+	local function walk(dir: string)
+		for _, name in fs.readDir(dir) do
+			local path = dir .. "/" .. name
+			if fs.isDir(path) then
+				walk(path)
+			elseif string.match(name, "%.luau$") ~= nil then
+				table.insert(files, path)
+			end
+		end
+	end
+	walk("src")
+	Check.truthy(#files > 0)
+	for _, path in files do
+		local text = fs.readFile(path)
+		Check.eq(string.match(text, "StreamingEnabled%s*=") == nil, true, path)
+		Check.eq(string.match(text, "%.Technology%s*=") == nil, true, path)
+		Check.eq(string.find(text, "203785492", 1, true), nil, path)
+	end
+	Check.eq(string.find(fs.readFile("default.project.json"), "203785492", 1, true), nil)
 end)
 
 Check.test("the home beam tip is inside the clear fog band from the town edge", function()

@@ -120,6 +120,7 @@ local UITheme = {
 		atmosphereOffset = 0.22,
 		atmosphereHaze = 0.3,
 		atmosphereGlare = 0,
+		-- Lighting.Technology is not scriptable. default.project.json writes Future.
 		technology = "Future",
 	}),
 	materials = table.freeze({

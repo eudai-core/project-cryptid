@@ -9,7 +9,6 @@ local UITheme = require(Shared:WaitForChild("UITheme")) :: any
 local LightingSetup = {}
 
 function LightingSetup.apply()
-	workspace.StreamingEnabled = false
 	local lighting = UITheme.lighting
 	Lighting.Ambient = UITheme.color("Ambient")
 	Lighting.OutdoorAmbient = UITheme.color("OutdoorAmbient")
@@ -18,7 +17,6 @@ function LightingSetup.apply()
 	Lighting.ClockTime = lighting.clockTime
 	Lighting.GeographicLatitude = lighting.geographicLatitude
 	Lighting.GlobalShadows = lighting.globalShadows
-	Lighting.Technology = Enum.Technology[lighting.technology]
 	Lighting.FogColor = UITheme.color("Void")
 	Lighting.FogStart = lighting.fogStart
 	Lighting.FogEnd = lighting.fogEnd

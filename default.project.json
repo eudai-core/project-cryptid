@@ -13,6 +13,12 @@
         "StreamingEnabled": false
       }
     },
+    "Lighting": {
+      "$className": "Lighting",
+      "$properties": {
+        "Technology": "Future"
+      }
+    },
     "Players": {
       "$className": "Players",
       "$properties": {
