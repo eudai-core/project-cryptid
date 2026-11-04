@@ -11,6 +11,9 @@ end
 local Economy = import("../Config/Economy", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Economy")
 end)
+local Shop = import("../Config/Shop", function()
+	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Shop")
+end)
 local Species = import("../Config/Species", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Species")
 end)
@@ -22,6 +25,18 @@ local Income = import("./Income", function()
 end)
 local ProfileQuery = import("./ProfileQuery", function()
 	return script.Parent:WaitForChild("ProfileQuery")
+end)
+local ShopLedger = import("./ShopLedger", function()
+	return script.Parent:WaitForChild("ShopLedger")
+end)
+local ShopStock = import("./ShopStock", function()
+	return script.Parent:WaitForChild("ShopStock")
+end)
+local RemoteArgs = import("./RemoteArgs", function()
+	return script.Parent:WaitForChild("RemoteArgs")
+end)
+local Town = import("../Config/Town", function()
+	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Town")
 end)
 local OnboardingGoals = import("./OnboardingGoals", function()
 	return script.Parent:WaitForChild("OnboardingGoals")
@@ -216,6 +231,81 @@ function Transactions.setReducedMotion(profile: any, enabled: boolean): boolean
 	end
 	profile.settings.reducedMotion = enabled
 	return true
+end
+
+function Transactions.setBindAtOnce(profile: any, enabled: boolean): boolean
+	if type(enabled) ~= "boolean" then
+		return false
+	end
+	profile.settings.bindAtOnce = enabled
+	return true
+end
+
+local function firstEmptyPad(profile: any): number?
+	for index = 1, profile.padsUnlocked do
+		if ProfileQuery.padAt(profile, index) == nil then
+			return index
+		end
+	end
+	return nil
+end
+
+function Transactions.buyPedlar(
+	profile: any,
+	rotationId: number,
+	slot: number,
+	offers: any,
+	distance: number?,
+	now: number,
+	newId: string
+): (boolean, string)
+	if not RemoteArgs.withinDistance(distance, Town.BUY_DISTANCE) then
+		return false, "range"
+	end
+	if profile.onboarding.step < Shop.GATE_STEP then
+		return false, "onboarding"
+	end
+	if type(slot) ~= "number" or slot ~= math.floor(slot) or slot < 1 or slot > Shop.SLOT_COUNT then
+		return false, "slot"
+	end
+	if type(rotationId) ~= "number" or rotationId ~= math.floor(rotationId) then
+		return false, "rotation"
+	end
+	if type(offers) ~= "table" then
+		return false, "slot"
+	end
+	local offer = offers[slot]
+	if type(offer) ~= "table" or type(offer.speciesId) ~= "string" then
+		return false, "slot"
+	end
+	local species = Species.get(offer.speciesId)
+	if species == nil then
+		return false, "species"
+	end
+	if ShopLedger.slotBought(profile.shop.lastRotationId, profile.shop.boughtSlots, rotationId, slot) then
+		return false, "bought"
+	end
+	local price = ShopStock.priceFor(offer.speciesId)
+	if profile.cash + 1e-9 < price then
+		return false, "afford"
+	end
+	if not addCryptid(profile, newId, offer.speciesId, "pedlar", now) then
+		return false, "id"
+	end
+	profile.cryptids[newId].mutation = ""
+	profile.cash = Money.round(profile.cash - price)
+	if profile.shop.lastRotationId ~= rotationId then
+		profile.shop.boughtSlots = ShopLedger.freshSlots()
+	end
+	profile.shop.boughtSlots[slot] = true
+	profile.shop.lastRotationId = rotationId
+	if profile.settings.bindAtOnce == true then
+		local pad = firstEmptyPad(profile)
+		if pad ~= nil then
+			profile.pads[tostring(pad)] = newId
+		end
+	end
+	return true, "ok"
 end
 
 return Transactions

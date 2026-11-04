@@ -291,15 +291,15 @@ Check.test("reservation beats a nearby friend", function()
 	Check.eq(PlotAssign.choose(state, 7, { 1 }), 5)
 end)
 
-Check.test("migration to dataVersion 3 adds empty defences and keeps a v2 ledger", function()
-	Check.eq(Save.DATA_VERSION, 3)
+Check.test("migration from v2 lands on the current data version and keeps the ledger", function()
+	Check.eq(Save.DATA_VERSION, 4)
 	local v2 = Schema.newProfile(9, "starter")
 	v2.dataVersion = 2
 	v2.totalEarned = 40
 	v2.cash = 65
 	v2.base = nil
 	local migrated = Schema.migrate(v2)
-	Check.eq(migrated.dataVersion, 3)
+	Check.eq(migrated.dataVersion, 4)
 	Check.eq(migrated.totalEarned, 40)
 	Check.eq(migrated.cash, 65)
 	Check.eq(next(migrated.base.defences), nil)
@@ -311,7 +311,7 @@ Check.test("migration to dataVersion 3 adds empty defences and keeps a v2 ledger
 	v1.totalEarned = 45
 	v1.cash = 45
 	local fromV1 = Schema.migrate(v1)
-	Check.eq(fromV1.dataVersion, 3)
+	Check.eq(fromV1.dataVersion, 4)
 	Check.eq(fromV1.totalEarned, 20)
 	Check.eq(next(fromV1.base.defences), nil)
 
@@ -327,14 +327,14 @@ Check.test("migration to dataVersion 3 adds empty defences and keeps a v2 ledger
 	Check.eq(corrupt.base.defences, "no")
 
 	local future = Schema.newProfile(9, "starter")
-	future.dataVersion = 4
+	future.dataVersion = 5
 	Check.eq(Schema.migrate(future), nil)
 
 	local encoded = serde.encode("json", Schema.newProfile(9, "starter"))
 	Check.eq(string.find(encoded, "plotIndex", 1, true), nil)
 	Check.eq(string.find(encoded, "PlotIndex", 1, true), nil)
 	local decoded = Schema.migrate(serde.decode("json", encoded))
-	Check.eq(decoded.dataVersion, 3)
+	Check.eq(decoded.dataVersion, 4)
 	Check.eq(next(decoded.base.defences), nil)
 end)
 
@@ -434,10 +434,27 @@ Check.test("world trim uses RiftDim metal and no neon emission", function()
 	Check.eq(UITheme.palette.Rift, "7FA34A")
 	Check.eq(UITheme.palette.RiftDim, "4F6B34")
 	Check.eq(UITheme.materials.lantern, "Metal")
+	local builders = {
+		"src/server/PlotBuilder.luau",
+		"src/server/TownBuilder.luau",
+		"src/server/Pedlar.luau",
+		"src/server/Wisp.luau",
+		"src/server/RiftGlow.luau",
+	}
+	for _, path in builders do
+		local builder = fs.readFile(path)
+		Check.eq(string.find(builder, "materials.neon", 1, true), nil, path)
+		Check.eq(string.find(builder, "Enum.Material.Neon", 1, true), nil, path)
+		Check.eq(string.find(builder, "LightEmission", 1, true), nil, path)
+	end
 	local builder = fs.readFile("src/server/PlotBuilder.luau")
-	Check.eq(string.find(builder, "materials.neon", 1, true), nil)
-	Check.eq(string.find(builder, "LightEmission", 1, true), nil)
 	Check.eq(string.find(builder, '"RiftDim"', 1, true) ~= nil, true)
+	local town = fs.readFile("src/server/TownBuilder.luau")
+	Check.eq(Lanterns.RIFT_SURFACE, "RiftDim")
+	Check.eq(Lanterns.RIFT_MATERIAL, "lantern")
+	Check.eq(string.find(town, "Lanterns.RIFT_SURFACE", 1, true) ~= nil, true)
+	Check.eq(string.find(town, "RiftGlow.attach", 1, true) ~= nil, true)
+	Check.eq(string.find(fs.readFile("src/server/PlotBuilder.luau"), "RiftGlow.attach", 1, true) ~= nil, true)
 	local riftUses = 0
 	local cursor = 1
 	while true do
@@ -455,8 +472,9 @@ Check.test("gate lanterns fit the per-plot light cap", function()
 	Check.eq(Lanterns.PER_PLOT_LIGHT_CAP, 8)
 	Check.eq(#Lanterns.townOffsets(), 4)
 	Check.eq(#Lanterns.gateOffsets(), 2)
-	Check.eq(Lair.CANDLE_LIGHT_COUNT + #Lanterns.gateOffsets() <= Lanterns.PER_PLOT_LIGHT_CAP, true)
-	Check.eq(Lair.CANDLE_LIGHT_COUNT + #Lanterns.gateOffsets(), Lanterns.PER_PLOT_LIGHT_CAP)
+	local plotLights = Lair.CANDLE_LIGHT_COUNT + #Lanterns.gateOffsets() + Lanterns.FISSURE_LIGHTS
+	Check.eq(plotLights <= Lanterns.PER_PLOT_LIGHT_CAP, true)
+	Check.eq(plotLights, Lanterns.PER_PLOT_LIGHT_CAP)
 	Check.eq(Lanterns.SHADOWS, false)
 	Check.eq(Lanterns.COLOR_TOKEN, "Candle")
 	Check.eq(UITheme.world.Candle, "FFB36B")
@@ -464,13 +482,25 @@ Check.test("gate lanterns fit the per-plot light cap", function()
 	Check.eq(Lanterns.RANGE >= 14 and Lanterns.RANGE <= 18, true)
 end)
 
-Check.test("the home beam tip is inside the clear fog band from the town edge", function()
-	Check.eq(UITheme.lighting.fogStart, 140)
-	Check.eq(UITheme.lighting.fogEnd, 380)
+Check.test("the home beam tip is inside the clear fog band under the live atmosphere", function()
+	Check.eq(UITheme.lighting.fogStart, 250)
+	Check.eq(UITheme.lighting.fogEnd, 1100)
+	Check.eq(UITheme.lighting.fogColor, "Ash")
+	Check.eq(UITheme.lighting.atmosphereDensity, 0.18)
+	Check.eq(UITheme.lighting.atmosphereHaze, 0.3)
+	Check.eq(UITheme.lighting.atmosphereOffset, 0)
+	Check.eq(UITheme.lighting.atmosphereGlare, 0)
+	Check.eq(UITheme.lighting.atmosphereColor, "Ash")
+	Check.eq(UITheme.lighting.atmosphereDecay, "Void")
+	Check.eq(UITheme.lighting.brightness, 1.5)
+	Check.eq(UITheme.lighting.exposureCompensation, 0.3)
 	Check.near(PlotRing.townEdgeToCentre(), 140, 1e-6)
 	local slant = PlotRing.homeBeamTipDistance()
 	Check.eq(slant < UITheme.lighting.fogStart, true)
 	Check.eq(slant < UITheme.lighting.fogEnd, true)
+	local across = Plots.RING_RADIUS * 2
+	Check.eq(across > UITheme.lighting.fogStart, true)
+	Check.eq(across < UITheme.lighting.fogEnd, true)
 end)
 
 Check.test("the slot to the right of both lair buttons stays empty", function()
@@ -500,7 +530,7 @@ Check.test("the slot to the right of both lair buttons stays empty", function()
 	end
 end)
 
-Check.test("brightened lair lighting from the playtest is still the theme", function()
+Check.test("lair stone stays the playtest colours and the live light follows v1.2", function()
 	Check.eq(Lair.CANDLE_RANGE, 18)
 	Check.eq(Lair.CANDLE_BRIGHTNESS, 2)
 	Check.eq(UITheme.world.Candle, "FFB36B")
@@ -509,11 +539,19 @@ Check.test("brightened lair lighting from the playtest is still the theme", func
 	Check.eq(UITheme.world.Floor, "3A342F")
 	Check.eq(UITheme.world.Wall, "1C1917")
 	Check.eq(UITheme.world.Altar, "403932")
-	Check.eq(UITheme.lighting.brightness, 0.65)
-	Check.eq(UITheme.lighting.exposureCompensation, 0.35)
+	Check.eq(UITheme.lighting.brightness, 1.5)
+	Check.eq(UITheme.lighting.exposureCompensation, 0.3)
+	Check.eq(UITheme.lighting.ambient, "LightAmbient")
+	Check.eq(UITheme.lighting.outdoorAmbient, "LightOutdoor")
+	Check.eq(UITheme.palette.LightAmbient, "3C3734")
+	Check.eq(UITheme.palette.LightOutdoor, "5F5852")
 	Check.eq(UITheme.lighting.technology, "Future")
-	Check.eq(UITheme.lighting.fogStart, 140)
-	Check.eq(UITheme.lighting.fogEnd, 380)
+	Check.eq(UITheme.lighting.fogStart, 250)
+	Check.eq(UITheme.lighting.fogEnd, 1100)
 	Check.eq(UITheme.lighting.atmosphereDensity, 0.18)
 	Check.eq(UITheme.lighting.atmosphereHaze, 0.3)
+	Check.eq(UITheme.lighting.atmosphereOffset, 0)
+	Check.eq(UITheme.lighting.atmosphereGlare, 0)
+	Check.eq(UITheme.lighting.atmosphereColor, "Ash")
+	Check.eq(UITheme.lighting.atmosphereDecay, "Void")
 end)

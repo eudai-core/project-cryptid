@@ -5,10 +5,15 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Lair = require(Shared:WaitForChild("Config"):WaitForChild("Lair")) :: any
+local RiftGlow = require(script.Parent:WaitForChild("RiftGlow"))
 local Lanterns = require(Shared:WaitForChild("Config"):WaitForChild("Lanterns")) :: any
 local PlotRing = require(Shared:WaitForChild("Logic"):WaitForChild("PlotRing")) :: any
 local Plots = require(Shared:WaitForChild("Config"):WaitForChild("Plots")) :: any
+local Town = require(Shared:WaitForChild("Config"):WaitForChild("Town")) :: any
 local UITheme = require(Shared:WaitForChild("UITheme")) :: any
+local Wisp = require(script.Parent:WaitForChild("Wisp"))
+
+local TownBuilder = require(script.Parent:WaitForChild("TownBuilder"))
 
 local PlotBuilder = {}
 
@@ -344,6 +349,8 @@ function PlotBuilder.buildPlot(parent: Folder, index: number): any
 		true
 	)
 
+	Wisp.attach(model, "WildWisp", origin * CFrame.new(0, Town.WISP.wildLift, Plots.WILD_GATE_Z - Town.WISP.wildPast))
+
 	local wildPoint = PlotRing.wildLocal()
 	local wildStart = -half - Plots.WALL_THICKNESS / 2
 	local wildLength = math.abs(wildPoint.z - wildStart)
@@ -369,6 +376,7 @@ function PlotBuilder.buildPlot(parent: Folder, index: number): any
 		"Ash",
 		true
 	)
+	RiftGlow.attach(belt, true, true)
 	makePart(
 		model,
 		"RiftTrimLeft",
@@ -622,6 +630,7 @@ function PlotBuilder.build(): { any }
 	local plotsFolder = folder(workspace, "Plots")
 	local town = folder(workspace, "Town")
 	PlotBuilder.buildGround(town)
+	TownBuilder.build(town)
 	local plots = {}
 	for index = 1, Plots.COUNT do
 		plots[index] = PlotBuilder.buildPlot(plotsFolder, index)

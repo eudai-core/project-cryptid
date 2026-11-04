@@ -7,6 +7,7 @@ local ThemeBind = require(script.Parent:WaitForChild("ThemeBind"))
 local UiFactory = require(script.Parent:WaitForChild("UiFactory"))
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Economy = require(Shared:WaitForChild("Config"):WaitForChild("Economy")) :: any
+local Shop = require(Shared:WaitForChild("Config"):WaitForChild("Shop")) :: any
 local UITheme = require(Shared:WaitForChild("UITheme")) :: any
 
 local Interactions = {}
@@ -60,8 +61,9 @@ local function plateFor(prompt: ProximityPrompt)
 	end)
 end
 
-function Interactions.start(player: Player, remotes: Folder, names: any, beginCatch: () -> ())
+function Interactions.start(player: Player, remotes: Folder, names: any, beginCatch: () -> (), town: any)
 	local wired: { [Instance]: boolean } = {}
+	local refreshers: { [Instance]: () -> () } = {}
 
 	local function hook(inst: Instance)
 		if not inst:IsA("ProximityPrompt") or wired[inst] then
@@ -69,23 +71,42 @@ function Interactions.start(player: Player, remotes: Folder, names: any, beginCa
 		end
 		wired[inst] = true
 		local function refresh()
+			local publicPrompt = inst:GetAttribute("Public") == true
 			local owner = inst:GetAttribute("OwnerUserId")
 			local available = inst:GetAttribute("Available") == true
 			local parent = inst.Parent
 			local sealed = parent ~= nil and parent:GetAttribute("Sealed") == true
-			inst.Enabled = owner == player.UserId and available and not sealed
+			local allowed = available and not sealed
+			if not publicPrompt then
+				allowed = allowed and owner == player.UserId
+			end
+			local kindName = inst:GetAttribute("Kind")
+			if kindName == "Pedlar" or kindName == "SkillShrine" then
+				local step = player:GetAttribute("OnboardingStep")
+				if type(step) ~= "number" or step < Shop.GATE_STEP then
+					allowed = false
+				end
+			end
+			inst.Enabled = allowed
 		end
+		refreshers[inst] = refresh
 		refresh()
 		inst:GetAttributeChangedSignal("Available"):Connect(refresh)
 		inst:GetAttributeChangedSignal("OwnerUserId"):Connect(refresh)
+		inst:GetAttributeChangedSignal("Public"):Connect(refresh)
 		local parent = inst.Parent
 		if parent ~= nil then
 			parent:GetAttributeChangedSignal("Sealed"):Connect(refresh)
 		end
 		plateFor(inst)
 		inst.Triggered:Connect(function()
-			if inst:GetAttribute("Kind") == "Catch" then
+			local kind = inst:GetAttribute("Kind")
+			if kind == "Catch" then
 				beginCatch()
+			elseif kind == "Pedlar" then
+				town.onPedlar()
+			elseif kind == "SkillShrine" then
+				town.onShrine()
 			else
 				send(remotes, names, inst)
 			end
@@ -106,7 +127,14 @@ function Interactions.start(player: Player, remotes: Folder, names: any, beginCa
 		end
 	end
 	local plots = workspace:WaitForChild("Plots")
+	local townFolder = workspace:WaitForChild("Town")
 	scan(plots)
+	scan(townFolder)
+	player:GetAttributeChangedSignal("OnboardingStep"):Connect(function()
+		for _, refresh in refreshers do
+			refresh()
+		end
+	end)
 	workspace.DescendantAdded:Connect(function(desc)
 		if desc:IsA("ProximityPrompt") then
 			hook(desc)

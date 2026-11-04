@@ -17,6 +17,9 @@ end)
 local Save = import("../Config/Save", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Save")
 end)
+local Shop = import("../Config/Shop", function()
+	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Shop")
+end)
 local Species = import("../Config/Species", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Species")
 end)
@@ -28,6 +31,7 @@ local SOURCES = {
 	starter = true,
 	rift = true,
 	wild = true,
+	pedlar = true,
 }
 
 local Schema = {}
@@ -209,8 +213,72 @@ local function normalizeV1(raw: any): any?
 		firstJoinUnix = raw.firstJoinUnix,
 		settings = {
 			reducedMotion = reducedMotion,
+			bindAtOnce = false,
 		},
 	}
+end
+
+local function freshShop(): any
+	local bought = {}
+	for slot = 1, Shop.SLOT_COUNT do
+		bought[slot] = false
+	end
+	return {
+		lastRotationId = 0,
+		boughtSlots = bought,
+	}
+end
+
+local function readSlot(slots: any, index: number): boolean?
+	local value = slots[index]
+	if value == nil then
+		value = slots[tostring(index)]
+	end
+	if type(value) ~= "boolean" then
+		return nil
+	end
+	return value
+end
+
+local function parseShop(raw: any, version: number): any?
+	if version < 4 then
+		return freshShop()
+	end
+	if type(raw.shop) ~= "table" then
+		return nil
+	end
+	local rotationId = raw.shop.lastRotationId
+	if type(rotationId) ~= "number" or rotationId ~= math.floor(rotationId) then
+		return nil
+	end
+	if rotationId < 0 or rotationId > 1e12 then
+		return nil
+	end
+	if type(raw.shop.boughtSlots) ~= "table" then
+		return nil
+	end
+	local bought = {}
+	for slot = 1, Shop.SLOT_COUNT do
+		local flag = readSlot(raw.shop.boughtSlots, slot)
+		if flag == nil then
+			return nil
+		end
+		bought[slot] = flag
+	end
+	return {
+		lastRotationId = rotationId,
+		boughtSlots = bought,
+	}
+end
+
+local function parseBind(raw: any, version: number): boolean?
+	if version < 4 then
+		return false
+	end
+	if type(raw.settings) ~= "table" or type(raw.settings.bindAtOnce) ~= "boolean" then
+		return nil
+	end
+	return raw.settings.bindAtOnce
 end
 
 local function parseDefences(base: any): { [number]: string }?
@@ -278,10 +346,20 @@ function Schema.migrate(raw: any): any?
 		end
 		defences = parsed
 	end
+	local shop = parseShop(raw, version)
+	if shop == nil then
+		return nil
+	end
+	local bindAtOnce = parseBind(raw, version)
+	if bindAtOnce == nil then
+		return nil
+	end
 	profile.dataVersion = Save.DATA_VERSION
 	profile.base = {
 		defences = defences,
 	}
+	profile.shop = shop
+	profile.settings.bindAtOnce = bindAtOnce
 	return profile
 end
 
@@ -317,7 +395,9 @@ function Schema.newProfile(now: number, starterInstanceId: string): any
 		firstJoinUnix = now,
 		settings = {
 			reducedMotion = false,
+			bindAtOnce = false,
 		},
+		shop = freshShop(),
 		base = {
 			defences = {},
 		},

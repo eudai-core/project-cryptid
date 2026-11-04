@@ -11,6 +11,8 @@ local Remotes = {
 	COMPLETE_CATCH = "RequestCompleteCatch",
 	REDUCED_MOTION = "RequestSetReducedMotion",
 	RETURN_TO_LAIR = "RequestReturnToLair",
+	PEDLAR_BUY = "RequestPedlarBuy",
+	BIND_AT_ONCE = "RequestSetBindAtOnce",
 }
 
 return table.freeze(Remotes)

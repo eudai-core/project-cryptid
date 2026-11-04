@@ -82,7 +82,7 @@ A player who has not finished onboarding (step under 8 and under 5:00) has a sea
 - `PlotIntruded` is a log line plus a bindable. Nothing raids the plot.
 - Defence sockets are empty attachments. `beingStolen` is always false. `base.defences` is always `{}` in normal play.
 - `StealGuard.canSteal` still follows spec 01. No steal remote exists, so a steal cannot succeed.
-- No offline income. The Wilds past the tutorial clearing are empty. The town centre is a ground disc; the Weeping Well is spec 03.
+- No offline income. The Wilds past the tutorial clearing are empty. Hollowmere, the Weeping Well, and the Pale Pedlar are spec 03.
 - Ward Candles still cannot be bought. That remains the spec 01 gap.
 - The sealed mark uses the existing sigil glyph. There is no cracked-sigil image.
 

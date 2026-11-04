@@ -10,6 +10,9 @@ local GuideArrow = require(script.Parent:WaitForChild("GuideArrow"))
 local HomeBeam = require(script.Parent:WaitForChild("HomeBeam"))
 local Interactions = require(script.Parent:WaitForChild("Interactions"))
 local LairBanners = require(script.Parent:WaitForChild("LairBanners"))
+local PedlarShop = require(script.Parent:WaitForChild("PedlarShop"))
+local SkillTree = require(script.Parent:WaitForChild("SkillTree"))
+local TownDress = require(script.Parent:WaitForChild("TownDress"))
 local ReturnButton = require(script.Parent:WaitForChild("ReturnButton"))
 local SealToast = require(script.Parent:WaitForChild("SealToast"))
 local ThemeBind = require(script.Parent:WaitForChild("ThemeBind"))
@@ -218,7 +221,13 @@ local function beginCatch()
 	end)
 end
 
-Interactions.start(player, remotes :: Folder, Names, beginCatch)
+local skill = SkillTree.mount(gui, player, isReduced)
+local pedlar = PedlarShop.mount(gui, player, remotes :: Folder, Names, isReduced)
+TownDress.start()
+Interactions.start(player, remotes :: Folder, Names, beginCatch, {
+	onPedlar = pedlar.open,
+	onShrine = skill.open,
+})
 GuideArrow.start(player)
 LairBanners.start(player)
 HomeBeam.start(player)

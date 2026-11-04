@@ -11,6 +11,9 @@ end
 local Economy = import("../Config/Economy", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Economy")
 end)
+local Shop = import("../Config/Shop", function()
+	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Shop")
+end)
 local Species = import("../Config/Species", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Species")
 end)
@@ -49,6 +52,26 @@ function RemoteArgs.instanceId(value: any): string?
 		return nil
 	end
 	if string.match(value, "^[%w%-]+$") == nil then
+		return nil
+	end
+	return value
+end
+
+function RemoteArgs.pedlarSlot(value: any): number?
+	if type(value) ~= "number" or value ~= math.floor(value) then
+		return nil
+	end
+	if value < 1 or value > Shop.SLOT_COUNT then
+		return nil
+	end
+	return value
+end
+
+function RemoteArgs.rotationId(value: any): number?
+	if type(value) ~= "number" or value ~= math.floor(value) then
+		return nil
+	end
+	if value < 0 or value > 1e12 then
 		return nil
 	end
 	return value
