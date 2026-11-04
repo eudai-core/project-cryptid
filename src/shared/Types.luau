@@ -62,6 +62,7 @@ export type Profile = {
 	base: {
 		defences: { [number]: string },
 	},
+	skills: { string },
 }
 
 return {}

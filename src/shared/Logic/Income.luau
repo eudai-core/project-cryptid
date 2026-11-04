@@ -20,6 +20,9 @@ end)
 local ProfileQuery = import("./ProfileQuery", function()
 	return script.Parent:WaitForChild("ProfileQuery")
 end)
+local SkillEffects = import("./SkillEffects", function()
+	return script.Parent:WaitForChild("SkillEffects")
+end)
 
 local Income = {}
 
@@ -34,16 +37,34 @@ function Income.multiplier(altarLevel: number): number
 	return 1 + Economy.ALTAR_BONUS_PER_LEVEL * level
 end
 
-function Income.contribution(speciesId: string, altarLevel: number): number
+function Income.contribution(speciesId: string, altarLevel: number, perLevel: number?, skillIncome: number?): number
 	local species = Species.get(speciesId)
 	if species == nil then
 		return 0
 	end
-	return Money.round(species.baseIncome * Income.multiplier(altarLevel))
+	local level = altarLevel
+	if level < 0 then
+		level = 0
+	end
+	if level > Economy.MAX_ALTAR_LEVEL then
+		level = Economy.MAX_ALTAR_LEVEL
+	end
+	local rate = Economy.ALTAR_BONUS_PER_LEVEL
+	if type(perLevel) == "number" then
+		rate = perLevel
+	end
+	local skill = 0
+	if type(skillIncome) == "number" then
+		skill = skillIncome
+	end
+	return Money.round(species.baseIncome * (1 + rate * level) * (1 + skill))
 end
 
 function Income.perSecond(profile: any): number
-	local base = 0
+	local altar = SkillEffects.altarMultiplier(profile)
+	local skill = SkillEffects.skillIncome(profile)
+	local wild = SkillEffects.wildIncome(profile)
+	local total = 0
 	for index = 1, profile.padsUnlocked do
 		local instanceId = ProfileQuery.padAt(profile, index)
 		if instanceId ~= nil then
@@ -51,12 +72,16 @@ function Income.perSecond(profile: any): number
 			if record ~= nil then
 				local species = Species.get(record.speciesId)
 				if species ~= nil then
-					base += species.baseIncome
+					local factor = 1 + skill
+					if record.source == "wild" then
+						factor += wild
+					end
+					total += species.baseIncome * altar * factor
 				end
 			end
 		end
 	end
-	return Money.round(base * Income.multiplier(profile.upgrades.boneAltar))
+	return Money.round(total)
 end
 
 return Income

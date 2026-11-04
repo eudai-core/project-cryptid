@@ -39,6 +39,18 @@
       },
       "Shared": {
         "$path": "src/shared"
+      },
+      "Assets": {
+        "$className": "Folder",
+        "Cryptids": {
+          "$path": "assets/cryptids"
+        },
+        "Lair": {
+          "$path": "assets/lair"
+        },
+        "Placeholders": {
+          "$path": "assets/placeholders"
+        }
       }
     }
   }

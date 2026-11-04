@@ -548,7 +548,7 @@ Check.test("buying rolls into the next rotation and bind at once uses the first 
 end)
 
 Check.test("v3 saves gain an empty shop and bind at once without rewriting the old table", function()
-	Check.eq(Save.DATA_VERSION, 5)
+	Check.eq(Save.DATA_VERSION, 6)
 	local legacy = Schema.newProfile(20, "starter")
 	legacy.dataVersion = 3
 	legacy.cash = 80
@@ -563,7 +563,7 @@ Check.test("v3 saves gain an empty shop and bind at once without rewriting the o
 	}
 	local migrated = Schema.migrate(legacy)
 	Check.truthy(migrated)
-	Check.eq(migrated.dataVersion, 5)
+	Check.eq(migrated.dataVersion, Save.DATA_VERSION)
 	Check.eq(migrated.cash, 80)
 	Check.eq(migrated.settings.reducedMotion, true)
 	Check.eq(migrated.settings.bindAtOnce, false)
@@ -599,7 +599,7 @@ Check.test("v3 saves gain an empty shop and bind at once without rewriting the o
 
 	local encoded = serde.encode("json", current)
 	local decoded = Schema.migrate(serde.decode("json", encoded))
-	Check.eq(decoded.dataVersion, 5)
+	Check.eq(decoded.dataVersion, Save.DATA_VERSION)
 	Check.eq(decoded.shop.boughtSlots[1], true)
 	Check.eq(decoded.shop.boughtSlots[3], true)
 	Check.eq(decoded.settings.bindAtOnce, true)
@@ -610,11 +610,11 @@ Check.test("v3 saves gain an empty shop and bind at once without rewriting the o
 	Check.eq(broken.shop.boughtSlots[1], true)
 
 	local future = Schema.newProfile(4, "starter")
-	future.dataVersion = 6
+	future.dataVersion = Save.DATA_VERSION + 1
 	Check.eq(Schema.migrate(future), nil)
 
 	local fresh = Schema.newProfile(4, "starter")
-	Check.eq(fresh.dataVersion, 5)
+	Check.eq(fresh.dataVersion, Save.DATA_VERSION)
 	Check.eq(fresh.settings.bindAtOnce, false)
 	Check.eq(fresh.shop.lastRotationId, 0)
 	local lean = math.abs(TownLayout.leanDegrees(1))

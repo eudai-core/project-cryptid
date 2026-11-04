@@ -96,6 +96,7 @@ Start from the edit session: `playtest op=play args=qa:120:loadfail` (or `foreig
 - `loadfail` — the player is kicked with `The ledger would not open. Your progress is safe. Rejoin.` before `DataStoreGateway.load`. Read the key afterwards. Cash and the lock must be unchanged. There must be no new document if the key was empty.
 - `foreignlock` — before load, the existing profile is wrapped in a fresh lock owned by `qa-foreign` (90 seconds). The join then retries and kicks with `The ledger is open elsewhere. Rejoin.` The stored cash stays the previous value. The lock job stays `qa-foreign` until that lease expires.
 - `foreignlock:stale` — the planted lock is already past its lease. The join steals it, prints `PASS spawn`, and keeps the stored cash. The new lock job is this server's JobId, not `qa-foreign`.
+- Confirm no QA cash grant fires in live servers. `qa:<seconds>:cash<N>` sets cash only when `RunService:IsStudio()` is true. A published server must not print `[Cryptid:QA] granted cash`.
 
 ## 2-player local pass
 

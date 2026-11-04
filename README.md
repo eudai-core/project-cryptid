@@ -50,7 +50,7 @@ rojo build -o ProjectCryptid.rbxlx
 
 Start a bot playtest with `args=qa:<seconds>` (for example `args=qa:300`). `ServerScriptService.Dev.StudioTestWatchdog` ends that session itself, so nobody has to press Stop if the bridge drops. It does nothing in a live server, and nothing when the argument is missing, so a manual Play is left alone.
 
-The seconds are clamped to 1–1800. The ops guide does not name a range; 1800 is thirty minutes, and `0` is raised to 1 so a typo cannot end the test before the bridge reconnects. A `qa:` argument with no usable number uses 300. A suffix such as `qa:420:plots3` uses 420. In Studio only, `qa:<seconds>:loadfail` kicks before the ledger opens, `qa:<seconds>:foreignlock` plants a fresh lock from another job, and `qa:<seconds>:foreignlock:stale` plants an already expired one. Those three do nothing in a live server. The output shows both moments:
+The seconds are clamped to 1–1800. The ops guide does not name a range; 1800 is thirty minutes, and `0` is raised to 1 so a typo cannot end the test before the bridge reconnects. A `qa:` argument with no usable number uses 300. A suffix such as `qa:420:plots3` uses 420. Suffixes can be combined. In Studio only, `qa:<seconds>:loadfail` kicks before the ledger opens, `qa:<seconds>:foreignlock` plants a fresh lock from another job, and `qa:<seconds>:foreignlock:stale` plants an already expired one. Those three do nothing in a live server. The output shows both moments:
 
 ```text
 [Cryptid:Watchdog] armed for 300s (args "qa:300")
@@ -59,7 +59,15 @@ The seconds are clamped to 1–1800. The ops guide does not name a range; 1800 i
 
 `GetTestArgs` returns the value as it was passed. The wrapper passes one string, so a table argument does not arm the watchdog.
 
-Suffixes on that same `qa:` string are Studio-only and never become remotes. `offline:<seconds>` rewinds the loaded `lastSeenUnix` before the haul is computed (`qa:300:offline:7200` is two hours away). `utc:<days>` shifts the Nightly Offering day number (`qa:300:utc:1`). `utcjump:<seconds>` adds one more UTC day after the test has been running that long (`qa:300:utcjump:20` lets you claim, wait, and claim the next step). Unknown suffixes such as `plots3` are ignored. A published server does not read them. The haul still uses `os.time()` and the saved `lastSeenUnix`, never the client clock.
+Suffixes on that same `qa:` string are Studio-only and never become remotes. `offline:<seconds>` rewinds the loaded `lastSeenUnix` before the haul is computed (`qa:300:offline:7200` is two hours away). `utc:<days>` shifts the Nightly Offering day number (`qa:300:utc:1`). `utcjump:<seconds>` adds one more UTC day after the test has been running that long (`qa:300:utcjump:20` lets you claim, wait, and claim the next step). `loadfail`, `foreignlock`, and `foreignlock:stale` are the save-debug hooks. Unknown suffixes such as `plots3` are ignored. A published server does not read them. The haul still uses `os.time()` and the saved `lastSeenUnix`, never the client clock.
+
+A Studio playtest can also start the test player with a set purse: `args=qa:600:cash50000`. On profile load the server sets that player's cash to the number, clamped to 10,000,000 (`QaConfig.MAX_GRANT`). `qa:600:plots3:cash50000` is the same grant with the plots suffix. This runs only when `RunService:IsStudio()` is true and the argument is a `qa:` string with a `cash<N>` token. It does nothing in a live server, nothing on a manual Play, and nothing when the token is missing or malformed. It does not change total earned. There is no remote and no chat command. The Output window shows:
+
+```text
+[Cryptid:QA] granted cash 50000 to <userId>
+```
+
+Use this to reach Quiet Step. Steady Hand, Long Reach, and Quiet Step together cost $9,500, and the catch then takes 2.25 seconds.
 
 An unpublished Studio place cannot call the DataStore API. The server then uses an in-memory mock, once, and the real load, save, and release path still runs (session lock and migrations included). A live or published server never installs the mock. The Output window shows this warning a single time:
 
