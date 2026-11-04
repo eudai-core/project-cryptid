@@ -13,6 +13,7 @@ require("./persistence.spec")
 require("./save_hardening.spec")
 require("./return.spec")
 require("./monetisation.spec")
+require("./rate_limit.spec")
 
 local Check = require("./check")
 Check.finish()

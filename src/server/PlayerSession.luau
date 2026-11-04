@@ -11,6 +11,8 @@ local DataStoreGateway = require(script.Parent:WaitForChild("DataStoreGateway"))
 local MonetisationService = require(script.Parent:WaitForChild("MonetisationService"))
 local Pedlar = require(script.Parent:WaitForChild("Pedlar"))
 local Plot = require(script.Parent:WaitForChild("Plot"))
+local RateLimiter = require(script.Parent:WaitForChild("RateLimiter"))
+local RemoteGuard = require(script.Parent:WaitForChild("RemoteGuard"))
 local Remotes = require(script.Parent:WaitForChild("Remotes"))
 local Debounce = require(Shared:WaitForChild("Logic"):WaitForChild("Debounce")) :: any
 local Economy = require(Shared:WaitForChild("Config"):WaitForChild("Economy")) :: any
@@ -270,16 +272,7 @@ local function ownsPlot(session: any): boolean
 end
 
 local function allowRequest(session: any): boolean
-	if not ownsPlot(session) then
-		return false
-	end
-	local now = os.clock()
-	if now - session.windowStart >= 1 then
-		session.windowStart = now
-		session.windowCount = 0
-	end
-	session.windowCount += 1
-	return session.windowCount <= Economy.REMOTE_REQUESTS_PER_SECOND
+	return ownsPlot(session)
 end
 
 local function allowPurchase(session: any): boolean
@@ -587,7 +580,7 @@ end
 
 local function bind(folder: Folder)
 	local function listen(name: string, handler: (any, ...any) -> ())
-		Remotes.get(folder, name).OnServerEvent:Connect(function(player: Player, ...: any)
+		RemoteGuard.bindEvent(Remotes.get(folder, name), function(player: Player, ...: any)
 			local session = sessions[player]
 			if session == nil or not session.alive then
 				return
@@ -824,8 +817,6 @@ function PlayerSession.onPlayer(player: Player)
 		lastSaveAt = 0,
 		lastPurchaseAt = nil,
 		lastSettingAt = nil,
-		windowStart = 0,
-		windowCount = 0,
 		revision = 0,
 		catchStart = nil,
 		catchToken = 0,
@@ -863,6 +854,7 @@ end
 local function detach(player: Player, hurry: boolean)
 	local session = sessions[player]
 	if session == nil or session.leaving then
+		RateLimiter.forget(player.UserId)
 		return
 	end
 	session.leaving = true
@@ -881,6 +873,7 @@ local function detach(player: Player, hurry: boolean)
 		DataStoreGateway.release(player.UserId, session.profile)
 	end
 	Plot.hold(player)
+	RateLimiter.forget(player.UserId)
 end
 
 function PlayerSession.onRemoving(player: Player)
@@ -920,6 +913,7 @@ function PlayerSession.shutdown()
 			session.alive = false
 			sessions[player] = nil
 			settleDeparture(session)
+			RateLimiter.forget(player.UserId)
 			table.insert(entries, {
 				loaded = true,
 				dirty = session.loaded == true and session.ephemeral ~= true,
