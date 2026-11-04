@@ -113,6 +113,7 @@ end)
 
 local snapshotValue = player:WaitForChild("CryptidState"):WaitForChild("Snapshot") :: StringValue
 local latestSnapshot: any = nil
+local skillTree: any = nil
 
 local function readNumber(name: string): number
 	local value = player:GetAttribute(name)
@@ -145,6 +146,9 @@ local function applySnapshot(text: string)
 		return
 	end
 	latestSnapshot = decoded
+	if skillTree ~= nil then
+		skillTree.apply(decoded)
+	end
 	if type(decoded.goal) == "table" then
 		banner.apply(decoded.goal)
 	end
@@ -212,7 +216,11 @@ local function beginCatch()
 			task.wait(0.05)
 		end
 		if token ~= previous then
-			task.wait(Economy.CATCH_SECONDS + Economy.CATCH_CLIENT_BUFFER_SECONDS)
+			local catchSeconds = player:GetAttribute("CatchSeconds")
+			if type(catchSeconds) ~= "number" or catchSeconds ~= catchSeconds then
+				catchSeconds = Economy.CATCH_SECONDS
+			end
+			task.wait(catchSeconds + Economy.CATCH_CLIENT_BUFFER_SECONDS)
 			if player:GetAttribute("CatchToken") == token then
 				fire(Names.COMPLETE_CATCH)
 			end
@@ -222,6 +230,7 @@ local function beginCatch()
 end
 
 local skill = SkillTree.mount(gui, player, isReduced)
+skillTree = skill
 local pedlar = PedlarShop.mount(gui, player, remotes :: Folder, Names, isReduced)
 TownDress.start()
 Interactions.start(player, remotes :: Folder, Names, beginCatch, {

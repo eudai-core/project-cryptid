@@ -60,9 +60,9 @@ Check.test("species and economy match spec 01", function()
 	Check.eq(Onboarding.GOAL_ONE_SECONDS, 5)
 	Check.eq(Onboarding.SKIP_LABEL, "Skip the rite")
 	Check.eq(Onboarding.BIND_HINT, "Carve a circle to bind it.")
-	Check.eq(Save.DATA_VERSION, 4)
+	Check.eq(Save.DATA_VERSION, 5)
 	Check.eq(Save.AUTOSAVE_SECONDS, 60)
-	Check.eq(Save.KICK_LOAD_FAILED, "The ledger would not open. Rejoin.")
+	Check.eq(Save.KICK_LOAD_FAILED, "The ledger would not open. Your progress is safe. Rejoin.")
 end)
 
 Check.test("QA1 fresh profile is the starter lair", function()
@@ -344,7 +344,7 @@ Check.test("schema migration keeps cash and rejects corrupt or newer saves", fun
 	migrated.cash = 5
 	Check.eq(profile.cash, 80)
 
-	profile.dataVersion = 5
+	profile.dataVersion = Save.DATA_VERSION + 1
 	Check.eq(Schema.migrate(profile), nil)
 	Check.eq(Schema.migrate({}), nil)
 	Check.eq(Schema.migrate("ledger"), nil)
@@ -359,7 +359,7 @@ Check.test("schema migration keeps cash and rejects corrupt or newer saves", fun
 	Check.eq(roundTrip.cryptids.starter.source, "starter")
 	Check.eq(roundTrip.onboarding.starterGranted, true)
 	Check.eq(roundTrip.totalEarned, 0)
-	Check.eq(roundTrip.dataVersion, 4)
+	Check.eq(roundTrip.dataVersion, Save.DATA_VERSION)
 	Check.eq(type(roundTrip.base.defences), "table")
 end)
 
@@ -376,7 +376,7 @@ Check.test("v1 saves drop the starting grant from totalEarned and rename the old
 		source = "wild",
 	}
 	local migrated = Schema.migrate(legacy)
-	Check.eq(migrated.dataVersion, 4)
+	Check.eq(migrated.dataVersion, Save.DATA_VERSION)
 	Check.eq(next(migrated.base.defences), nil)
 	Check.eq(migrated.cash, 45)
 	Check.eq(migrated.totalEarned, 20)

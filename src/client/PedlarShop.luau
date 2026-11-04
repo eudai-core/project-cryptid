@@ -158,7 +158,11 @@ function PedlarShop.mount(parent: Instance, player: Player, remotes: Folder, nam
 		card.rarityLabel.Text = card.rarity
 		card.rarityLabel.TextColor3 = UITheme.color(token)
 		card.art.TextColor3 = UITheme.color(token)
-		card.income.Text = NumberFormat.formatRate(Income.contribution(card.speciesId, altarLevel()))
+		local perLevel = player:GetAttribute("AltarPerLevel")
+		local skillIncome = player:GetAttribute("SkillIncome")
+		local rate = if type(perLevel) == "number" then perLevel else nil
+		local skill = if type(skillIncome) == "number" then skillIncome else nil
+		card.income.Text = NumberFormat.formatRate(Income.contribution(card.speciesId, altarLevel(), rate, skill))
 		card.priceLabel.Text = NumberFormat.formatCash(card.price)
 		local shortfall = card.price - cash()
 		if taken(card.slot) then

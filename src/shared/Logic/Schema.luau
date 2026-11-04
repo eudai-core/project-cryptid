@@ -20,6 +20,9 @@ end)
 local Shop = import("../Config/Shop", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Shop")
 end)
+local SkillConfig = import("../Config/SkillConfig", function()
+	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("SkillConfig")
+end)
 local Species = import("../Config/Species", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Species")
 end)
@@ -271,6 +274,55 @@ local function parseShop(raw: any, version: number): any?
 	}
 end
 
+local function parseSkills(raw: any): { string }?
+	if type(raw) ~= "table" or raw.skills == nil then
+		return {}
+	end
+	if type(raw.skills) ~= "table" then
+		return nil
+	end
+	local list = {}
+	local seen: { [string]: boolean } = {}
+	local function take(id: any): boolean
+		if type(id) ~= "string" then
+			return false
+		end
+		if #id < 1 or #id > SkillConfig.ID_MAX or string.match(id, "^[%w]+$") == nil or SkillConfig.get(id) == nil then
+			warn("[Cryptid:Skill] ignored unknown rite")
+			return true
+		end
+		if id == SkillConfig.ROOT or seen[id] == true then
+			return true
+		end
+		seen[id] = true
+		table.insert(list, id)
+		return true
+	end
+	local count = #raw.skills
+	if count > SkillConfig.SAVE_MAX then
+		return nil
+	end
+	if count > 0 then
+		for index = 1, count do
+			if not take(raw.skills[index]) then
+				return nil
+			end
+		end
+		return list
+	end
+	local extras = 0
+	for _, value in raw.skills do
+		extras += 1
+		if extras > SkillConfig.SAVE_MAX then
+			return nil
+		end
+		if not take(value) then
+			return nil
+		end
+	end
+	return list
+end
+
 local function parseBind(raw: any, version: number): boolean?
 	if version < 4 then
 		return false
@@ -316,6 +368,73 @@ local function parseDefences(base: any): { [number]: string }?
 	return defences
 end
 
+local function migrateToV2(profile: any, raw: any, version: number): boolean
+	if type(raw) ~= "table" or version >= 2 then
+		return true
+	end
+	local incomeOnly = profile.totalEarned - Economy.STARTING_CASH
+	if incomeOnly < 0 then
+		incomeOnly = 0
+	end
+	profile.totalEarned = Money.round(incomeOnly)
+	return true
+end
+
+local function migrateToV3(profile: any, raw: any, version: number): boolean
+	if version < 3 then
+		profile.base = {
+			defences = {},
+		}
+		return true
+	end
+	local parsed = parseDefences(raw.base)
+	if parsed == nil then
+		return false
+	end
+	profile.base = {
+		defences = parsed,
+	}
+	return true
+end
+
+local function migrateToV4(profile: any, raw: any, version: number): boolean
+	local shop = parseShop(raw, version)
+	if shop == nil then
+		return false
+	end
+	local bindAtOnce = parseBind(raw, version)
+	if bindAtOnce == nil then
+		return false
+	end
+	profile.shop = shop
+	profile.settings.bindAtOnce = bindAtOnce
+	return true
+end
+
+local function migrateToV5(profile: any, raw: any, _version: number): boolean
+	local skills = parseSkills(raw)
+	if skills == nil then
+		return false
+	end
+	profile.skills = skills
+	return true
+end
+
+local MIGRATION_STEPS: { { to: number, apply: (any, any, number) -> boolean } } = {
+	{ to = 2, apply = migrateToV2 },
+	{ to = 3, apply = migrateToV3 },
+	{ to = 4, apply = migrateToV4 },
+	{ to = 5, apply = migrateToV5 },
+}
+
+function Schema.migrationTargets(): { number }
+	local targets = {}
+	for _, step in MIGRATION_STEPS do
+		table.insert(targets, step.to)
+	end
+	return targets
+end
+
 function Schema.migrate(raw: any): any?
 	if type(raw) ~= "table" then
 		return nil
@@ -331,35 +450,12 @@ function Schema.migrate(raw: any): any?
 	if profile == nil then
 		return nil
 	end
-	if version < 2 then
-		local incomeOnly = profile.totalEarned - Economy.STARTING_CASH
-		if incomeOnly < 0 then
-			incomeOnly = 0
-		end
-		profile.totalEarned = Money.round(incomeOnly)
-	end
-	local defences = {}
-	if version >= 3 then
-		local parsed = parseDefences(raw.base)
-		if parsed == nil then
+	for _, step in MIGRATION_STEPS do
+		if step.apply(profile, raw, version) ~= true then
 			return nil
 		end
-		defences = parsed
-	end
-	local shop = parseShop(raw, version)
-	if shop == nil then
-		return nil
-	end
-	local bindAtOnce = parseBind(raw, version)
-	if bindAtOnce == nil then
-		return nil
 	end
 	profile.dataVersion = Save.DATA_VERSION
-	profile.base = {
-		defences = defences,
-	}
-	profile.shop = shop
-	profile.settings.bindAtOnce = bindAtOnce
 	return profile
 end
 
@@ -401,6 +497,7 @@ function Schema.newProfile(now: number, starterInstanceId: string): any
 		base = {
 			defences = {},
 		},
+		skills = {},
 	}
 end
 
