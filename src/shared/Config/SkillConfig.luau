@@ -79,7 +79,7 @@ local built = {
 		false,
 		"catchTime",
 		0.10,
-		"Catch time −10% (3.0 s → 2.7 s)",
+		"Catch time -10% (3.0 s -> 2.7 s)",
 		"Hunter rite"
 	),
 	rite(
@@ -95,7 +95,7 @@ local built = {
 		false,
 		"catchRange",
 		2,
-		"Catch range +2 studs (12 → 14)",
+		"Catch range +2 studs (12 -> 14)",
 		"Hunter rite"
 	),
 	rite(
@@ -127,7 +127,7 @@ local built = {
 		false,
 		"catchTime",
 		0.15,
-		"Catch time −15% (total −25%)",
+		"Catch time -15% (total -25%)",
 		"Hunter rite"
 	),
 	rite(
@@ -159,7 +159,7 @@ local built = {
 		false,
 		"uncommon",
 		0.05,
-		"Wild Uncommon-or-better chance ×1.05",
+		"Wild Uncommon-or-better chance x1.05",
 		"Hunter rite"
 	),
 	rite(
@@ -175,7 +175,7 @@ local built = {
 		false,
 		"expedition",
 		0.10,
-		"Expedition time −10%",
+		"Expedition time -10%",
 		"Hunter rite"
 	),
 	rite(
@@ -223,7 +223,7 @@ local built = {
 		false,
 		"padCost",
 		0.10,
-		"Pad unlock costs −10%",
+		"Pad unlock costs -10%",
 		"Lair rite"
 	),
 	rite(

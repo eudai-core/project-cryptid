@@ -3,6 +3,7 @@
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local CashPlaque = require(script.Parent:WaitForChild("CashPlaque"))
 local GoalBanner = require(script.Parent:WaitForChild("GoalBanner"))
@@ -27,6 +28,7 @@ local HudSlots = require(Shared:WaitForChild("Logic"):WaitForChild("HudSlots")) 
 local GameInfo = require(Shared:WaitForChild("GameInfo")) :: any
 local Plots = require(Shared:WaitForChild("Config"):WaitForChild("Plots")) :: any
 local Names = require(Shared:WaitForChild("Config"):WaitForChild("Remotes")) :: any
+local QaArgs = require(Shared:WaitForChild("Logic"):WaitForChild("QaArgs")) :: any
 local UITheme = require(Shared:WaitForChild("UITheme")) :: any
 
 print(GameInfo.name .. " client started")
@@ -257,6 +259,22 @@ end
 
 local skill = SkillTree.mount(gui, player, isReduced)
 skillTree = skill
+if RunService:IsStudio() then
+	local StudioTestService = game:GetService("StudioTestService") :: any
+	local ok, studioArgs = pcall(function()
+		return StudioTestService:GetTestArgs()
+	end)
+	if ok and QaArgs.openTree(true, studioArgs) then
+		local function openWhenReady()
+			skill.open()
+		end
+		player:GetAttributeChangedSignal("OnboardingStep"):Connect(openWhenReady)
+		player.CharacterAdded:Connect(function()
+			task.defer(openWhenReady)
+		end)
+		task.defer(openWhenReady)
+	end
+end
 local pedlar = PedlarShop.mount(gui, player, remotes :: Folder, Names, isReduced)
 TownDress.start()
 Interactions.start(player, remotes :: Folder, Names, beginCatch, {

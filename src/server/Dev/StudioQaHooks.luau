@@ -57,6 +57,10 @@ function StudioQaHooks.rewindLastSeen(profile: any)
 	profile.lastSeenUnix = rewound
 end
 
+function StudioQaHooks.sessionReducedMotion(): boolean?
+	return QaArgs.reducedMotion(RunService:IsStudio(), StudioQaHooks.args())
+end
+
 function StudioQaHooks.unixNow(): number
 	local now = os.time()
 	if not RunService:IsStudio() then

@@ -165,7 +165,12 @@ local function publish(session: any, credit: number)
 	player:SetAttribute("SkillIncome", SkillEffects.skillIncome(profile))
 	player:SetAttribute("AltarPerLevel", SkillEffects.altarPerLevel(profile))
 	player:SetAttribute("LastCredit", credit)
-	player:SetAttribute("ReducedMotion", profile.settings.reducedMotion == true)
+	local reducedMotion = profile.settings.reducedMotion == true
+	local motionOverride = StudioQaHooks.sessionReducedMotion()
+	if motionOverride ~= nil then
+		reducedMotion = motionOverride
+	end
+	player:SetAttribute("ReducedMotion", reducedMotion)
 	player:SetAttribute("OnboardingStep", profile.onboarding.step)
 	player:SetAttribute("StealProtected", StealGuard.isProtected(profile))
 	player:SetAttribute("Bowl", profile.bowl)
