@@ -31,6 +31,7 @@ local palette = table.freeze({
 	Bone = "E8E0CF",
 	BoneDim = "A79F90",
 	Rift = "7FA34A",
+	RiftDim = "4F6B34",
 	Moss = "5E7A4A",
 	TarnishedSilver = "8C9AA3",
 })
@@ -74,6 +75,10 @@ local UITheme = {
 			desktop = 18,
 			mobile = 16,
 		}),
+		sigil = table.freeze({
+			family = "Garamond",
+			weight = "Bold",
+		}),
 		number = table.freeze({
 			family = "Oswald",
 			weight = "Regular",
@@ -88,6 +93,9 @@ local UITheme = {
 			desktop = 16,
 			mobile = 14,
 		}),
+	}),
+	fontFaces = table.freeze({
+		Garamond = "rbxasset://fonts/families/Guru.json",
 	}),
 	text = table.freeze({
 		minSize = 14,
@@ -134,6 +142,7 @@ local UITheme = {
 		candle = "SmoothPlastic",
 		altar = "Slate",
 		cloth = "Fabric",
+		glass = "Glass",
 	}),
 	motion = table.freeze({
 		buttonHover = table.freeze({

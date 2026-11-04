@@ -36,4 +36,11 @@ function SpawnSafety.placeTarget(built: boolean, floorReady: boolean): string
 	return "fallback"
 end
 
+function SpawnSafety.spawnTarget(plotAssigned: boolean): string
+	if plotAssigned then
+		return "plot"
+	end
+	return "town"
+end
+
 return SpawnSafety

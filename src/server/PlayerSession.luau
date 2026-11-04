@@ -453,6 +453,11 @@ local function pivot(session: any, character: Model)
 			end
 			if Plot.tryPlace(session.player, character) then
 				syncLantern(session)
+				task.defer(function()
+					if character.Parent ~= nil and session.alive then
+						Plot.tryPlace(session.player, character)
+					end
+				end)
 				return
 			end
 			task.wait(Plots.SPAWN_RETRY_SECONDS)

@@ -20,7 +20,7 @@ function CashPlaque.mount(parent: Instance, isReduced: () -> boolean)
 		stroke.Transparency = 0
 	end
 
-	local sigil = UiFactory.label(frame, "number", UITheme.fonts.number.plaqueDesktop, "Gold")
+	local sigil = UiFactory.label(frame, "sigil", UITheme.fonts.header.desktop, "Gold")
 	sigil.Name = "Sigil"
 	sigil.Text = UITheme.sigil
 	sigil.TextXAlignment = Enum.TextXAlignment.Center
@@ -106,7 +106,7 @@ function CashPlaque.mount(parent: Instance, isReduced: () -> boolean)
 		income.Position = UDim2.fromOffset(44, pad + numberSize)
 		income.Size = UDim2.new(1, -56, 0, incomeSize + 2)
 		local ThemeBind = require(script.Parent:WaitForChild("ThemeBind"))
-		ThemeBind.apply(sigil, "number", numberSize)
+		ThemeBind.apply(sigil, "sigil", numberSize)
 		ThemeBind.apply(cash, "number", numberSize)
 		ThemeBind.apply(income, "income", incomeSize)
 	end

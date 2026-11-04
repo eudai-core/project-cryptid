@@ -5,6 +5,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Lair = require(Shared:WaitForChild("Config"):WaitForChild("Lair")) :: any
+local Lanterns = require(Shared:WaitForChild("Config"):WaitForChild("Lanterns")) :: any
 local PlotRing = require(Shared:WaitForChild("Logic"):WaitForChild("PlotRing")) :: any
 local Plots = require(Shared:WaitForChild("Config"):WaitForChild("Plots")) :: any
 local UITheme = require(Shared:WaitForChild("UITheme")) :: any
@@ -62,7 +63,45 @@ local function folder(parent: Instance, name: string): Folder
 	return created
 end
 
-local function candle(parent: Instance, origin: CFrame, localPos: Vector3): (PointLight, BasePart)
+local function lantern(parent: Instance, cf: CFrame)
+	makePart(
+		parent,
+		"LanternPost",
+		Vector3.new(Lanterns.POST_THICKNESS, Lanterns.POST_HEIGHT, Lanterns.POST_THICKNESS),
+		cf * CFrame.new(0, Lanterns.POST_HEIGHT / 2, 0),
+		UITheme.materials.lantern,
+		"Ash",
+		true
+	)
+	local glass = makePart(
+		parent,
+		"LanternGlass",
+		Vector3.new(Lanterns.GLASS_SIZE, Lanterns.GLASS_SIZE, Lanterns.GLASS_SIZE),
+		cf * CFrame.new(0, Lanterns.POST_HEIGHT + Lanterns.GLASS_SIZE / 2, 0),
+		UITheme.materials.glass,
+		"BoneDim",
+		false
+	)
+	glass.Transparency = Lanterns.GLASS_TRANSPARENCY
+	makePart(
+		parent,
+		"LanternAccent",
+		Vector3.new(Lanterns.ACCENT_WIDTH, Lanterns.ACCENT_HEIGHT, Lanterns.ACCENT_WIDTH),
+		cf * CFrame.new(0, Lanterns.POST_HEIGHT, 0),
+		UITheme.materials.padRing,
+		"Gold",
+		false
+	)
+	local light = Instance.new("PointLight")
+	light.Name = "LanternLight"
+	light.Color = UITheme.color(Lanterns.COLOR_TOKEN)
+	light.Brightness = Lanterns.BRIGHTNESS
+	light.Range = Lanterns.RANGE
+	light.Shadows = Lanterns.SHADOWS
+	light.Parent = glass
+end
+
+local function candle(parent: Instance, origin: CFrame, localPos: Vector3, withLight: boolean): (PointLight?, BasePart)
 	local stick = makePart(
 		parent,
 		"Candle",
@@ -82,13 +121,16 @@ local function candle(parent: Instance, origin: CFrame, localPos: Vector3): (Poi
 		"Candle",
 		false
 	)
-	local light = Instance.new("PointLight")
-	light.Color = UITheme.color("Candle")
-	light.Range = Lair.CANDLE_RANGE
-	light.Brightness = Lair.CANDLE_BRIGHTNESS
-	light.Shadows = true
-	light.Enabled = false
-	light.Parent = flame
+	local light = nil
+	if withLight then
+		light = Instance.new("PointLight")
+		light.Color = UITheme.color("Candle")
+		light.Range = Lair.CANDLE_RANGE
+		light.Brightness = Lair.CANDLE_BRIGHTNESS
+		light.Shadows = true
+		light.Enabled = false
+		light.Parent = flame
+	end
 	flame.Transparency = 1
 	return light, flame
 end
@@ -203,8 +245,8 @@ local function gate(
 		"WardingSeal",
 		Vector3.new(width, doorHeight, 0.4),
 		origin * CFrame.new(0, floorTop + doorHeight / 2, z),
-		UITheme.materials.neon,
-		"Rift",
+		UITheme.materials.lantern,
+		"RiftDim",
 		false
 	)
 	seal.Transparency = 1
@@ -244,6 +286,9 @@ function PlotBuilder.buildGround(town: Folder)
 	spawn.Enabled = true
 	spawn.CFrame = CFrame.new(0, Plots.FALLBACK_THICKNESS + 0.5, 0)
 	spawn.Parent = town
+	for _, offset in Lanterns.townOffsets() do
+		lantern(town, CFrame.new(offset.x, Plots.FALLBACK_THICKNESS, offset.z))
+	end
 end
 
 function PlotBuilder.buildPlot(parent: Folder, index: number): any
@@ -282,6 +327,9 @@ function PlotBuilder.buildPlot(parent: Folder, index: number): any
 		gate(model, origin, "LairGate", "LairDoor", half, Plots.LAIR_GATE_WIDTH, floorTop)
 	local _, wildDoor, wildSeal = gate(model, origin, "WildGate", "WildDoor", -half, Plots.WILD_GATE_WIDTH, floorTop)
 	wildSeal:Destroy()
+	for _, offset in Lanterns.gateOffsets() do
+		lantern(model, origin * CFrame.new(offset.x, 0, offset.z))
+	end
 
 	local townLocalZ = Plots.RING_RADIUS - Plots.TOWN_RADIUS
 	local roadStart = half + Plots.WALL_THICKNESS / 2
@@ -326,8 +374,8 @@ function PlotBuilder.buildPlot(parent: Folder, index: number): any
 		"RiftTrimLeft",
 		Vector3.new(Plots.RIFT_TRIM.x, Plots.RIFT_TRIM.y, riftLength),
 		origin * CFrame.new(Plots.RIFT_X - Plots.RIFT_WIDTH / 2, riftY + Plots.RIFT_THICKNESS / 2, riftCenterZ),
-		UITheme.materials.neon,
-		"Rift",
+		UITheme.materials.lantern,
+		"RiftDim",
 		false
 	)
 	makePart(
@@ -335,8 +383,8 @@ function PlotBuilder.buildPlot(parent: Folder, index: number): any
 		"RiftTrimRight",
 		Vector3.new(Plots.RIFT_TRIM.x, Plots.RIFT_TRIM.y, riftLength),
 		origin * CFrame.new(Plots.RIFT_X + Plots.RIFT_WIDTH / 2, riftY + Plots.RIFT_THICKNESS / 2, riftCenterZ),
-		UITheme.materials.neon,
-		"Rift",
+		UITheme.materials.lantern,
+		"RiftDim",
 		false
 	)
 
@@ -497,9 +545,16 @@ function PlotBuilder.buildPlot(parent: Folder, index: number): any
 	local flames = {}
 	local inset = Plots.WALL_THICKNESS / 2 + 0.4
 	local reach = Plots.FOOTPRINT / 2 - Plots.CANDLE_SPACING
+	local lit = 0
 	local function addCandle(localPos: Vector3)
-		local light, flame = candle(model, origin, localPos)
-		table.insert(lights, light)
+		local withLight = lit < Lair.CANDLE_LIGHT_COUNT
+		if withLight then
+			lit += 1
+		end
+		local light, flame = candle(model, origin, localPos, withLight)
+		if light ~= nil then
+			table.insert(lights, light)
+		end
 		table.insert(flames, flame)
 	end
 	for cursor = -reach, reach, Plots.CANDLE_SPACING do

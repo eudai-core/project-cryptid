@@ -12,6 +12,7 @@ local SpawnSafety = require("../src/shared/Logic/SpawnSafety")
 local Economy = require("../src/shared/Config/Economy")
 local Income = require("../src/shared/Logic/Income")
 local Lair = require("../src/shared/Config/Lair")
+local Lanterns = require("../src/shared/Config/Lanterns")
 local PlotAccess = require("../src/shared/Logic/PlotAccess")
 local PlotAssign = require("../src/shared/Logic/PlotAssign")
 local PlotRing = require("../src/shared/Logic/PlotRing")
@@ -375,6 +376,13 @@ Check.test("a spawn stands on a solid floor and the plot move waits for that flo
 	Check.eq(SpawnSafety.placeTarget(false, true), "fallback")
 	Check.eq(SpawnSafety.placeTarget(true, false), "fallback")
 	Check.eq(SpawnSafety.placeTarget(true, true), "plot")
+	Check.eq(SpawnSafety.spawnTarget(false), "town")
+	Check.eq(SpawnSafety.spawnTarget(true), "plot")
+	local plotOne = PlotRing.toWorld(1, PlotRing.spawnLocal())
+	Check.near(plotOne.x, 0, 0.05)
+	Check.near(plotOne.y, Plots.STAND_HEIGHT, 0.05)
+	Check.near(plotOne.z, 212, 0.05)
+	Check.eq(SpawnSafety.spawnTarget(true), "plot")
 	Check.eq(Plots.SPAWN_CHECK_SECONDS, 10)
 	local builder = fs.readFile("src/server/PlotBuilder.luau")
 	local ground = string.match(builder, "function PlotBuilder.buildGround%(.-%\nfunction PlotBuilder.buildPlot")
@@ -410,6 +418,50 @@ Check.test("Technology and StreamingEnabled live in the place file, not in scrip
 		Check.eq(string.find(text, "203785492", 1, true), nil, path)
 	end
 	Check.eq(string.find(fs.readFile("default.project.json"), "203785492", 1, true), nil)
+end)
+
+Check.test("the cash sigil uses the header face, not Oswald", function()
+	Check.eq(UITheme.fonts.sigil.family, UITheme.fonts.header.family)
+	Check.eq(UITheme.fonts.sigil.weight, UITheme.fonts.header.weight)
+	Check.eq(UITheme.fonts.header.family, "Garamond")
+	Check.eq(UITheme.fonts.number.family, "Oswald")
+	Check.eq(UITheme.fontFaces.Garamond, "rbxasset://fonts/families/Guru.json")
+	local plaque = fs.readFile("src/client/CashPlaque.luau")
+	Check.eq(string.find(plaque, 'ThemeBind.apply(sigil, "sigil"', 1, true) ~= nil, true)
+end)
+
+Check.test("world trim uses RiftDim metal and no neon emission", function()
+	Check.eq(UITheme.palette.Rift, "7FA34A")
+	Check.eq(UITheme.palette.RiftDim, "4F6B34")
+	Check.eq(UITheme.materials.lantern, "Metal")
+	local builder = fs.readFile("src/server/PlotBuilder.luau")
+	Check.eq(string.find(builder, "materials.neon", 1, true), nil)
+	Check.eq(string.find(builder, "LightEmission", 1, true), nil)
+	Check.eq(string.find(builder, '"RiftDim"', 1, true) ~= nil, true)
+	local riftUses = 0
+	local cursor = 1
+	while true do
+		local found = string.find(builder, '"Rift"', cursor, true)
+		if found == nil then
+			break
+		end
+		riftUses += 1
+		cursor = found + 1
+	end
+	Check.eq(riftUses, 0)
+end)
+
+Check.test("gate lanterns fit the per-plot light cap", function()
+	Check.eq(Lanterns.PER_PLOT_LIGHT_CAP, 8)
+	Check.eq(#Lanterns.townOffsets(), 4)
+	Check.eq(#Lanterns.gateOffsets(), 2)
+	Check.eq(Lair.CANDLE_LIGHT_COUNT + #Lanterns.gateOffsets() <= Lanterns.PER_PLOT_LIGHT_CAP, true)
+	Check.eq(Lair.CANDLE_LIGHT_COUNT + #Lanterns.gateOffsets(), Lanterns.PER_PLOT_LIGHT_CAP)
+	Check.eq(Lanterns.SHADOWS, false)
+	Check.eq(Lanterns.COLOR_TOKEN, "Candle")
+	Check.eq(UITheme.world.Candle, "FFB36B")
+	Check.eq(Lanterns.BRIGHTNESS >= 1 and Lanterns.BRIGHTNESS <= 1.5, true)
+	Check.eq(Lanterns.RANGE >= 14 and Lanterns.RANGE <= 18, true)
 end)
 
 Check.test("the home beam tip is inside the clear fog band from the town edge", function()

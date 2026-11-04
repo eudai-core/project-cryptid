@@ -117,8 +117,8 @@ local function setLivedIn(plot: any, livedIn: boolean)
 		door.CanTouch = not livedIn
 		door.Transparency = if livedIn then 1 else 0
 	end
-	plot.spawnLocation.Enabled = false
-	plot.spawnLocation.Neutral = false
+	plot.spawnLocation.Enabled = livedIn
+	plot.spawnLocation.Neutral = livedIn
 end
 
 local function destroyNamed(host: Instance, name: string)
@@ -225,10 +225,7 @@ local function occupy(plot: any, player: Player)
 	setLivedIn(plot, true)
 	publish(plot)
 	player:SetAttribute("PlotIndex", plot.index)
-	local fallback = Plot.fallbackSpawn()
-	if fallback ~= nil then
-		player.RespawnLocation = fallback
-	end
+	player.RespawnLocation = plot.spawnLocation
 end
 
 function Plot.fallbackSpawn(): SpawnLocation?
@@ -267,13 +264,13 @@ function Plot.tryPlace(player: Player, character: Model): boolean
 		end
 	end
 	character:PivotTo(spawnPart.CFrame)
-	local root = rootOf(player)
-	if root ~= nil then
+	local root = character:FindFirstChild("HumanoidRootPart")
+	if root ~= nil and root:IsA("BasePart") then
 		root.AssemblyLinearVelocity = Vector3.zero
 		root.AssemblyAngularVelocity = Vector3.zero
 	end
 	local humanoid = character:FindFirstChildOfClass("Humanoid")
-	if humanoid == nil or humanoid.Health <= 0 or root == nil then
+	if humanoid == nil or humanoid.Health <= 0 or root == nil or not root:IsA("BasePart") then
 		return false
 	end
 	local params = RaycastParams.new()
