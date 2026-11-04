@@ -133,7 +133,10 @@ Check.test("QA4 layout draws 17 nodes and 9 of them are sealed", function()
 		Check.near(node.x, expected[1], 2, id)
 		Check.near(node.y, expected[2], 2, id)
 		Check.eq(node.currency, "cash", id)
-		if node.ring == 1 then
+		if id == "h3" then
+			Check.eq(node.ring, 1)
+			Check.eq(node.sealed, true)
+		elseif node.ring == 1 then
 			Check.eq(node.sealed, false, id)
 		else
 			Check.eq(node.sealed, true, id)

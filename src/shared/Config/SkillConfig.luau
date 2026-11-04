@@ -106,7 +106,7 @@ local built = {
 		140,
 		{ "h1" },
 		6000,
-		2,
+		1,
 		true,
 		false,
 		"outline",

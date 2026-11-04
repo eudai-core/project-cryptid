@@ -9,6 +9,7 @@ require("./theme_and_source.spec")
 require("./plots.spec")
 require("./town.spec")
 require("./watchdog.spec")
+require("./qa_args.spec")
 require("./persistence.spec")
 require("./skill_tree.spec")
 

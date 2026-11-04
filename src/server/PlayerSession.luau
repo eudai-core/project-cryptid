@@ -8,6 +8,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local DataStoreGateway = require(script.Parent:WaitForChild("DataStoreGateway"))
 local Pedlar = require(script.Parent:WaitForChild("Pedlar"))
+local QaGrant = require(script.Parent:WaitForChild("Dev"):WaitForChild("QaGrant"))
 local Plot = require(script.Parent:WaitForChild("Plot"))
 local Remotes = require(script.Parent:WaitForChild("Remotes"))
 local Debounce = require(Shared:WaitForChild("Logic"):WaitForChild("Debounce")) :: any
@@ -643,6 +644,8 @@ function PlayerSession.onPlayer(player: Player)
 		player:Kick(Plots.KICK_NO_LAIR)
 		return
 	end
+
+	QaGrant.apply(profile, player.UserId)
 
 	local session = {
 		player = player,
