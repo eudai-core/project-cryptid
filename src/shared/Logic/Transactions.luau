@@ -41,6 +41,9 @@ end)
 local OnboardingGoals = import("./OnboardingGoals", function()
 	return script.Parent:WaitForChild("OnboardingGoals")
 end)
+local Bowl = import("./Bowl", function()
+	return script.Parent:WaitForChild("Bowl")
+end)
 
 local Transactions = {}
 
@@ -209,16 +212,19 @@ function Transactions.skip(profile: any, now: number, makeId: () -> string): (bo
 	return true, "ok"
 end
 
-function Transactions.creditIncome(profile: any, seconds: number): number
+function Transactions.creditIncome(
+	profile: any,
+	seconds: number,
+	inside: boolean?,
+	autoCollect: boolean?
+): (number, boolean)
 	if seconds <= 0 then
-		return 0
+		return 0, false
 	end
 	local amount = Money.round(Income.perSecond(profile) * seconds)
-	profile.cash = Money.round(profile.cash + amount)
-	profile.totalEarned = Money.round(profile.totalEarned + amount)
 	profile.onboarding.playSeconds += seconds
 	OnboardingGoals.advance(profile)
-	return amount
+	return Bowl.route(profile, amount, inside == true, autoCollect == true)
 end
 
 function Transactions.canSell(profile: any): boolean
@@ -248,6 +254,22 @@ local function firstEmptyPad(profile: any): number?
 		end
 	end
 	return nil
+end
+
+function Transactions.grantOffering(profile: any, speciesId: string, now: number, newId: string): (boolean, string)
+	if type(speciesId) ~= "string" or Species.get(speciesId) == nil then
+		return false, "species"
+	end
+	if not addCryptid(profile, newId, speciesId, "offering", now) then
+		return false, "id"
+	end
+	if profile.settings.bindAtOnce == true then
+		local pad = firstEmptyPad(profile)
+		if pad ~= nil then
+			profile.pads[tostring(pad)] = newId
+		end
+	end
+	return true, "ok"
 end
 
 function Transactions.buyPedlar(

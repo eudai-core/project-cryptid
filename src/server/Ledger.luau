@@ -186,7 +186,7 @@ function Ledger.open(options: {
 			return SessionDocument.buildWrite(old, options.jobId, options.now(), Save.LOCK_TTL_SECONDS, createProfile)
 		end)
 		if ok and type(result) == "table" and result.lockJobId == options.jobId then
-			local profile = Schema.migrate(result.profile)
+			local profile = Schema.migrate(result.profile, options.now())
 			if profile == nil then
 				return {
 					ok = false,

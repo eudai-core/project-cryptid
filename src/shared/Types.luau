@@ -1,6 +1,8 @@
 --!strict
 
-export type CryptidSource = "starter" | "rift" | "wild" | "pedlar"
+export type CryptidSource = "starter" | "rift" | "wild" | "pedlar" | "offering"
+
+export type EffectsQuality = "High" | "Medium" | "Low"
 
 export type CryptidRecord = {
 	speciesId: string,
@@ -29,9 +31,28 @@ export type Profile = {
 	},
 	onboarding: OnboardingState,
 	firstJoinUnix: number,
+	lastSeenUnix: number,
+	tithe: number,
+	bowl: number,
+	offline: {
+		rate: number,
+		rateNoPass: number,
+		pending: number,
+		pendingTithe: number,
+		awaySeconds: number,
+		capped: boolean,
+	},
+	daily: {
+		step: number,
+		lastClaimDay: number,
+		totalClaims: number,
+	},
 	settings: {
 		reducedMotion: boolean,
 		bindAtOnce: boolean,
+		sfx: number,
+		music: number,
+		effectsQuality: EffectsQuality,
 	},
 	shop: {
 		lastRotationId: number,

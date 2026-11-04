@@ -45,6 +45,8 @@ local BY_ID: { [string]: SpeciesRecord } = {
 	legendary_02 = record("legendary_02", "Placeholder Legendary II", 600, nil, "Legendary"),
 	mythic_01 = record("mythic_01", "Placeholder Mythic", 2500, nil, "Mythic"),
 	mythic_02 = record("mythic_02", "Placeholder Mythic II", 2500, nil, "Mythic"),
+	snallygaster = record("snallygaster", "Snallygaster", 16, nil, "Uncommon"),
+	flatwoods_monster = record("flatwoods_monster", "Flatwoods Monster", 40, nil, "Rare"),
 }
 
 local Species = {
@@ -53,6 +55,8 @@ local Species = {
 	RIFT_2_ID = "hidebehind",
 	WILD_ID = "hodag",
 	LEGACY_WILD_ID = "wild_common",
+	SNALLYGASTER_ID = "snallygaster",
+	FLATWOODS_ID = "flatwoods_monster",
 	GUARANTEES = table.freeze({
 		table.freeze({
 			slot = 1,

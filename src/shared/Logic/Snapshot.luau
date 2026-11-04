@@ -11,11 +11,17 @@ end
 local Economy = import("../Config/Economy", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Economy")
 end)
+local Return = import("../Config/Return", function()
+	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Return")
+end)
 local Shop = import("../Config/Shop", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Shop")
 end)
 local Species = import("../Config/Species", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Species")
+end)
+local Daily = import("./Daily", function()
+	return script.Parent:WaitForChild("Daily")
 end)
 local Income = import("./Income", function()
 	return script.Parent:WaitForChild("Income")
@@ -35,7 +41,7 @@ end)
 
 local Snapshot = {}
 
-function Snapshot.build(profile: any, lastCredit: number, revision: number): any
+function Snapshot.build(profile: any, lastCredit: number, revision: number, view: any?): any
 	local goal = OnboardingGoals.view(profile)
 	local pads = {}
 	for index = 1, Economy.MAX_PADS do
@@ -95,6 +101,31 @@ function Snapshot.build(profile: any, lastCredit: number, revision: number): any
 		pedlarBought[slot] = profile.shop.boughtSlots[slot] == true
 	end
 
+	local viewNow = 0
+	local autoOpen = false
+	if type(view) == "table" then
+		if type(view.now) == "number" then
+			viewNow = view.now
+		end
+		autoOpen = view.dailyAutoOpen == true
+	end
+	local rate = Income.perSecond(profile)
+	local steps = {}
+	for index = 1, Return.LADDER_STEPS do
+		local preview = Daily.preview(index, rate)
+		if preview ~= nil then
+			table.insert(steps, preview)
+		end
+	end
+	local pending = profile.offline.pending
+	if type(pending) ~= "number" then
+		pending = 0
+	end
+	local awaySeconds = profile.offline.awaySeconds
+	if type(awaySeconds) ~= "number" then
+		awaySeconds = 0
+	end
+
 	local rift = {}
 	for _, offer in Transactions.currentOffers(profile) do
 		local species = Species.get(offer.speciesId)
@@ -124,6 +155,32 @@ function Snapshot.build(profile: any, lastCredit: number, revision: number): any
 			lastRotationId = profile.shop.lastRotationId,
 			boughtSlots = pedlarBought,
 			bindAtOnce = profile.settings.bindAtOnce == true,
+		},
+		bowl = profile.bowl,
+		settings = {
+			sfx = profile.settings.sfx,
+			music = profile.settings.music,
+			effectsQuality = profile.settings.effectsQuality,
+			reducedMotion = profile.settings.reducedMotion == true,
+		},
+		haul = {
+			pending = pending,
+			awaySeconds = awaySeconds,
+			capped = profile.offline.capped == true,
+			show = pending >= Return.SCREEN_MIN_HAUL and awaySeconds >= Return.SCREEN_AWAY_SECONDS,
+		},
+		daily = {
+			step = profile.daily.step,
+			lastClaimDay = profile.daily.lastClaimDay,
+			totalClaims = profile.daily.totalClaims,
+			ready = Daily.ready(profile, viewNow),
+			missed = Daily.missed(profile, viewNow),
+			nextDailyUnix = Daily.nextReset(viewNow),
+			serverNow = viewNow,
+			button = Daily.offerButton(profile),
+			autoOpen = autoOpen,
+			progress = profile.daily.step,
+			steps = steps,
 		},
 	}
 end

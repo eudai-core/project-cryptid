@@ -63,6 +63,15 @@ The mock runs the flush on a fake list of profiles. It does not run Studio's sto
 3. Start 2 players again. Each client keeps the cash and creatures from before the stop. Neither is kicked with the lock message.
 4. Cloud check: join from the Roblox app, earn some cash, then shut that server down from the Creator Dashboard (or leave until the server empties). Rejoin. Cash matches the pre-shutdown value. A lock kick may appear only if the old server has not released yet. After the 90 second lease, or after the shutdown flush, the rejoin shows the saved cash, never a fresh $25 profile.
 
+### Offline haul uses the saved lastSeenUnix
+
+The mock can subtract seconds from `lastSeenUnix` in memory. Only a real DataStore proves the next server pays from the previous server's save.
+
+1. Play on place `80631305127330` with API access on. Finish onboarding (step 8), note cash and the income per second, then leave so `BindToClose` writes.
+2. Wait at least five minutes. Rejoin. The welcome-back panel shows a haul of `floor(savedRate × 0.20 × awaySeconds)`, capped at 8 hours. Cash increases by that amount only after **Take the haul** (or Esc, or a click outside the panel). A second tap does not pay again.
+3. Leave again immediately and rejoin. There is no second haul for the same absence. Two servers must not both pay: the session lock rejects the second join while the first server still holds the key.
+4. The Studio `qa:offline:` suffix is not this check. It never runs in a published server, and it does not write a client timestamp.
+
 ### Teleport / rejoin race
 
 1. Play on the test place, note cash, leave, and rejoin immediately.

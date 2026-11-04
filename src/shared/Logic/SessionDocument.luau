@@ -55,7 +55,7 @@ function SessionDocument.buildWrite(
 	createProfile: any
 ): (any?, string)
 	if old == nil then
-		local profile = Schema.migrate(createProfile)
+		local profile = Schema.migrate(createProfile, now)
 		if profile == nil then
 			return nil, "corrupt"
 		end
@@ -67,7 +67,7 @@ function SessionDocument.buildWrite(
 	if lockActive(old, jobId, now) then
 		return nil, "locked"
 	end
-	local profile = Schema.migrate(old.profile)
+	local profile = Schema.migrate(old.profile, now)
 	if profile == nil then
 		return nil, "corrupt"
 	end

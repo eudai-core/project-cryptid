@@ -1,0 +1,40 @@
+--!strict
+
+local function import(lunePath: string, getRoblox: () -> any): any
+	-- selene: allow(global_usage)
+	if _G.LUNE == true then
+		return require(lunePath)
+	end
+	return require(getRoblox())
+end
+
+local Return = import("../Config/Return", function()
+	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Return")
+end)
+
+local Ownership = {}
+
+function Ownership.autoCollect(profile: any, forced: boolean?): boolean
+	if forced == true then
+		return true
+	end
+	if Return.AUTO_COLLECT_ENABLED ~= true or type(Return.AUTO_COLLECT_PASS_ID) ~= "number" then
+		return false
+	end
+	return type(profile) == "table" and profile.autoCollect == true
+end
+
+function Ownership.cashMultiplier(profile: any, forced: number?): number
+	if type(forced) == "number" and forced == forced and forced > 0 and forced < 1e6 and forced ~= math.huge then
+		return forced
+	end
+	if Return.CASH_DOUBLE_ENABLED ~= true or type(Return.CASH_DOUBLE_PASS_ID) ~= "number" then
+		return 1
+	end
+	if type(profile) == "table" and profile.cashDouble == true then
+		return Return.CASH_DOUBLE_MULTIPLIER
+	end
+	return 1
+end
+
+return Ownership

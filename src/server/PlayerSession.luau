@@ -23,6 +23,11 @@ local ShopStock = require(Shared:WaitForChild("Logic"):WaitForChild("ShopStock")
 local Town = require(Shared:WaitForChild("Config"):WaitForChild("Town")) :: any
 local RemoteArgs = require(Shared:WaitForChild("Logic"):WaitForChild("RemoteArgs")) :: any
 local Autosave = require(Shared:WaitForChild("Logic"):WaitForChild("Autosave")) :: any
+local Bowl = require(Shared:WaitForChild("Logic"):WaitForChild("Bowl")) :: any
+local Daily = require(Shared:WaitForChild("Logic"):WaitForChild("Daily")) :: any
+local Offline = require(Shared:WaitForChild("Logic"):WaitForChild("Offline")) :: any
+local Ownership = require(Shared:WaitForChild("Logic"):WaitForChild("Ownership")) :: any
+local Settings = require(Shared:WaitForChild("Logic"):WaitForChild("Settings")) :: any
 local Save = require(Shared:WaitForChild("Config"):WaitForChild("Save")) :: any
 local Schema = require(Shared:WaitForChild("Logic"):WaitForChild("Schema")) :: any
 local ShutdownFlush = require(Shared:WaitForChild("Logic"):WaitForChild("ShutdownFlush")) :: any
@@ -30,6 +35,7 @@ local Snapshot = require(Shared:WaitForChild("Logic"):WaitForChild("Snapshot")) 
 local StealGuard = require(Shared:WaitForChild("Logic"):WaitForChild("StealGuard")) :: any
 local Transactions = require(Shared:WaitForChild("Logic"):WaitForChild("Transactions")) :: any
 local UITheme = require(Shared:WaitForChild("UITheme")) :: any
+local StudioQa = require(script.Parent:WaitForChild("Dev"):WaitForChild("StudioQa"))
 
 local sessions: { [Player]: any } = {}
 
@@ -138,7 +144,11 @@ local function publish(session: any, credit: number)
 	session.revision += 1
 	local profile = session.profile
 	local income = Income.perSecond(profile)
-	local snap = Snapshot.build(profile, credit, session.revision)
+	local offeringNow = StudioQa.unixNow()
+	local snap = Snapshot.build(profile, credit, session.revision, {
+		now = offeringNow,
+		dailyAutoOpen = session.dailyAutoOpen == true,
+	})
 	local player = session.player
 	player:SetAttribute("Cash", profile.cash)
 	player:SetAttribute("IncomePerSecond", income)
@@ -146,6 +156,11 @@ local function publish(session: any, credit: number)
 	player:SetAttribute("ReducedMotion", profile.settings.reducedMotion == true)
 	player:SetAttribute("OnboardingStep", profile.onboarding.step)
 	player:SetAttribute("StealProtected", StealGuard.isProtected(profile))
+	player:SetAttribute("Bowl", profile.bowl)
+	player:SetAttribute("Sfx", profile.settings.sfx)
+	player:SetAttribute("Music", profile.settings.music)
+	player:SetAttribute("EffectsQuality", profile.settings.effectsQuality)
+	player:SetAttribute("NextDailyUnix", Daily.nextReset(offeringNow))
 	session.snapshot.Value = HttpService:JSONEncode(snap)
 	player:SetAttribute("StateRevision", session.revision)
 	Plot.sync(session.plot, profile, session.guide)
@@ -155,10 +170,22 @@ end
 local performSave: (any) -> (boolean, string)
 local queueSave: (any) -> ()
 
+local function stampOnline(session: any)
+	Offline.capture(session.profile, Ownership.cashMultiplier(session.profile))
+	session.profile.lastSeenUnix = os.time()
+end
+
+local function settleDeparture(session: any)
+	Bowl.bank(session.profile)
+	stampOnline(session)
+	session.dirty = true
+end
+
 performSave = function(session: any): (boolean, string)
 	if session.ephemeral or session.loaded ~= true or not session.alive or session.player.Parent == nil then
 		return false, "skipped"
 	end
+	stampOnline(session)
 	session.saveBusy = true
 	session.dirty = false
 	session.lastSaveAt = os.clock()
@@ -480,6 +507,54 @@ local function onBind(session: any, enabled: any)
 	queueSave(session)
 end
 
+local function onClaimHaul(session: any)
+	if not allowRequest(session) then
+		return
+	end
+	local amount = Offline.claim(session.profile)
+	if amount <= 0 then
+		return
+	end
+	publish(session, amount)
+	queueSave(session)
+end
+
+local function onClaimDaily(session: any)
+	if not allowRequest(session) then
+		return
+	end
+	local serial = 0
+	local granted = Daily.claim(session.profile, StudioQa.unixNow(), function()
+		serial += 1
+		return HttpService:GenerateGUID(false) .. "-offering-" .. tostring(serial)
+	end)
+	if not granted then
+		return
+	end
+	publish(session, 0)
+	queueSave(session)
+end
+
+local function onSettings(session: any, key: any, value: any)
+	if not allowRequest(session) then
+		return
+	end
+	if type(key) ~= "string" then
+		return
+	end
+	local now = os.clock()
+	local allowed, at = Debounce.allow(session.lastSettingAt, now, Economy.PURCHASE_DEBOUNCE_SECONDS)
+	if not allowed then
+		return
+	end
+	session.lastSettingAt = at
+	if not Settings.apply(session.profile, key, value) then
+		return
+	end
+	publish(session, 0)
+	queueSave(session)
+end
+
 local function onReducedMotion(session: any, enabled: any)
 	if not allowRequest(session) then
 		return
@@ -522,6 +597,9 @@ local function bind(folder: Folder)
 	listen(Names.RETURN_TO_LAIR, onReturn)
 	listen(Names.PEDLAR_BUY, onPedlarBuy)
 	listen(Names.BIND_AT_ONCE, onBind)
+	listen(Names.CLAIM_HAUL, onClaimHaul)
+	listen(Names.CLAIM_DAILY, onClaimDaily)
+	listen(Names.SET_SETTINGS, onSettings)
 end
 
 local function startLoops(session: any)
@@ -533,15 +611,35 @@ local function startLoops(session: any)
 			if not session.alive then
 				break
 			end
+			local inside = Plot.insideOwn(session.plot, session.player)
+			local floated = 0
+			local changed = false
+			if inside then
+				local banked = Bowl.bank(session.profile)
+				if banked > 0 then
+					floated += banked
+					changed = true
+				end
+			end
 			acc += dt
+			local ticked = false
 			if acc >= Economy.INCOME_INTERVAL_SECONDS then
+				ticked = true
 				local ticks = math.floor(acc / Economy.INCOME_INTERVAL_SECONDS)
 				acc -= ticks * Economy.INCOME_INTERVAL_SECONDS
-				local amount = Transactions.creditIncome(session.profile, ticks * Economy.INCOME_INTERVAL_SECONDS)
-				if amount > 0 then
-					session.dirty = true
+				local auto = Ownership.autoCollect(session.profile)
+				local amount, incomeChanged =
+					Transactions.creditIncome(session.profile, ticks * Economy.INCOME_INTERVAL_SECONDS, inside, auto)
+				floated += amount
+				if incomeChanged then
+					changed = true
 				end
-				publish(session, amount)
+			end
+			if changed then
+				session.dirty = true
+			end
+			if changed or ticked then
+				publish(session, floated)
 			end
 		end
 		session.workers -= 1
@@ -615,6 +713,10 @@ function PlayerSession.onPlayer(player: Player)
 	end
 	local profile = loaded.profile
 	local grantedStarter = Schema.ensureStarter(profile, os.time(), HttpService:GenerateGUID(false))
+	StudioQa.rewindLastSeen(profile)
+	local folded = Offline.fold(profile, os.time())
+	local offeringNow = StudioQa.unixNow()
+	local dailyAutoOpen = Daily.shouldAutoOpen(Daily.offerButton(profile), Daily.ready(profile, offeringNow))
 
 	local state = Instance.new("Folder")
 	state.Name = "CryptidState"
@@ -655,7 +757,8 @@ function PlayerSession.onPlayer(player: Player)
 		loaded = true,
 		alive = true,
 		leaving = false,
-		dirty = grantedStarter,
+		dirty = grantedStarter or folded.changed,
+		dailyAutoOpen = dailyAutoOpen,
 		lockExpiresAt = lockExpiresAt,
 		saveBusy = false,
 		saveScheduled = false,
@@ -704,6 +807,7 @@ local function detach(player: Player, hurry: boolean)
 		end
 	end
 	if session.loaded == true and session.ephemeral ~= true then
+		settleDeparture(session)
 		if session.dirty then
 			DataStoreGateway.save(player.UserId, session.profile)
 		end
@@ -748,9 +852,10 @@ function PlayerSession.shutdown()
 			session.leaving = true
 			session.alive = false
 			sessions[player] = nil
+			settleDeparture(session)
 			table.insert(entries, {
 				loaded = true,
-				dirty = session.dirty == true and session.loaded == true and session.ephemeral ~= true,
+				dirty = session.loaded == true and session.ephemeral ~= true,
 				player = player,
 				session = session,
 			})

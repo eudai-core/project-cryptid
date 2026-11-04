@@ -6,6 +6,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local CashPlaque = require(script.Parent:WaitForChild("CashPlaque"))
 local GoalBanner = require(script.Parent:WaitForChild("GoalBanner"))
+local HaulPanel = require(script.Parent:WaitForChild("HaulPanel"))
+local OfferingPanel = require(script.Parent:WaitForChild("OfferingPanel"))
 local GuideArrow = require(script.Parent:WaitForChild("GuideArrow"))
 local HomeBeam = require(script.Parent:WaitForChild("HomeBeam"))
 local Interactions = require(script.Parent:WaitForChild("Interactions"))
@@ -122,6 +124,17 @@ local function readNumber(name: string): number
 	return value
 end
 
+local layout: () -> ()
+
+local haul = HaulPanel.mount(gui, isReduced, function()
+	fire(Names.CLAIM_HAUL)
+end)
+local offering = OfferingPanel.mount(gui, isReduced, function()
+	fire(Names.CLAIM_DAILY)
+end, function()
+	return banner.isBusy()
+end)
+
 local function applyAttributes()
 	reduced = player:GetAttribute("ReducedMotion") == true
 	paintSteady()
@@ -130,8 +143,10 @@ local function applyAttributes()
 		readNumber("IncomePerSecond"),
 		0,
 		readNumber("StateRevision"),
-		readNumber("OnboardingStep")
+		readNumber("OnboardingStep"),
+		readNumber("Bowl")
 	)
+	layout()
 end
 
 local function applySnapshot(text: string)
@@ -156,16 +171,27 @@ local function applySnapshot(text: string)
 	if type(revision) ~= "number" then
 		revision = 0
 	end
-	plaque.apply(readNumber("Cash"), readNumber("IncomePerSecond"), credit, revision, readNumber("OnboardingStep"))
+	plaque.apply(
+		readNumber("Cash"),
+		readNumber("IncomePerSecond"),
+		credit,
+		revision,
+		readNumber("OnboardingStep"),
+		if type(decoded.bowl) == "number" then decoded.bowl else readNumber("Bowl")
+	)
+	haul.apply(decoded.haul)
+	offering.apply(decoded.daily, haul.isOpen())
 	WorldBoards.refresh(decoded)
+	layout()
 end
 
-local function layout()
+layout = function()
 	local viewport = camera.ViewportSize
 	local mobile = viewport.X < UITheme.shape.mobileWidthBreakpoint
-	local plaqueSize = if mobile then UITheme.shape.plaqueSize.mobile else UITheme.shape.plaqueSize.desktop
-	plaque.layout(mobile)
-	banner.layout(mobile, plaqueSize.h)
+	local plaqueHeight = plaque.layout(mobile)
+	banner.layout(mobile, plaqueHeight)
+	haul.layout(mobile)
+	offering.layout(mobile)
 end
 
 camera:GetPropertyChangedSignal("ViewportSize"):Connect(layout)

@@ -59,6 +59,8 @@ The seconds are clamped to 1–1800. The ops guide does not name a range; 1800 i
 
 `GetTestArgs` returns the value as it was passed. The wrapper passes one string, so a table argument does not arm the watchdog.
 
+Suffixes on that same `qa:` string are Studio-only and never become remotes. `offline:<seconds>` rewinds the loaded `lastSeenUnix` before the haul is computed (`qa:300:offline:7200` is two hours away). `utc:<days>` shifts the Nightly Offering day number (`qa:300:utc:1`). `utcjump:<seconds>` adds one more UTC day after the test has been running that long (`qa:300:utcjump:20` lets you claim, wait, and claim the next step). Unknown suffixes such as `plots3` are ignored. A published server does not read them. The haul still uses `os.time()` and the saved `lastSeenUnix`, never the client clock.
+
 An unpublished Studio place cannot call the DataStore API. The server then uses an in-memory mock, once, and the real load, save, and release path still runs (session lock and migrations included). A live or published server never installs the mock. The Output window shows this warning a single time:
 
 ```text
@@ -99,6 +101,6 @@ stylua --check src
 lune run tests/run.luau
 ```
 
-Lune runs the pure-logic tests (cash format, income, onboarding, schema, session lock, plot ring, assignment, migration, the Pale Pedlar, the playtest watchdog budget, and the ledger against the in-memory DataStore). It does not need Studio. Studio steps are in [`docs/spec-01.md`](docs/spec-01.md), [`docs/spec-02.md`](docs/spec-02.md), and [`docs/spec-03.md`](docs/spec-03.md).
+Lune runs the pure-logic tests (cash format, income, onboarding, schema, session lock, plot ring, assignment, migration, the Pale Pedlar, the playtest watchdog budget, the ledger against the in-memory DataStore, offline haul, the Nightly Offering, and the Offering Bowl). It does not need Studio. Studio steps are in [`docs/spec-01.md`](docs/spec-01.md), [`docs/spec-02.md`](docs/spec-02.md), and [`docs/spec-03.md`](docs/spec-03.md).
 
 `selene.toml` sets `std = "roblox"`. `stylua.toml` is the formatter config.

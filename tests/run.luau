@@ -11,6 +11,7 @@ require("./town.spec")
 require("./watchdog.spec")
 require("./persistence.spec")
 require("./save_hardening.spec")
+require("./return.spec")
 
 local Check = require("./check")
 Check.finish()
