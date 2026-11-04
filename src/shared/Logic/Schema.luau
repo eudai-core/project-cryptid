@@ -522,13 +522,48 @@ local function migrateToV5(profile: any, raw: any, version: number, now: number)
 	return true
 end
 
+local function parseAnalytics(raw: any): { lastReturnDay: number, funnelStep: number }
+	local day = 0
+	local step = 0
+	if type(raw) == "table" and type(raw.analytics) == "table" then
+		local parsedDay = raw.analytics.lastReturnDay
+		local parsedStep = raw.analytics.funnelStep
+		if
+			type(parsedDay) == "number"
+			and parsedDay == math.floor(parsedDay)
+			and parsedDay >= 0
+			and parsedDay <= 10000000
+		then
+			day = parsedDay
+		end
+		if
+			type(parsedStep) == "number"
+			and parsedStep == math.floor(parsedStep)
+			and parsedStep >= 0
+			and parsedStep <= 9
+		then
+			step = parsedStep
+		end
+	end
+	return {
+		lastReturnDay = day,
+		funnelStep = step,
+	}
+end
+
 local function migrateToV7(profile: any, raw: any, version: number, _now: number): boolean
+	local ok = true
 	if version < 7 then
 		MonetisationProfile.applyDefaults(profile)
 		RelicsPip.armExisting(profile)
-		return true
+	else
+		ok = MonetisationProfile.parse(profile, raw)
 	end
-	return MonetisationProfile.parse(profile, raw)
+	if ok ~= true then
+		return false
+	end
+	profile.analytics = parseAnalytics(raw)
+	return true
 end
 
 local function migrateToV6(profile: any, _raw: any, version: number, _now: number): boolean
@@ -663,6 +698,10 @@ function Schema.newProfile(now: number, starterInstanceId: string): any
 		shop = freshShop(),
 		base = {
 			defences = {},
+		},
+		analytics = {
+			lastReturnDay = 0,
+			funnelStep = 0,
 		},
 	}
 	MonetisationProfile.applyDefaults(profile)

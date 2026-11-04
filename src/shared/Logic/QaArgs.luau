@@ -3,6 +3,7 @@
 -- Studio playtests pass one string, `qa:<seconds>` plus optional suffixes.
 -- `offline:<seconds>` rewinds lastSeen. `utc:<days>` shifts the offering day.
 -- `utcjump:<seconds>` adds one more day after that many seconds of the test.
+-- `analytics` marks a Studio playtest that should print the analytics sink banner.
 -- Unknown suffixes (such as `plots3`) are ignored so the watchdog still arms.
 
 local QaArgs = {}
@@ -12,6 +13,7 @@ export type Tokens = {
 	utcDays: number,
 	utcJumpSeconds: number,
 	relics: boolean,
+	analytics: boolean,
 }
 
 local function empty(): Tokens
@@ -20,6 +22,7 @@ local function empty(): Tokens
 		utcDays = 0,
 		utcJumpSeconds = 0,
 		relics = false,
+		analytics = false,
 	}
 end
 
@@ -49,6 +52,9 @@ function QaArgs.parse(args: any): Tokens
 		local key = parts[index]
 		if key == "relics" then
 			tokens.relics = true
+			index += 1
+		elseif key == "analytics" then
+			tokens.analytics = true
 			index += 1
 		elseif key == "offline" or key == "utc" or key == "utcjump" then
 			local amount = whole(parts[index + 1])

@@ -132,7 +132,9 @@ function Ledger.open(options: {
 		transform: (any) -> (any?, string)
 	): (boolean, string, any?)
 		local lastStatus = "error"
+		local attempts = 0
 		for attempt = 1, Save.MAX_ATTEMPTS do
+			attempts = attempt
 			awaitBudget()
 			local why = "error"
 			local function call(): any
@@ -151,21 +153,21 @@ function Ledger.open(options: {
 					options.confirmLive()
 				end
 				if type(result) == "table" then
-					return true, why, result
+					return true, why, result, attempts
 				end
 				lastStatus = why
 				if why ~= "locked" then
 					if why == "wipe" or why == "downgrade" then
 						options.warn(string.format("[Cryptid:DataStore] refusing %s (%s) for %s", label, why, userKey))
 					end
-					return false, why, nil
+					return false, why, nil, attempts
 				end
 			else
 				lastStatus = "error"
 				local message = tostring(result)
 				options.warn("Ledger " .. label .. " failed: " .. message)
 				if Retry.classify(message) == "fatal" then
-					return false, "fatal", nil
+					return false, "fatal", nil, attempts
 				end
 			end
 			local pause = Retry.backoffSeconds(attempt)
@@ -176,14 +178,14 @@ function Ledger.open(options: {
 				options.waitFor(Retry.withJitter(pause, roll()))
 			end
 		end
-		return false, lastStatus, nil
+		return false, lastStatus, nil, attempts
 	end
 
 	local api = {}
 
 	function api.load(userId: number, createProfile: any): any
 		ready[userId] = false
-		local ok, status, result = runUpdate("read", key(userId), function(old)
+		local ok, status, result, attempts = runUpdate("read", key(userId), function(old)
 			return SessionDocument.buildWrite(
 				old,
 				options.jobId,
@@ -193,12 +195,18 @@ function Ledger.open(options: {
 				options.settle
 			)
 		end)
+		if type(attempts) ~= "number" or attempts < 1 then
+			attempts = 1
+		end
 		if ok and type(result) == "table" and result.lockJobId == options.jobId then
+			local seenUnix = result.seenUnix
 			local profile = Schema.migrate(result.profile, options.now())
 			if profile == nil then
 				return {
 					ok = false,
 					message = Save.KICK_LOAD_FAILED,
+					reason = "corrupt",
+					attempts = attempts,
 				}
 			end
 			ready[userId] = true
@@ -207,17 +215,28 @@ function Ledger.open(options: {
 				profile = profile,
 				ephemeral = false,
 				lockExpiresAt = result.lockExpiresAt,
+				fresh = status == "created",
+				seenUnix = if type(seenUnix) == "number" then seenUnix else nil,
+				attempts = attempts,
 			}
+		end
+		local reason = "read"
+		if status == "corrupt" then
+			reason = "corrupt"
 		end
 		if status == "locked" then
 			return {
 				ok = false,
 				message = Save.KICK_LOCKED,
+				reason = "locked",
+				attempts = attempts,
 			}
 		end
 		return {
 			ok = false,
 			message = Save.KICK_LOAD_FAILED,
+			reason = reason,
+			attempts = attempts,
 		}
 	end
 

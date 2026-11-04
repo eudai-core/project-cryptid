@@ -70,6 +70,13 @@ function StudioQa.armRelics(profile: any)
 	end
 end
 
+function StudioQa.analytics(): boolean
+	if not RunService:IsStudio() then
+		return false
+	end
+	return tokens().analytics == true
+end
+
 function StudioQa.unixNow(): number
 	local now = os.time()
 	if not RunService:IsStudio() then
