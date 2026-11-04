@@ -4,7 +4,9 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
-local CryptidModel = require(script.Parent:WaitForChild("CryptidModel"))
+local CryptidArt = require(Shared:WaitForChild("Config"):WaitForChild("CryptidArt")) :: any
+local CryptidModels = require(Shared:WaitForChild("CryptidModels")) :: any
+local LairVisual = require(script.Parent:WaitForChild("LairVisual"))
 local PlotBuilder = require(script.Parent:WaitForChild("PlotBuilder"))
 local PlotSignals = require(script.Parent:WaitForChild("PlotSignals"))
 local Economy = require(Shared:WaitForChild("Config"):WaitForChild("Economy")) :: any
@@ -19,7 +21,6 @@ local Species = require(Shared:WaitForChild("Config"):WaitForChild("Species")) :
 local SkillEffects = require(script.Parent:WaitForChild("SkillEffects")) :: any
 local StealGuard = require(Shared:WaitForChild("Logic"):WaitForChild("StealGuard")) :: any
 local Transactions = require(Shared:WaitForChild("Logic"):WaitForChild("Transactions")) :: any
-local UITheme = require(Shared:WaitForChild("UITheme")) :: any
 
 local plots: { any } = {}
 local byPlayer: { [Player]: any } = {}
@@ -129,11 +130,29 @@ local function destroyNamed(host: Instance, name: string)
 	end
 end
 
+local function padRestState(pad: any): string
+	if PlotRing.isSealedPad(pad.index) then
+		return CryptidArt.states.sealed
+	end
+	return CryptidArt.states.empty
+end
+
+local function showPad(pad: any, state: string, affordable: boolean)
+	LairVisual.applyPad(pad.visual, pad.states, state, affordable)
+	local sealed = state == CryptidArt.states.sealed
+	pad.center:SetAttribute("Sealed", sealed)
+	if pad.visual ~= nil then
+		pad.visual:SetAttribute("Sealed", sealed)
+		pad.visual:SetAttribute("beingStolen", false)
+	end
+end
+
 local function clearCreatures(plot: any)
 	for _, pad in plot.pads do
 		destroyNamed(pad.center, "Creature")
 		pad.center:SetAttribute("beingStolen", false)
 		pad.prompt:SetAttribute("Available", false)
+		showPad(pad, padRestState(pad), false)
 	end
 	for _, rift in plot.rift do
 		destroyNamed(rift.part, "Creature")
@@ -142,7 +161,7 @@ local function clearCreatures(plot: any)
 	destroyNamed(plot.wildPad, "Creature")
 	plot.wildPrompt:SetAttribute("Available", false)
 	plot.altarPrompt:SetAttribute("Available", false)
-	plot.tiers:ClearAllChildren()
+	LairVisual.applyAltar(plot.altarModel, plot.altarTiers, 0)
 end
 
 local function outsideGate(plot: any): CFrame
@@ -359,6 +378,13 @@ function Plot.hold(player: Player)
 	end)
 end
 
+local function creatureMount(pad: any): CFrame
+	if pad.mount ~= nil and pad.mount:IsA("BasePart") then
+		return pad.mount.CFrame
+	end
+	return pad.stand
+end
+
 local function replaceCreature(host: Instance, speciesId: string?, cf: CFrame)
 	local existing = host:FindFirstChild("Creature")
 	if speciesId == nil then
@@ -367,42 +393,17 @@ local function replaceCreature(host: Instance, speciesId: string?, cf: CFrame)
 		end
 		return
 	end
-	if existing ~= nil and existing:GetAttribute("SpeciesId") == speciesId then
+	if existing ~= nil and existing:GetAttribute(CryptidArt.attr.speciesId) == speciesId then
 		return
 	end
 	if existing ~= nil then
 		existing:Destroy()
 	end
-	local model = CryptidModel.build(speciesId)
+	local model = CryptidModels.get(speciesId)
 	model.Name = "Creature"
+	model:SetAttribute(CryptidArt.attr.speciesId, speciesId)
 	model.Parent = host
-	model:PivotTo(cf)
-end
-
-local function rebuildTiers(plot: any, level: number)
-	plot.tiers:ClearAllChildren()
-	for step = 1, level do
-		local shrink = (step - 1) * Plots.ALTAR_TIER_INSET
-		local piece = Instance.new("Part")
-		piece.Name = "AltarTier" .. tostring(step)
-		piece.Anchored = true
-		piece.CanCollide = false
-		piece.CanTouch = false
-		piece.Size = Vector3.new(
-			Plots.ALTAR_SIZE.x - Plots.PAD_RING_MARGIN - shrink,
-			Plots.ALTAR_TIER_HEIGHT,
-			Plots.ALTAR_SIZE.z - Plots.PAD_RING_MARGIN - shrink
-		)
-		piece.CFrame = plot.altarStand
-			* CFrame.new(
-				0,
-				Plots.FLOOR_THICKNESS + Plots.ALTAR_SIZE.y + Plots.ALTAR_LIP + step * Plots.ALTAR_TIER_HEIGHT,
-				0
-			)
-		piece.Material = Enum.Material[UITheme.materials.altar]
-		piece.Color = UITheme.color("Bone")
-		piece.Parent = plot.tiers
-	end
+	CryptidModels.pivotTo(model, cf)
 end
 
 local function guidePart(plot: any, guide: string): BasePart?
@@ -433,15 +434,15 @@ function Plot.sync(plot: any, profile: any, guideValue: ObjectValue)
 	plot.profile = profile
 	plot.protected = StealGuard.isProtected(profile)
 	publish(plot)
-	rebuildTiers(plot, profile.upgrades.boneAltar)
+	LairVisual.applyAltar(plot.altarModel, plot.altarTiers, profile.upgrades.boneAltar)
 
 	for _, pad in plot.pads do
 		pad.center:SetAttribute("beingStolen", false)
+		local mount = creatureMount(pad)
 		if PlotRing.isSealedPad(pad.index) then
-			pad.center:SetAttribute("Sealed", true)
-			replaceCreature(pad.center, nil, pad.stand)
+			replaceCreature(pad.center, nil, mount)
 			pad.prompt:SetAttribute("Available", false)
-			pad.ring.Color = UITheme.color("BoneDim")
+			showPad(pad, CryptidArt.states.sealed, false)
 			continue
 		end
 		local instanceId = ProfileQuery.padAt(profile, pad.index)
@@ -452,15 +453,13 @@ function Plot.sync(plot: any, profile: any, guideValue: ObjectValue)
 				speciesId = record.speciesId
 			end
 		end
-		replaceCreature(pad.center, speciesId, pad.stand)
+		replaceCreature(pad.center, speciesId, mount)
 		local lockedPad = pad.index > profile.padsUnlocked
 		local nextPad = pad.index == profile.padsUnlocked + 1
 		local cost = SkillEffects.padCost(profile, pad.index)
-		if lockedPad and nextPad and type(cost) == "number" and profile.cash + 1e-9 >= cost then
-			pad.ring.Color = UITheme.color("Blood")
-		else
-			pad.ring.Color = UITheme.color("Gold")
-		end
+		local occupied = speciesId ~= nil
+		local canAfford = lockedPad and nextPad and type(cost) == "number" and profile.cash + 1e-9 >= cost
+		showPad(pad, CryptidArt.padState(false, occupied, lockedPad), canAfford)
 		pad.prompt:SetAttribute("Pad", pad.index)
 		if lockedPad and nextPad and type(cost) == "number" then
 			pad.prompt:SetAttribute("Kind", "UnlockPad")
