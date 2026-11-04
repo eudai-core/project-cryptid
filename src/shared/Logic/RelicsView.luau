@@ -23,9 +23,6 @@ end)
 local NumberFormat = import("./NumberFormat", function()
 	return script.Parent:WaitForChild("NumberFormat")
 end)
-local Ownership = import("./Ownership", function()
-	return script.Parent:WaitForChild("Ownership")
-end)
 local Passes = import("./Passes", function()
 	return script.Parent:WaitForChild("Passes")
 end)
@@ -54,6 +51,10 @@ local BODIES = {
 }
 
 local RelicsView = {}
+
+function RelicsView.showRelicPad(view: any): boolean
+	return type(view) == "table" and view.visible == true and view.extraPadsOwned ~= true
+end
 
 function RelicsView.buttonFor(entry: any, owned: boolean): string
 	if owned == true or Monetisation.isLive(entry) ~= true then

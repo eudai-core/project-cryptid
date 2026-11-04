@@ -12,6 +12,7 @@ require("./watchdog.spec")
 require("./persistence.spec")
 require("./save_hardening.spec")
 require("./return.spec")
+require("./monetisation.spec")
 
 local Check = require("./check")
 Check.finish()

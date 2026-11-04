@@ -11,6 +11,9 @@ end
 local BoneAltar = import("../Config/BoneAltar", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("BoneAltar")
 end)
+local Monetisation = import("../Config/Monetisation", function()
+	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Monetisation")
+end)
 local Economy = import("../Config/Economy", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Economy")
 end)
@@ -54,7 +57,8 @@ function Snapshot.build(profile: any, lastCredit: number, revision: number, view
 	local goal = OnboardingGoals.view(profile)
 	local pads = {}
 	for index = 1, Economy.MAX_PADS do
-		local cost = Economy.PAD_COST[index] or 0
+		local scaled = Economy.padCost(index, BoneAltar.rebirths(profile))
+		local cost = if type(scaled) == "number" then scaled else 0
 		local instanceId = ProfileQuery.padAt(profile, index)
 		local entry = {
 			index = index,
@@ -65,8 +69,14 @@ function Snapshot.build(profile: any, lastCredit: number, revision: number, view
 			affordable = false,
 			instanceId = "",
 		}
-		if index > profile.padsUnlocked then
-			entry.affordable = index == profile.padsUnlocked + 1 and profile.cash + 1e-9 >= cost
+		if Monetisation.relicLocked(profile, index) then
+			entry.state = "sealed"
+			entry.cost = 0
+			entry.affordable = false
+		elseif index > profile.padsUnlocked then
+			entry.affordable = index == profile.padsUnlocked + 1
+				and type(scaled) == "number"
+				and profile.cash + 1e-9 >= cost
 		elseif instanceId == nil then
 			entry.state = "empty"
 		else

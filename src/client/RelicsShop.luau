@@ -10,6 +10,7 @@ local UiFactory = require(script.Parent:WaitForChild("UiFactory"))
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Monetisation = require(Shared:WaitForChild("Config"):WaitForChild("Monetisation")) :: any
 local RelicsCopy = require(Shared:WaitForChild("Logic"):WaitForChild("RelicsCopy")) :: any
+local RelicsView = require(Shared:WaitForChild("Logic"):WaitForChild("RelicsView")) :: any
 local Plots = require(Shared:WaitForChild("Config"):WaitForChild("Plots")) :: any
 local UITheme = require(Shared:WaitForChild("UITheme")) :: any
 
@@ -201,7 +202,7 @@ function RelicsShop.mount(parent: Instance, isReduced: () -> boolean, onOpen: ()
 	end
 
 	local function refreshPads()
-		local show = latest ~= nil and latest.visible == true and latest.extraPadsOwned ~= true
+		local show = RelicsView.showRelicPad(latest)
 		for _, gui in pads do
 			gui.Enabled = show
 			local label = gui:FindFirstChild("Line", true)
@@ -236,7 +237,7 @@ function RelicsShop.mount(parent: Instance, isReduced: () -> boolean, onOpen: ()
 		plate.Size = UDim2.fromScale(1, 1)
 		local label = UiFactory.label(plate, "body", UITheme.text.minSize, "Bone")
 		label.Name = "Line"
-		label.Size = UDim2.new(1, 0, 0.5, 0)
+		label.Size = UDim2.fromScale(1, 0.5)
 		label.TextXAlignment = Enum.TextXAlignment.Center
 		local action = UiFactory.button(plate, UITheme.text.minSize)
 		action.Name = "Open"

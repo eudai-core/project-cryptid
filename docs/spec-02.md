@@ -20,7 +20,7 @@ Local layout, in studs, with +Z toward the town:
 | Wild Gate | `(0, 0, −60)`, 12 wide |
 | Defence sockets | D1 `(−54, −54)`, D2 `(54, −54)`, D3 `(54, 54)`, D4 `(−54, 54)` |
 
-Pads 7–12 show a sigil and "Sealed" and cannot be bought. Pads 1–6 keep the spec 01 prices. Walls are 14 studs of basalt with crenellations. Candle lights stay at range 18 and brightness 2. Floor, wall, and altar colours stay the brightened tokens from the spec 01 playtest (`Floor`, `Wall`, `Altar`). The only neon in a plot is the Rift trim, plus a faint Rift seal on a protected Lair Gate.
+Pads 1–6 keep the spec 01 prices. Pads 7 and 8 are bought with cash at $15,000 and $40,000 (×1.5^r, and r is 0 until rebirth). Pads 9 and 10 stay Sealed until the +2 Pads pass opens them. Pads 11–12 stay Sealed and cannot be bought. Walls are 14 studs of basalt with crenellations. Candle lights stay at range 18 and brightness 2. Floor, wall, and altar colours stay the brightened tokens from the spec 01 playtest (`Floor`, `Wall`, `Altar`). The only neon in a plot is the Rift trim, plus a faint Rift seal on a protected Lair Gate.
 
 Unclaimed plots show "Unclaimed Lair", shut both gates, and turn the candles off. Your own banner reads "Your Lair". Everyone else sees the owner's display name.
 
@@ -50,7 +50,7 @@ A player who has not finished onboarding (step under 8 and under 5:00) has a sea
 2. Use **Test → Start Server** with 1 player, then add players from the server window. Stopping a solo Play session also stops the server, which drops the in-memory 30 second reservation.
 3. One player: the server log is quiet, the player stands on Plot 1 at the north gate looking toward the altar, and the banner reads "Your Lair". The gold beam rises above that gate.
 4. Walk the spec 01 rite on that plot: claim, carve, altar, lantern, catch outside the Wild Gate, bind. The guide beam stays inside the plot except for the catch, which points through the Wild Gate.
-5. Pads 7–12 read "Sealed". Pressing them does nothing. Carving still follows pads 3, then 4, at the spec 01 prices.
+5. Pads 11–12 read "Sealed". Pads 9–10 read "Sealed" until the pass, and after step 8 and 5:00 their billboard says "Relic pad · View Item" (tap opens the shop, no purchase prompt). Pads 7–8 can be carved for $15,000 and $40,000. Carving during the rite still follows pads 3, then 4, at the spec 01 prices.
 6. **Return to Lair** (bottom left) puts you on your spawn. Steady gaze sits on its right. The slot to the right of both is empty. Press Return again within 10 seconds and you stay put.
 7. Start a second player who has finished nothing. They cannot walk into the first lair. If that visitor is still in the rite, the toast is "Finish your own rite first." If the visitor has finished and the owner has not, the toast is "A warding seal holds this lair." Both are bone-dim. After both have skipped or finished, each can enter the other's plot and no prompt appears.
 8. Leave with the server still running and rejoin within 30 seconds: same plot, same cash and creatures. Leave again, wait 35 seconds: the banner reads "Unclaimed Lair", the gates are shut, and the next player can receive that plot.
@@ -73,7 +73,7 @@ A player who has not finished onboarding (step under 8 and under 5:00) has a sea
 | 10 | A finished player cannot pass an onboarding gate | Lune `QA10 and QA11`. The finished visitor gets the warding-seal toast. An onboarding visitor gets "Finish your own rite first." Studio step 7. |
 | 11 | Finished players may enter and see no prompts | Lune `QA10 and QA11` (`mayEnter`). Prompts require `OwnerUserId` in `Interactions`. Studio step 7. |
 | 12 | Return to Lair, then a refusal inside 10 seconds | Lune `QA12`. Studio step 6. |
-| 13 | Pads 7–12 say Sealed and cannot be bought | Lune `QA13`. Studio step 5. |
+| 13 | Pads 11–12 stay Sealed. Pads 9–10 are not sold for cash. Pads 7–8 cost $15,000 and $40,000 | Lune `QA13` and the monetisation pad tests. Studio step 5 for the sealed pair. |
 | 14 | `PlotIntruded`, four sockets, `base.defences = {}` | Lune `QA14`. Studio step 9 and step 10. The saved map is empty until a later spec writes a defence. |
 | 15 | Income stops on leave and resumes from saved cash | Lune `QA15`. A 30 second hold credits nothing to the leaver or to anyone else. The income loop stops (`alive = false`) before `Plot.hold`. Studio: read the plaque, leave, rejoin, and confirm cash did not tick while away. |
 

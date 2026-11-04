@@ -8,6 +8,9 @@ local function import(lunePath: string, getRoblox: () -> any): any
 	return require(getRoblox())
 end
 
+local Economy = import("../Config/Economy", function()
+	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Economy")
+end)
 local Monetisation = import("../Config/Monetisation", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Monetisation")
 end)
@@ -51,7 +54,24 @@ function Passes.owned(profile: any, key: string): boolean
 	return false
 end
 
-function Passes.grant(profile: any, key: string, now: number, instanceId: string?): { changed: boolean, cash: number, grants: { string } }
+function Passes.openRelicPads(profile: any): boolean
+	if not Passes.owned(profile, "extraPads") or type(profile) ~= "table" then
+		return false
+	end
+	local unlocked = profile.padsUnlocked
+	if type(unlocked) ~= "number" or unlocked < Economy.CASH_PAD_MAX or unlocked >= Economy.MAX_PADS then
+		return false
+	end
+	profile.padsUnlocked = Economy.MAX_PADS
+	return true
+end
+
+function Passes.grant(
+	profile: any,
+	key: string,
+	now: number,
+	instanceId: string?
+): { changed: boolean, cash: number, grants: { string } }
 	local empty = {
 		changed = false,
 		cash = 0,
@@ -90,6 +110,7 @@ function Passes.grant(profile: any, key: string, now: number, instanceId: string
 		table.insert(grants, "pass:cashDouble")
 	elseif key == "extraPads" then
 		profile.passes.extraPads = true
+		Passes.openRelicPads(profile)
 		table.insert(grants, "pass:extraPads")
 	elseif key == "lairCosmetics" then
 		profile.passes.lairCosmetics = true

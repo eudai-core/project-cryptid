@@ -11,6 +11,9 @@ end
 local Monetisation = import("../Config/Monetisation", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Monetisation")
 end)
+local Income = import("./Income", function()
+	return script.Parent:WaitForChild("Income")
+end)
 local Money = import("./Money", function()
 	return script.Parent:WaitForChild("Money")
 end)
@@ -21,8 +24,8 @@ end)
 local Bundles = {}
 
 function Bundles.prePassRate(profile: any): number
-	local noPass = select(1, Ownership.leaveRates(profile))
-	return noPass
+	local layers = Ownership.layers(profile)
+	return Money.round(Income.perSecond(profile) * layers.skills * layers.rebirth)
 end
 
 function Bundles.amount(rate: number, key: string): number

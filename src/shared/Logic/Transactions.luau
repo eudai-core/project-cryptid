@@ -17,6 +17,9 @@ end)
 local Economy = import("../Config/Economy", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Economy")
 end)
+local Monetisation = import("../Config/Monetisation", function()
+	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Monetisation")
+end)
 local Onboarding = import("../Config/Onboarding", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Onboarding")
 end)
@@ -52,6 +55,9 @@ local Bowl = import("./Bowl", function()
 end)
 local Ownership = import("./Ownership", function()
 	return script.Parent:WaitForChild("Ownership")
+end)
+local Passes = import("./Passes", function()
+	return script.Parent:WaitForChild("Passes")
 end)
 local RelicsPip = import("./RelicsPip", function()
 	return script.Parent:WaitForChild("RelicsPip")
@@ -136,7 +142,10 @@ function Transactions.unlockPad(profile: any, index: number): (boolean, string)
 	if index ~= profile.padsUnlocked + 1 or index > Economy.MAX_PADS then
 		return false, "order"
 	end
-	local cost = Economy.PAD_COST[index]
+	if Monetisation.isRelicPad(index) then
+		return false, "relic"
+	end
+	local cost = Economy.padCost(index, BoneAltar.rebirths(profile))
 	if type(cost) ~= "number" then
 		return false, "range"
 	end
@@ -155,6 +164,7 @@ function Transactions.unlockPad(profile: any, index: number): (boolean, string)
 			profile.pads[tostring(index)] = wildId
 		end
 	end
+	Passes.openRelicPads(profile)
 	OnboardingGoals.advance(profile)
 	return true, "ok"
 end

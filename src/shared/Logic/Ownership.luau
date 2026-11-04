@@ -33,9 +33,10 @@ end
 
 function Ownership.leaveRates(profile: any, forcedCash: number?): (number, number)
 	local layers = Ownership.layers(profile, forcedCash)
-	local noPass = Money.round(Income.perSecond(profile) * layers.skills * layers.rebirth)
-	local withPass = Money.round(noPass * layers.cashPass)
-	return noPass, withPass
+	local scale = layers.skills * layers.rebirth
+	local titheRate = Money.round(Income.tithePerSecond(profile) * scale)
+	local cashRate = Money.round(Income.perSecond(profile) * scale * layers.cashPass)
+	return titheRate, cashRate
 end
 
 function Ownership.cryptidTick(profile: any, seconds: number, forcedCash: number?): { cash: number, tithe: number }

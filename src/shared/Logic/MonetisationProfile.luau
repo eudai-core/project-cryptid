@@ -121,7 +121,7 @@ local function parseGrants(raw: any): { string }?
 		if type(grant) ~= "string" or #grant < 1 or #grant > Monetisation.KEY_MAX then
 			return nil
 		end
-		if string.match(grant, "^[%w:%-.]+$") == nil then
+		if string.match(grant, "^[%w_:%-.]+$") == nil then
 			return nil
 		end
 		grants[index] = grant

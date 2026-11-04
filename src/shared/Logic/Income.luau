@@ -11,6 +11,9 @@ end
 local BoneAltar = import("../Config/BoneAltar", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("BoneAltar")
 end)
+local Monetisation = import("../Config/Monetisation", function()
+	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Monetisation")
+end)
 local Species = import("../Config/Species", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Species")
 end)
@@ -35,21 +38,35 @@ function Income.contribution(speciesId: string, altarLevel: number, l3: boolean?
 	return Money.round(species.baseIncome * Income.multiplier(altarLevel, l3 == true))
 end
 
-function Income.perSecond(profile: any): number
+local function placed(profile: any, includeRelic: boolean): number
+	local unlocked = profile.padsUnlocked
+	if type(unlocked) ~= "number" then
+		return 0
+	end
 	local base = 0
-	for index = 1, profile.padsUnlocked do
-		local instanceId = ProfileQuery.padAt(profile, index)
-		if instanceId ~= nil then
-			local record = profile.cryptids[instanceId]
-			if record ~= nil then
-				local species = Species.get(record.speciesId)
-				if species ~= nil then
-					base += species.baseIncome
+	for index = 1, unlocked do
+		if includeRelic or not Monetisation.isRelicPad(index) then
+			local instanceId = ProfileQuery.padAt(profile, index)
+			if instanceId ~= nil then
+				local record = profile.cryptids[instanceId]
+				if record ~= nil then
+					local species = Species.get(record.speciesId)
+					if species ~= nil then
+						base += species.baseIncome
+					end
 				end
 			end
 		end
 	end
 	return Money.round(base * Income.multiplier(profile.upgrades.boneAltar, BoneAltar.l3Owned(profile)))
+end
+
+function Income.perSecond(profile: any): number
+	return placed(profile, true)
+end
+
+function Income.tithePerSecond(profile: any): number
+	return placed(profile, false)
 end
 
 return Income

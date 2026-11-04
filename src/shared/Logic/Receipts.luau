@@ -55,7 +55,11 @@ local function restore(profile: any, snapshot: any)
 	end
 end
 
-function Receipts.process(receipt: any, profile: any, deps: any): { decision: string, cash: number, fresh: boolean, spent: number }
+function Receipts.process(
+	receipt: any,
+	profile: any,
+	deps: any
+): { decision: string, cash: number, fresh: boolean, spent: number }
 	local held = {
 		decision = Receipts.NOT_PROCESSED,
 		cash = 0,
@@ -85,7 +89,11 @@ function Receipts.process(receipt: any, profile: any, deps: any): { decision: st
 	if type(item) ~= "table" or item.kind ~= "bundle" or Monetisation.isLive(item) ~= true then
 		return held
 	end
-	if item.catalogPrice ~= nil and type(receipt.CurrencySpent) == "number" and receipt.CurrencySpent ~= item.catalogPrice then
+	if
+		item.catalogPrice ~= nil
+		and type(receipt.CurrencySpent) == "number"
+		and receipt.CurrencySpent ~= item.catalogPrice
+	then
 		if type(deps.log) == "function" then
 			deps.log("catalog price differs from CurrencySpent")
 		end
@@ -127,7 +135,11 @@ function Receipts.process(receipt: any, profile: any, deps: any): { decision: st
 		return held
 	end
 	local spent = 0
-	if type(receipt.CurrencySpent) == "number" and receipt.CurrencySpent > 0 and receipt.CurrencySpent == receipt.CurrencySpent then
+	if
+		type(receipt.CurrencySpent) == "number"
+		and receipt.CurrencySpent > 0
+		and receipt.CurrencySpent == receipt.CurrencySpent
+	then
 		spent = receipt.CurrencySpent
 	end
 	return {

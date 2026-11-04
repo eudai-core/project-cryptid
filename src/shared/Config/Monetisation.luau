@@ -118,6 +118,17 @@ function Monetisation.isRelicPad(index: number): boolean
 	return false
 end
 
+function Monetisation.relicLocked(profile: any, index: number): boolean
+	if not Monetisation.isRelicPad(index) or type(profile) ~= "table" then
+		return false
+	end
+	local unlocked = profile.padsUnlocked
+	if type(unlocked) ~= "number" then
+		return true
+	end
+	return index > unlocked
+end
+
 function Monetisation.shopOpen(profile: any): boolean
 	if type(profile) ~= "table" or type(profile.onboarding) ~= "table" then
 		return false
