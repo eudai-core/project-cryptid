@@ -2,12 +2,13 @@
 
 local CollectionService = game:GetService("CollectionService")
 local HttpService = game:GetService("HttpService")
-local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local DataStoreGateway = require(script.Parent:WaitForChild("DataStoreGateway"))
+local StudioQa = require(script.Parent:WaitForChild("Dev"):WaitForChild("StudioQa"))
+local StudioQaHooks = require(script.Parent:WaitForChild("Dev"):WaitForChild("StudioQaHooks"))
 local Pedlar = require(script.Parent:WaitForChild("Pedlar"))
 local Plot = require(script.Parent:WaitForChild("Plot"))
 local Remotes = require(script.Parent:WaitForChild("Remotes"))
@@ -27,6 +28,7 @@ local Bowl = require(Shared:WaitForChild("Logic"):WaitForChild("Bowl")) :: any
 local Daily = require(Shared:WaitForChild("Logic"):WaitForChild("Daily")) :: any
 local Offline = require(Shared:WaitForChild("Logic"):WaitForChild("Offline")) :: any
 local Ownership = require(Shared:WaitForChild("Logic"):WaitForChild("Ownership")) :: any
+local SessionClose = require(Shared:WaitForChild("Logic"):WaitForChild("SessionClose")) :: any
 local Settings = require(Shared:WaitForChild("Logic"):WaitForChild("Settings")) :: any
 local Save = require(Shared:WaitForChild("Config"):WaitForChild("Save")) :: any
 local Schema = require(Shared:WaitForChild("Logic"):WaitForChild("Schema")) :: any
@@ -35,9 +37,10 @@ local Snapshot = require(Shared:WaitForChild("Logic"):WaitForChild("Snapshot")) 
 local StealGuard = require(Shared:WaitForChild("Logic"):WaitForChild("StealGuard")) :: any
 local Transactions = require(Shared:WaitForChild("Logic"):WaitForChild("Transactions")) :: any
 local UITheme = require(Shared:WaitForChild("UITheme")) :: any
-local StudioQa = require(script.Parent:WaitForChild("Dev"):WaitForChild("StudioQa"))
 
 local sessions: { [Player]: any } = {}
+local detaching: { [Player]: any } = {}
+local activeTally: { saved: number, released: number }? = nil
 
 local PlayerSession = {}
 
@@ -144,7 +147,7 @@ local function publish(session: any, credit: number)
 	session.revision += 1
 	local profile = session.profile
 	local income = Income.perSecond(profile)
-	local offeringNow = StudioQa.unixNow()
+	local offeringNow = StudioQaHooks.unixNow()
 	local snap = Snapshot.build(profile, credit, session.revision, {
 		now = offeringNow,
 		dailyAutoOpen = session.dailyAutoOpen == true,
@@ -183,7 +186,13 @@ local function settleDeparture(session: any)
 end
 
 performSave = function(session: any): (boolean, string)
-	if session.ephemeral or session.loaded ~= true or not session.alive or session.player.Parent == nil then
+	if
+		session.ephemeral
+		or session.loaded ~= true
+		or session.leaving
+		or not session.alive
+		or session.player.Parent == nil
+	then
 		return false, "skipped"
 	end
 	stampOnline(session)
@@ -216,7 +225,7 @@ end
 
 queueSave = function(session: any)
 	session.dirty = true
-	if session.ephemeral or session.loaded ~= true or not session.alive then
+	if session.ephemeral or session.loaded ~= true or session.leaving or not session.alive then
 		return
 	end
 	if session.saveBusy then
@@ -239,7 +248,7 @@ queueSave = function(session: any)
 end
 
 local function onCadence(session: any)
-	if session.ephemeral or session.loaded ~= true or not session.alive or session.saveBusy then
+	if session.ephemeral or session.loaded ~= true or session.leaving or not session.alive or session.saveBusy then
 		return
 	end
 	Autosave.apply(session.dirty == true, session.lockExpiresAt, os.time(), {
@@ -525,7 +534,7 @@ local function onClaimDaily(session: any)
 		return
 	end
 	local serial = 0
-	local granted = Daily.claim(session.profile, StudioQa.unixNow(), function()
+	local granted = Daily.claim(session.profile, StudioQaHooks.unixNow(), function()
 		serial += 1
 		return HttpService:GenerateGUID(false) .. "-offering-" .. tostring(serial)
 	end)
@@ -700,6 +709,14 @@ function PlayerSession.onPlayer(player: Player)
 	if fallback ~= nil then
 		player.RespawnLocation = fallback
 	end
+	local plan = StudioQa.plan(RunService:IsStudio(), StudioQaHooks.args())
+	if plan == "kick" then
+		player:Kick(Save.KICK_LOAD_FAILED)
+		return
+	end
+	if plan == "seed-fresh" or plan == "seed-stale" then
+		DataStoreGateway.seedForeignLock(player.UserId, plan == "seed-stale")
+	end
 	local created = Schema.newProfile(os.time(), HttpService:GenerateGUID(false))
 	local loaded = DataStoreGateway.load(player.UserId, created)
 	if player.Parent == nil then
@@ -719,7 +736,7 @@ function PlayerSession.onPlayer(player: Player)
 		silentNotice = profile.offline.notice
 		profile.offline.notice = 0
 	end
-	local offeringNow = StudioQa.unixNow()
+	local offeringNow = StudioQaHooks.unixNow()
 	local dailyAutoOpen = Daily.shouldAutoOpen(Daily.offerButton(profile), Daily.ready(profile, offeringNow))
 
 	local state = Instance.new("Folder")
@@ -798,31 +815,59 @@ function PlayerSession.onPlayer(player: Player)
 	end
 end
 
-local function detach(player: Player, hurry: boolean)
-	local session = sessions[player]
-	if session == nil or session.leaving then
-		return
+local function closeOwned(player: Player, session: any, bounded: boolean): (boolean, boolean)
+	local started = os.clock()
+	local budget = ShutdownFlush.budget(RunService:IsStudio())
+	while session.saveBusy or session.workers > 0 do
+		if bounded and os.clock() - started >= budget then
+			break
+		end
+		task.wait(Save.SHUTDOWN_POLL_SECONDS)
 	end
-	session.leaving = true
-	session.alive = false
-	sessions[player] = nil
-	if not hurry then
-		while session.saveBusy or session.workers > 0 do
-			task.wait()
+	local remaining = budget
+	if bounded then
+		remaining = budget - (os.clock() - started)
+		if remaining < 0 then
+			remaining = 0
 		end
 	end
-	if session.loaded == true and session.ephemeral ~= true then
-		settleDeparture(session)
-		if session.dirty then
-			DataStoreGateway.save(player.UserId, session.profile)
-		end
-		DataStoreGateway.release(player.UserId, session.profile)
+	settleDeparture(session)
+	local saved, released, state = SessionClose.persist(session, {
+		now = os.clock,
+		budgetSeconds = remaining,
+		waitFor = function(seconds: number)
+			task.wait(seconds)
+		end,
+		save = function(current: any): boolean
+			local ok = DataStoreGateway.save(player.UserId, current.profile)
+			if ok then
+				current.dirty = false
+				current.lockExpiresAt = os.time() + Save.LOCK_TTL_SECONDS
+			end
+			return ok
+		end,
+		release = function(current: any): boolean
+			local ok = DataStoreGateway.release(player.UserId, current.profile)
+			return ok
+		end,
+	})
+	if state == "busy" then
+		return false, false
 	end
 	Plot.hold(player)
+	SessionClose.finish(detaching, player)
+	if activeTally ~= nil then
+		SessionClose.note(activeTally, saved, released)
+	end
+	return saved, released
 end
 
 function PlayerSession.onRemoving(player: Player)
-	detach(player, false)
+	local role, session = SessionClose.begin(sessions, detaching, player)
+	if role ~= "owner" or session == nil then
+		return
+	end
+	closeOwned(player, session, false)
 end
 
 function PlayerSession.republish()
@@ -836,72 +881,30 @@ end
 function PlayerSession.shutdown()
 	local studio = RunService:IsStudio()
 	DataStoreGateway.setHurry(studio)
-	local entries = {}
-	local prepared: { [any]: boolean } = {}
-	local function prepare(entry: any)
-		if prepared[entry] then
-			return
-		end
-		prepared[entry] = true
-		if studio then
-			return
-		end
-		local session = entry.session
-		while session.saveBusy or session.workers > 0 do
-			task.wait()
-		end
-	end
-	for _, player in Players:GetPlayers() do
-		local session = sessions[player]
-		if session ~= nil and session.leaving ~= true then
-			session.leaving = true
-			session.alive = false
-			sessions[player] = nil
-			settleDeparture(session)
-			table.insert(entries, {
-				loaded = true,
-				dirty = session.loaded == true and session.ephemeral ~= true,
-				player = player,
-				session = session,
-			})
-		end
-	end
-	ShutdownFlush.run(entries, {
-		save = function(entry)
-			prepare(entry)
-			local ok, status = DataStoreGateway.save(entry.player.UserId, entry.session.profile)
-			if ok then
-				entry.session.dirty = false
-				entry.session.lockExpiresAt = os.time() + Save.LOCK_TTL_SECONDS
-			end
-			return ok, status
-		end,
-		release = function(entry)
-			prepare(entry)
-			local ok = true
-			local status = "released"
-			if entry.session.loaded == true and entry.session.ephemeral ~= true then
-				ok, status = DataStoreGateway.release(entry.player.UserId, entry.session.profile)
-			end
-			Plot.hold(entry.player)
-			return ok, status
-		end,
-		spawn = function(body)
-			if studio then
-				body()
-			else
-				task.spawn(body)
-			end
-		end,
+	activeTally = { saved = 0, released = 0 }
+	local outcome = SessionClose.shutdown(sessions, detaching, {
+		budgetSeconds = ShutdownFlush.budget(studio),
+		now = os.clock,
 		waitFor = function(seconds: number)
-			if studio then
-				return
-			end
 			task.wait(seconds)
 		end,
-		now = os.clock,
-		budgetSeconds = ShutdownFlush.budget(studio),
+		spawn = function(body: () -> ())
+			task.spawn(body)
+		end,
+		persist = function(player: Player, session: any)
+			closeOwned(player, session, true)
+		end,
 	})
+	print(
+		string.format(
+			"[Cryptid:DataStore] shutdown flush saved=%d released=%d pending=%d elapsed=%.2f",
+			activeTally.saved,
+			activeTally.released,
+			outcome.pending,
+			outcome.elapsed
+		)
+	)
+	activeTally = nil
 end
 
 return PlayerSession

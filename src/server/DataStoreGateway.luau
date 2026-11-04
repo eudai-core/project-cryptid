@@ -8,7 +8,7 @@ local RunService = game:GetService("RunService")
 local Ledger = require(script.Parent:WaitForChild("Ledger"))
 local MockDataStore = require(script.Parent:WaitForChild("MockDataStore"))
 local SaveHooks = require(script.Parent:WaitForChild("SaveHooks"))
-local StudioQa = require(script.Parent:WaitForChild("Dev"):WaitForChild("StudioQa"))
+local StudioQaHooks = require(script.Parent:WaitForChild("Dev"):WaitForChild("StudioQaHooks"))
 local Save = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("Save")) :: any
 local Offline = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Logic"):WaitForChild("Offline")) :: any
 
@@ -74,7 +74,7 @@ local ledger = Ledger.open({
 		liveConfirmed = true
 	end,
 	settle = function(profile: any, now: number)
-		StudioQa.rewindLastSeen(profile)
+		StudioQaHooks.rewindLastSeen(profile)
 		Offline.fold(profile, now)
 	end,
 })
@@ -99,6 +99,13 @@ end
 
 function DataStoreGateway.setHurry(value: boolean)
 	hurry = value
+end
+
+function DataStoreGateway.seedForeignLock(userId: number, stale: boolean): boolean
+	if not RunService:IsStudio() then
+		return false
+	end
+	return ledger.seedForeignLock(userId, stale == true)
 end
 
 return DataStoreGateway

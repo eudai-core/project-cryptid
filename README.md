@@ -50,7 +50,7 @@ rojo build -o ProjectCryptid.rbxlx
 
 Start a bot playtest with `args=qa:<seconds>` (for example `args=qa:300`). `ServerScriptService.Dev.StudioTestWatchdog` ends that session itself, so nobody has to press Stop if the bridge drops. It does nothing in a live server, and nothing when the argument is missing, so a manual Play is left alone.
 
-The seconds are clamped to 1–1800. The ops guide does not name a range; 1800 is thirty minutes, and `0` is raised to 1 so a typo cannot end the test before the bridge reconnects. A `qa:` argument with no usable number uses 300. A suffix such as `qa:420:plots3` uses 420. The output shows both moments:
+The seconds are clamped to 1–1800. The ops guide does not name a range; 1800 is thirty minutes, and `0` is raised to 1 so a typo cannot end the test before the bridge reconnects. A `qa:` argument with no usable number uses 300. A suffix such as `qa:420:plots3` uses 420. In Studio only, `qa:<seconds>:loadfail` kicks before the ledger opens, `qa:<seconds>:foreignlock` plants a fresh lock from another job, and `qa:<seconds>:foreignlock:stale` plants an already expired one. Those three do nothing in a live server. The output shows both moments:
 
 ```text
 [Cryptid:Watchdog] armed for 300s (args "qa:300")
