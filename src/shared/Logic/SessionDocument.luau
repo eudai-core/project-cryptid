@@ -56,10 +56,18 @@ function SessionDocument.buildWrite(
 	settle: ((any, number) -> ())?
 ): (any?, string)
 	local function finish(profile: any, status: string): (any?, string)
+		local seenUnix = nil
 		if settle ~= nil then
-			settle(profile, now)
+			local prior = settle(profile, now)
+			if type(prior) == "number" and prior == prior and prior >= 0 and prior ~= math.huge then
+				seenUnix = math.floor(prior)
+			end
 		end
-		return sealed(profile, jobId, now, ttl), status
+		local document = sealed(profile, jobId, now, ttl)
+		if seenUnix ~= nil then
+			document.seenUnix = seenUnix
+		end
+		return document, status
 	end
 	if old == nil then
 		local profile = Schema.migrate(createProfile, now)

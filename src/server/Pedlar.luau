@@ -76,7 +76,29 @@ function Pedlar.offers(): any
 	return cached
 end
 
-function Pedlar.start(onRotation: () -> ())
+local function bindBrowse(onBrowse: (Player) -> ())
+	local function bind(prompt: ProximityPrompt)
+		if prompt:GetAttribute("AnalyticsBound") == true then
+			return
+		end
+		if prompt.ActionText ~= Shop.PROMPT then
+			return
+		end
+		prompt:SetAttribute("AnalyticsBound", true)
+		prompt.Triggered:Connect(function(player)
+			onBrowse(player)
+		end)
+	end
+	for _, model in CollectionService:GetTagged("PedlarStall") do
+		for _, desc in model:GetDescendants() do
+			if desc:IsA("ProximityPrompt") then
+				bind(desc)
+			end
+		end
+	end
+end
+
+function Pedlar.start(onRotation: () -> (), onBrowse: ((Player) -> ())?)
 	local existing = ReplicatedStorage:FindFirstChild("PedlarBoard")
 	local board: StringValue
 	if existing ~= nil and existing:IsA("StringValue") then
@@ -87,6 +109,9 @@ function Pedlar.start(onRotation: () -> ())
 		board.Parent = ReplicatedStorage
 	end
 	publish(board, false)
+	if onBrowse ~= nil then
+		bindBrowse(onBrowse)
+	end
 	onRotation()
 	task.spawn(function()
 		local seen = ShopStock.rotationId(os.time())
