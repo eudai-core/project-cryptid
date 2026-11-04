@@ -7,6 +7,7 @@ local RunService = game:GetService("RunService")
 
 local Ledger = require(script.Parent:WaitForChild("Ledger"))
 local MockDataStore = require(script.Parent:WaitForChild("MockDataStore"))
+local SaveHooks = require(script.Parent:WaitForChild("SaveHooks"))
 local Save = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("Save")) :: any
 
 local jobId = game.JobId
@@ -15,6 +16,8 @@ if jobId == "" then
 end
 
 local realStore: any = nil
+local liveConfirmed = false
+local hurry = false
 
 local function getStore(): any
 	if realStore == nil then
@@ -25,6 +28,19 @@ end
 
 local function report(message: string)
 	warn(message)
+end
+
+local function budgetFor(): number?
+	if hurry or (RunService:IsStudio() and not liveConfirmed) then
+		return nil
+	end
+	local ok, budget = pcall(function()
+		return DataStoreService:GetRequestBudgetForRequestType(Enum.DataStoreRequestType.UpdateAsync)
+	end)
+	if not ok or type(budget) ~= "number" then
+		return nil
+	end
+	return budget
 end
 
 local ledger = Ledger.open({
@@ -44,6 +60,17 @@ local ledger = Ledger.open({
 		task.wait(seconds)
 	end,
 	warn = report,
+	budgetFor = budgetFor,
+	random = math.random,
+	onSaved = function(userId: number, profile: any, reason: string)
+		SaveHooks.fire(userId, profile, reason)
+	end,
+	isHurry = function()
+		return hurry
+	end,
+	confirmLive = function()
+		liveConfirmed = true
+	end,
 })
 
 local DataStoreGateway = {}
@@ -52,12 +79,20 @@ function DataStoreGateway.load(userId: number, createProfile: any): any
 	return ledger.load(userId, createProfile)
 end
 
-function DataStoreGateway.save(userId: number, profile: any): (boolean, string)
-	return ledger.save(userId, profile)
+function DataStoreGateway.save(userId: number, profile: any, rebirth: boolean?): (boolean, string)
+	return ledger.save(userId, profile, rebirth == true)
 end
 
-function DataStoreGateway.release(userId: number, profile: any): (boolean, string)
-	return ledger.release(userId, profile)
+function DataStoreGateway.renew(userId: number): (boolean, string, number?)
+	return ledger.renew(userId)
+end
+
+function DataStoreGateway.release(userId: number, profile: any, rebirth: boolean?): (boolean, string)
+	return ledger.release(userId, profile, rebirth == true)
+end
+
+function DataStoreGateway.setHurry(value: boolean)
+	hurry = value
 end
 
 return DataStoreGateway

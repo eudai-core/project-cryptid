@@ -6,11 +6,21 @@ local Save = {
 	KEY_PREFIX = "player_",
 	MAX_ATTEMPTS = 3,
 	BACKOFF_BASE_SECONDS = 1,
+	BACKOFF_JITTER_RATIO = 0.2,
+	-- Spec ceiling. The live write period is LOCK_REFRESH_SECONDS.
 	AUTOSAVE_SECONDS = 60,
 	LOCK_TTL_SECONDS = 90,
 	LOCK_REFRESH_SECONDS = 30,
 	PURCHASE_SAVE_THROTTLE_SECONDS = 2,
-	KICK_LOAD_FAILED = "The ledger would not open. Rejoin.",
+	BUDGET_MIN_REMAINING = 2,
+	BUDGET_WAIT_SECONDS = 1,
+	SHUTDOWN_TIMEOUT_SECONDS = 20,
+	STUDIO_SHUTDOWN_TIMEOUT_SECONDS = 0,
+	SHUTDOWN_POLL_SECONDS = 0.1,
+	WIPE_EMPTY_CASH = 0,
+	WIPE_EMPTY_PADS = 0,
+	WIPE_EMPTY_CRYPTIDS = 0,
+	KICK_LOAD_FAILED = "The ledger would not open. Your progress is safe. Rejoin.",
 	KICK_LOCKED = "The ledger is open elsewhere. Rejoin.",
 }
 

@@ -64,9 +64,15 @@ function Ledger.open(options: {
 	now: () -> number,
 	waitFor: (number) -> (),
 	warn: (string) -> (),
+	budgetFor: (() -> number?)?,
+	random: (() -> number)?,
+	onSaved: ((number, any, string) -> ())?,
+	isHurry: (() -> boolean)?,
+	confirmLive: (() -> ())?,
 }): any
 	local mock: any = nil
 	local warned = false
+	local ready: { [number]: boolean } = {}
 
 	local function store(): any
 		if mock ~= nil then
@@ -93,59 +99,109 @@ function Ledger.open(options: {
 		return Save.KEY_PREFIX .. tostring(userId)
 	end
 
-	local function acquire(userId: number, createProfile: any): (string, any?)
-		local why = "error"
-		local result = store():UpdateAsync(key(userId), function(old)
-			local document, status =
-				SessionDocument.buildWrite(old, options.jobId, options.now(), Save.LOCK_TTL_SECONDS, createProfile)
-			why = status
-			return document
-		end)
-		if type(result) == "table" and result.lockJobId == options.jobId then
-			local profile = Schema.migrate(result.profile)
-			if profile == nil then
-				return "corrupt", nil
-			end
-			return "ready", profile
+	local function hurry(): boolean
+		return options.isHurry ~= nil and options.isHurry() == true
+	end
+
+	local function roll(): number
+		if options.random == nil then
+			return 0.5
 		end
-		return why, nil
+		local value = options.random()
+		if type(value) ~= "number" then
+			return 0.5
+		end
+		return value
+	end
+
+	local function awaitBudget()
+		if hurry() or mock ~= nil or options.budgetFor == nil then
+			return
+		end
+		local budget = options.budgetFor()
+		if type(budget) ~= "number" or budget >= Save.BUDGET_MIN_REMAINING then
+			return
+		end
+		options.waitFor(Save.BUDGET_WAIT_SECONDS)
+	end
+
+	local function runUpdate(
+		label: string,
+		userKey: string,
+		transform: (any) -> (any?, string)
+	): (boolean, string, any?)
+		local lastStatus = "error"
+		for attempt = 1, Save.MAX_ATTEMPTS do
+			awaitBudget()
+			local why = "error"
+			local function call(): any
+				return store():UpdateAsync(userKey, function(old)
+					local document, status = transform(old)
+					why = status
+					return document
+				end)
+			end
+			local ok, result = pcall(call)
+			if not ok and installMockIfDenied(result) then
+				ok, result = pcall(call)
+			end
+			if ok then
+				if mock == nil and options.confirmLive ~= nil then
+					options.confirmLive()
+				end
+				if type(result) == "table" then
+					return true, why, result
+				end
+				lastStatus = why
+				if why ~= "locked" then
+					if why == "wipe" or why == "downgrade" then
+						options.warn(string.format("[Cryptid:DataStore] refusing %s (%s) for %s", label, why, userKey))
+					end
+					return false, why, nil
+				end
+			else
+				lastStatus = "error"
+				local message = tostring(result)
+				options.warn("Ledger " .. label .. " failed: " .. message)
+				if Retry.classify(message) == "fatal" then
+					return false, "fatal", nil
+				end
+			end
+			local pause = Retry.backoffSeconds(attempt)
+			if pause == nil then
+				break
+			end
+			if not hurry() then
+				options.waitFor(Retry.withJitter(pause, roll()))
+			end
+		end
+		return false, lastStatus, nil
 	end
 
 	local api = {}
 
 	function api.load(userId: number, createProfile: any): any
-		local lastStatus = "error"
-		for attempt = 1, Save.MAX_ATTEMPTS do
-			local ok, status, profile = pcall(acquire, userId, createProfile)
-			if not ok and installMockIfDenied(status) then
-				ok, status, profile = pcall(acquire, userId, createProfile)
+		ready[userId] = false
+		local ok, status, result = runUpdate("read", key(userId), function(old)
+			return SessionDocument.buildWrite(old, options.jobId, options.now(), Save.LOCK_TTL_SECONDS, createProfile)
+		end)
+		if ok and type(result) == "table" and result.lockJobId == options.jobId then
+			local profile = Schema.migrate(result.profile)
+			if profile == nil then
+				return {
+					ok = false,
+					message = Save.KICK_LOAD_FAILED,
+				}
 			end
-			if not ok then
-				lastStatus = "error"
-				options.warn("Ledger read failed: " .. tostring(status))
-			else
-				lastStatus = status
-				if status == "ready" and profile ~= nil then
-					return {
-						ok = true,
-						profile = profile,
-						ephemeral = false,
-					}
-				end
-				if status == "corrupt" then
-					return {
-						ok = false,
-						message = Save.KICK_LOAD_FAILED,
-					}
-				end
-			end
-			local pause = Retry.backoffSeconds(attempt)
-			if pause == nil or lastStatus == "corrupt" then
-				break
-			end
-			options.waitFor(pause)
+			ready[userId] = true
+			return {
+				ok = true,
+				profile = profile,
+				ephemeral = false,
+				lockExpiresAt = result.lockExpiresAt,
+			}
 		end
-		if lastStatus == "locked" then
+		if status == "locked" then
 			return {
 				ok = false,
 				message = Save.KICK_LOCKED,
@@ -157,53 +213,64 @@ function Ledger.open(options: {
 		}
 	end
 
-	function api.save(userId: number, profile: any): (boolean, string)
-		local snapshot = Schema.deepCopy(profile)
-		local why = "error"
-		local function write(): any
-			return store():UpdateAsync(key(userId), function(old)
-				local document, status =
-					SessionDocument.buildSave(old, options.jobId, options.now(), Save.LOCK_TTL_SECONDS, snapshot)
-				why = status
-				return document
-			end)
+	local function requireReady(userId: number, label: string): boolean
+		if ready[userId] == true then
+			return true
 		end
-		local ok, result = pcall(write)
-		if not ok and installMockIfDenied(result) then
-			ok, result = pcall(write)
-		end
-		if not ok then
-			options.warn("Ledger save failed: " .. tostring(result))
-			return false, "error"
-		end
-		if type(result) ~= "table" then
-			return false, why
-		end
-		return true, "saved"
+		options.warn("[Cryptid:DataStore] refusing " .. label .. " of an unloaded profile for " .. key(userId))
+		return false
 	end
 
-	function api.release(userId: number, profile: any): (boolean, string)
+	function api.save(userId: number, profile: any, rebirth: boolean?): (boolean, string)
+		if not requireReady(userId, "save") then
+			return false, "unloaded"
+		end
 		local snapshot = Schema.deepCopy(profile)
-		local why = "error"
-		local function write(): any
-			return store():UpdateAsync(key(userId), function(old)
-				local document, status = SessionDocument.buildRelease(old, options.jobId, snapshot)
-				why = status
-				return document
-			end)
+		local ok, status, result = runUpdate("save", key(userId), function(old)
+			return SessionDocument.buildSave(
+				old,
+				options.jobId,
+				options.now(),
+				Save.LOCK_TTL_SECONDS,
+				snapshot,
+				rebirth == true
+			)
+		end)
+		if ok and type(result) == "table" then
+			if options.onSaved ~= nil then
+				options.onSaved(userId, snapshot, "save")
+			end
+			return true, "saved"
 		end
-		local ok, result = pcall(write)
-		if not ok and installMockIfDenied(result) then
-			ok, result = pcall(write)
+		return false, status
+	end
+
+	function api.renew(userId: number): (boolean, string, number?)
+		if not requireReady(userId, "renew") then
+			return false, "unloaded", nil
 		end
-		if not ok then
-			options.warn("Ledger release failed: " .. tostring(result))
-			return false, "error"
+		local ok, status, result = runUpdate("renew", key(userId), function(old)
+			return SessionDocument.buildRenew(old, options.jobId, options.now(), Save.LOCK_TTL_SECONDS)
+		end)
+		if ok and type(result) == "table" then
+			return true, "renewed", result.lockExpiresAt
 		end
-		if type(result) ~= "table" then
-			return false, why
+		return false, status, nil
+	end
+
+	function api.release(userId: number, profile: any, rebirth: boolean?): (boolean, string)
+		if not requireReady(userId, "release") then
+			return false, "unloaded"
 		end
-		return true, "released"
+		local snapshot = Schema.deepCopy(profile)
+		local ok, status, result = runUpdate("release", key(userId), function(old)
+			return SessionDocument.buildRelease(old, options.jobId, snapshot, rebirth == true)
+		end)
+		if ok and type(result) == "table" then
+			ready[userId] = false
+			return true, "released"
+		end
+		return false, status
 	end
 
 	return api

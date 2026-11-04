@@ -1,0 +1,45 @@
+{
+  "name": "ProjectCryptid",
+  "servePlaceIds": [80631305127330],
+  "tree": {
+    "$className": "DataModel",
+    "ServerScriptService": {
+      "$className": "ServerScriptService",
+      "$path": "src/server"
+    },
+    "Workspace": {
+      "$className": "Workspace",
+      "$properties": {
+        "StreamingEnabled": false
+      }
+    },
+    "Lighting": {
+      "$className": "Lighting",
+      "$properties": {
+        "Technology": "Future"
+      }
+    },
+    "Players": {
+      "$className": "Players",
+      "$properties": {
+        "MaxPlayers": 8
+      }
+    },
+    "StarterPlayer": {
+      "$className": "StarterPlayer",
+      "StarterPlayerScripts": {
+        "$className": "StarterPlayerScripts",
+        "$path": "src/client"
+      }
+    },
+    "ReplicatedStorage": {
+      "$className": "ReplicatedStorage",
+      "$attributes": {
+        "BuildSha": "dev"
+      },
+      "Shared": {
+        "$path": "src/shared"
+      }
+    }
+  }
+}
