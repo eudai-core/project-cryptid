@@ -11,6 +11,9 @@ end
 local BoneAltar = import("../Config/BoneAltar", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("BoneAltar")
 end)
+local Monetisation = import("../Config/Monetisation", function()
+	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Monetisation")
+end)
 local Economy = import("../Config/Economy", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Economy")
 end)
@@ -38,6 +41,9 @@ end)
 local ProfileQuery = import("./ProfileQuery", function()
 	return script.Parent:WaitForChild("ProfileQuery")
 end)
+local RelicsView = import("./RelicsView", function()
+	return script.Parent:WaitForChild("RelicsView")
+end)
 local StealGuard = import("./StealGuard", function()
 	return script.Parent:WaitForChild("StealGuard")
 end)
@@ -51,7 +57,8 @@ function Snapshot.build(profile: any, lastCredit: number, revision: number, view
 	local goal = OnboardingGoals.view(profile)
 	local pads = {}
 	for index = 1, Economy.MAX_PADS do
-		local cost = Economy.PAD_COST[index] or 0
+		local scaled = Economy.padCost(index, BoneAltar.rebirths(profile))
+		local cost = if type(scaled) == "number" then scaled else 0
 		local instanceId = ProfileQuery.padAt(profile, index)
 		local entry = {
 			index = index,
@@ -62,8 +69,14 @@ function Snapshot.build(profile: any, lastCredit: number, revision: number, view
 			affordable = false,
 			instanceId = "",
 		}
-		if index > profile.padsUnlocked then
-			entry.affordable = index == profile.padsUnlocked + 1 and profile.cash + 1e-9 >= cost
+		if Monetisation.relicLocked(profile, index) then
+			entry.state = "sealed"
+			entry.cost = 0
+			entry.affordable = false
+		elseif index > profile.padsUnlocked then
+			entry.affordable = index == profile.padsUnlocked + 1
+				and type(scaled) == "number"
+				and profile.cash + 1e-9 >= cost
 		elseif instanceId == nil then
 			entry.state = "empty"
 		else
@@ -109,6 +122,8 @@ function Snapshot.build(profile: any, lastCredit: number, revision: number, view
 
 	local viewNow = 0
 	local autoOpen = false
+	local relicsBought = 0
+	local relicsSpent = 0
 	local silentNotice = profile.offline.notice
 	if type(silentNotice) ~= "number" or silentNotice < 0 then
 		silentNotice = 0
@@ -120,6 +135,12 @@ function Snapshot.build(profile: any, lastCredit: number, revision: number, view
 		autoOpen = view.dailyAutoOpen == true
 		if type(view.silentNotice) == "number" and view.silentNotice >= 0 then
 			silentNotice = view.silentNotice
+		end
+		if type(view.relicsBought) == "number" and view.relicsBought >= 0 then
+			relicsBought = view.relicsBought
+		end
+		if type(view.relicsSpent) == "number" and view.relicsSpent >= 0 then
+			relicsSpent = view.relicsSpent
 		end
 	end
 	local rate = Income.perSecond(profile)
@@ -219,6 +240,7 @@ function Snapshot.build(profile: any, lastCredit: number, revision: number, view
 			progress = profile.daily.step,
 			steps = steps,
 		},
+		relics = RelicsView.build(profile, viewNow, relicsBought, relicsSpent),
 	}
 end
 

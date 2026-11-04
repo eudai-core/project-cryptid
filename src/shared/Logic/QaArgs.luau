@@ -11,6 +11,7 @@ export type Tokens = {
 	offlineSeconds: number,
 	utcDays: number,
 	utcJumpSeconds: number,
+	relics: boolean,
 }
 
 local function empty(): Tokens
@@ -18,6 +19,7 @@ local function empty(): Tokens
 		offlineSeconds = 0,
 		utcDays = 0,
 		utcJumpSeconds = 0,
+		relics = false,
 	}
 end
 
@@ -45,7 +47,10 @@ function QaArgs.parse(args: any): Tokens
 	local index = 3
 	while index <= #parts do
 		local key = parts[index]
-		if key == "offline" or key == "utc" or key == "utcjump" then
+		if key == "relics" then
+			tokens.relics = true
+			index += 1
+		elseif key == "offline" or key == "utc" or key == "utcjump" then
 			local amount = whole(parts[index + 1])
 			if amount ~= nil then
 				if key == "offline" then

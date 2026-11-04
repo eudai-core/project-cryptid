@@ -10,6 +10,7 @@ local PlotSignals = require(script.Parent:WaitForChild("PlotSignals"))
 local AltarTier = require(Shared:WaitForChild("Logic"):WaitForChild("AltarTier")) :: any
 local BoneAltar = require(Shared:WaitForChild("Config"):WaitForChild("BoneAltar")) :: any
 local Economy = require(Shared:WaitForChild("Config"):WaitForChild("Economy")) :: any
+local Monetisation = require(Shared:WaitForChild("Config"):WaitForChild("Monetisation")) :: any
 local Onboarding = require(Shared:WaitForChild("Config"):WaitForChild("Onboarding")) :: any
 local NumberFormat = require(Shared:WaitForChild("Logic"):WaitForChild("NumberFormat")) :: any
 local OnboardingGoals = require(Shared:WaitForChild("Logic"):WaitForChild("OnboardingGoals")) :: any
@@ -435,13 +436,16 @@ function Plot.sync(plot: any, profile: any, guideValue: ObjectValue)
 
 	for _, pad in plot.pads do
 		pad.center:SetAttribute("beingStolen", false)
-		if PlotRing.isSealedPad(pad.index) then
+		pad.center:SetAttribute("RelicPad", Monetisation.isRelicPad(pad.index))
+		if PlotRing.isSealedPad(pad.index) or Monetisation.relicLocked(profile, pad.index) then
 			pad.center:SetAttribute("Sealed", true)
 			replaceCreature(pad.center, nil, pad.stand)
 			pad.prompt:SetAttribute("Available", false)
+			pad.prompt.ActionText = ""
 			pad.ring.Color = UITheme.color("BoneDim")
 			continue
 		end
+		pad.center:SetAttribute("Sealed", false)
 		local instanceId = ProfileQuery.padAt(profile, pad.index)
 		local speciesId = nil
 		if instanceId ~= nil then
@@ -453,7 +457,7 @@ function Plot.sync(plot: any, profile: any, guideValue: ObjectValue)
 		replaceCreature(pad.center, speciesId, pad.stand)
 		local lockedPad = pad.index > profile.padsUnlocked
 		local nextPad = pad.index == profile.padsUnlocked + 1
-		local cost = Economy.PAD_COST[pad.index]
+		local cost = Economy.padCost(pad.index, BoneAltar.rebirths(profile))
 		if lockedPad and nextPad and type(cost) == "number" and profile.cash + 1e-9 >= cost then
 			pad.ring.Color = UITheme.color("Blood")
 		else
