@@ -1,0 +1,33 @@
+--!strict
+
+local Economy = {
+	STARTING_CASH = 25,
+	INCOME_INTERVAL_SECONDS = 1,
+	PURCHASE_DEBOUNCE_SECONDS = 0.25,
+	REMOTE_REQUESTS_PER_SECOND = 8,
+	CATCH_DISTANCE_STUDS = 12,
+	CATCH_SECONDS = 3,
+	CATCH_CLIENT_BUFFER_SECONDS = 0.15,
+	WILD_SPAWN_STUDS = 20,
+	STARTING_PADS_UNLOCKED = 2,
+	MAX_PADS = 6,
+	ALTAR_BONUS_PER_LEVEL = 0.25,
+	MAX_ALTAR_LEVEL = 2,
+	WARD_CANDLES_COST = 1200,
+	STEAL_PROTECTION_PLAY_SECONDS = 300,
+	TOOL_NAME = "Lantern",
+	PAD_COST = table.freeze({
+		[1] = 0,
+		[2] = 0,
+		[3] = 120,
+		[4] = 400,
+		[5] = 1200,
+		[6] = 3000,
+	}),
+	ALTAR_COST = table.freeze({
+		[1] = 300,
+		[2] = 1500,
+	}),
+}
+
+return table.freeze(Economy)

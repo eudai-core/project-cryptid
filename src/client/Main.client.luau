@@ -1,3 +1,218 @@
 --!strict
 
-print("Project Cryptid client started")
+local HttpService = game:GetService("HttpService")
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local CashPlaque = require(script.Parent:WaitForChild("CashPlaque"))
+local GoalBanner = require(script.Parent:WaitForChild("GoalBanner"))
+local GuideArrow = require(script.Parent:WaitForChild("GuideArrow"))
+local Interactions = require(script.Parent:WaitForChild("Interactions"))
+local ThemeBind = require(script.Parent:WaitForChild("ThemeBind"))
+local UiFactory = require(script.Parent:WaitForChild("UiFactory"))
+local WorldBoards = require(script.Parent:WaitForChild("WorldBoards"))
+
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Economy = require(Shared:WaitForChild("Config"):WaitForChild("Economy")) :: any
+local GameInfo = require(Shared:WaitForChild("GameInfo")) :: any
+local Names = require(Shared:WaitForChild("Config"):WaitForChild("Remotes")) :: any
+local UITheme = require(Shared:WaitForChild("UITheme")) :: any
+
+print(GameInfo.name .. " client started")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+local camera = workspace.CurrentCamera or workspace:WaitForChild("Camera")
+local remotes = ReplicatedStorage:WaitForChild(Names.FOLDER)
+
+local reduced = false
+local function isReduced(): boolean
+	return reduced
+end
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "CryptidHUD"
+gui.ResetOnSpawn = false
+gui.IgnoreGuiInset = false
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+gui.DisplayOrder = 20
+gui.ScreenInsets = Enum.ScreenInsets.CoreUISafeInsets
+gui.Parent = playerGui
+
+local vignetteTop = Instance.new("Frame")
+vignetteTop.Name = "VignetteTop"
+vignetteTop.BackgroundColor3 = UITheme.color("Void")
+vignetteTop.BorderSizePixel = 0
+vignetteTop.Size = UDim2.new(1, 0, 0, 72)
+vignetteTop.Active = false
+vignetteTop.Parent = gui
+local topFade = Instance.new("UIGradient")
+topFade.Rotation = 90
+topFade.Transparency = NumberSequence.new({
+	NumberSequenceKeypoint.new(0, UITheme.shape.overlayTransparency),
+	NumberSequenceKeypoint.new(1, 1),
+})
+topFade.Parent = vignetteTop
+
+local function fire(name: string, ...: any)
+	local remote = remotes:WaitForChild(name) :: RemoteEvent
+	remote:FireServer(...)
+end
+
+local plaque = CashPlaque.mount(gui, isReduced)
+local banner = GoalBanner.mount(gui, isReduced, function(goal)
+	local kind = goal.actionKind
+	if kind == "buyRift" then
+		fire(Names.BUY_RIFT, goal.actionSlot)
+	elseif kind == "unlockPad" then
+		fire(Names.UNLOCK_PAD, goal.actionPad)
+	elseif kind == "upgradeAltar" then
+		fire(Names.UPGRADE, "boneAltar")
+	elseif kind == "place" then
+		fire(Names.PLACE, goal.actionInstanceId, goal.actionPad)
+	end
+end, function()
+	fire(Names.SKIP)
+end)
+
+local steady = UiFactory.button(gui, UITheme.text.minSize)
+steady.Name = "ReducedMotion"
+steady.AnchorPoint = Vector2.new(0, 1)
+steady.Position = UDim2.new(0, 12, 1, -12)
+steady.Size = UDim2.fromOffset(168, 32)
+steady.BackgroundColor3 = UITheme.color("Soot")
+steady.TextColor3 = UITheme.color("BoneDim")
+ThemeBind.apply(steady, "body", UITheme.text.minSize)
+local steadyStroke = steady:FindFirstChildOfClass("UIStroke")
+if steadyStroke ~= nil then
+	steadyStroke.Color = UITheme.color("BoneDim")
+end
+
+local function paintSteady()
+	steady.Text = if reduced then "Steady gaze: On" else "Steady gaze: Off"
+end
+paintSteady()
+steady.Activated:Connect(function()
+	fire(Names.REDUCED_MOTION, not reduced)
+end)
+
+local snapshotValue = player:WaitForChild("CryptidState"):WaitForChild("Snapshot") :: StringValue
+local latestSnapshot: any = nil
+
+local function readNumber(name: string): number
+	local value = player:GetAttribute(name)
+	if type(value) ~= "number" then
+		return 0
+	end
+	return value
+end
+
+local function applyAttributes()
+	reduced = player:GetAttribute("ReducedMotion") == true
+	paintSteady()
+	plaque.apply(
+		readNumber("Cash"),
+		readNumber("IncomePerSecond"),
+		0,
+		readNumber("StateRevision"),
+		readNumber("OnboardingStep")
+	)
+end
+
+local function applySnapshot(text: string)
+	if text == "" then
+		return
+	end
+	local ok, decoded = pcall(function()
+		return HttpService:JSONDecode(text)
+	end)
+	if not ok or type(decoded) ~= "table" then
+		return
+	end
+	latestSnapshot = decoded
+	if type(decoded.goal) == "table" then
+		banner.apply(decoded.goal)
+	end
+	local credit = decoded.lastCredit
+	if type(credit) ~= "number" then
+		credit = 0
+	end
+	local revision = decoded.revision
+	if type(revision) ~= "number" then
+		revision = 0
+	end
+	plaque.apply(readNumber("Cash"), readNumber("IncomePerSecond"), credit, revision, readNumber("OnboardingStep"))
+	WorldBoards.refresh(decoded)
+end
+
+local function layout()
+	local viewport = camera.ViewportSize
+	local mobile = viewport.X < UITheme.shape.mobileWidthBreakpoint
+	local plaqueSize = if mobile then UITheme.shape.plaqueSize.mobile else UITheme.shape.plaqueSize.desktop
+	plaque.layout(mobile)
+	banner.layout(mobile, plaqueSize.h)
+end
+
+camera:GetPropertyChangedSignal("ViewportSize"):Connect(layout)
+workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
+	local nextCamera = workspace.CurrentCamera
+	if nextCamera ~= nil then
+		camera = nextCamera
+		camera:GetPropertyChangedSignal("ViewportSize"):Connect(layout)
+		layout()
+	end
+end)
+layout()
+
+player:GetAttributeChangedSignal("Cash"):Connect(applyAttributes)
+player:GetAttributeChangedSignal("IncomePerSecond"):Connect(applyAttributes)
+player:GetAttributeChangedSignal("LastCredit"):Connect(applyAttributes)
+player:GetAttributeChangedSignal("StateRevision"):Connect(applyAttributes)
+player:GetAttributeChangedSignal("ReducedMotion"):Connect(applyAttributes)
+player:GetAttributeChangedSignal("OnboardingStep"):Connect(applyAttributes)
+snapshotValue.Changed:Connect(function(text)
+	applySnapshot(text)
+end)
+
+local catching = false
+local function beginCatch()
+	if catching then
+		return
+	end
+	catching = true
+	local previous = player:GetAttribute("CatchToken")
+	if type(previous) ~= "number" then
+		previous = 0
+	end
+	fire(Names.BEGIN_CATCH)
+	task.spawn(function()
+		local deadline = os.clock() + 2
+		local token = previous
+		while os.clock() < deadline do
+			local current = player:GetAttribute("CatchToken")
+			if type(current) == "number" and current ~= previous then
+				token = current
+				break
+			end
+			task.wait(0.05)
+		end
+		if token ~= previous then
+			task.wait(Economy.CATCH_SECONDS + Economy.CATCH_CLIENT_BUFFER_SECONDS)
+			if player:GetAttribute("CatchToken") == token then
+				fire(Names.COMPLETE_CATCH)
+			end
+		end
+		catching = false
+	end)
+end
+
+Interactions.start(player, remotes :: Folder, Names, beginCatch)
+GuideArrow.start(player)
+WorldBoards.start(function()
+	return latestSnapshot
+end)
+
+if player:GetAttribute("StateRevision") ~= nil then
+	applyAttributes()
+end
+applySnapshot(snapshotValue.Value)
