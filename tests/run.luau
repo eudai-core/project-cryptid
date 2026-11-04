@@ -13,6 +13,8 @@ require("./qa_args.spec")
 require("./persistence.spec")
 require("./skill_tree.spec")
 require("./art_batch.spec")
+require("./save_hardening.spec")
+require("./studio_qa.spec")
 
 local Check = require("./check")
 Check.finish()

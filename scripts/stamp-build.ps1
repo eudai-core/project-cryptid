@@ -13,8 +13,6 @@ param(
 $ErrorActionPreference = "Stop"
 $root = Resolve-Path (Join-Path $PSScriptRoot "..")
 Set-Location $root
-$file = Join-Path $root "default.project.json"
-
 if ([string]::IsNullOrWhiteSpace($Sha)) {
 	$Sha = $env:BUILD_SHA
 }
@@ -42,14 +40,26 @@ if ($Sha -ne "dev" -and $Sha -notmatch '^[0-9a-f]{7,40}$') {
 	exit 1
 }
 
-$raw = [System.IO.File]::ReadAllText($file)
-if ($raw -notmatch '"BuildSha"') {
-	Write-Error "stamp-build: default.project.json has no BuildSha attribute"
-	exit 1
+function Update-ProjectFile([string]$path) {
+	if (-not (Test-Path $path)) {
+		return
+	}
+	$raw = [System.IO.File]::ReadAllText($path)
+	if ($raw -notmatch '"BuildSha"') {
+		Write-Error "stamp-build: $path has no BuildSha attribute"
+		exit 1
+	}
+	$regex = New-Object System.Text.RegularExpressions.Regex '("BuildSha"\s*:\s*")[^"]*"'
+	$updated = $regex.Replace($raw, ('${1}' + $Sha + '"'), 1)
+	$utf8 = New-Object System.Text.UTF8Encoding $false
+	[System.IO.File]::WriteAllText($path, $updated, $utf8)
 }
 
-$regex = New-Object System.Text.RegularExpressions.Regex '("BuildSha"\s*:\s*")[^"]*"'
-$updated = $regex.Replace($raw, ('${1}' + $Sha + '"'), 1)
-$utf8 = New-Object System.Text.UTF8Encoding $false
-[System.IO.File]::WriteAllText($file, $updated, $utf8)
+$defaultFile = Join-Path $root "default.project.json"
+if (-not (Test-Path $defaultFile)) {
+	Write-Error "stamp-build: default.project.json is missing"
+	exit 1
+}
+Update-ProjectFile $defaultFile
+Update-ProjectFile (Join-Path $root "serve.test.project.json")
 Write-Output "stamp-build: BuildSha=$Sha"

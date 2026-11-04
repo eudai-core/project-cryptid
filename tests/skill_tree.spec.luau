@@ -349,12 +349,13 @@ Check.test("QA15 reduced motion keeps a colour fade and drops the burst", functi
 end)
 
 Check.test("QA16 owned rites survive a mock rejoin", function()
-	Check.eq(Save.DATA_VERSION, 4)
+	Check.eq(Save.DATA_VERSION, 5)
 	local legacy = Schema.newProfile(10, "starter")
+	legacy.dataVersion = 4
 	legacy.skills = nil
 	local filled = Schema.migrate(legacy)
 	Check.truthy(filled)
-	Check.eq(filled.dataVersion, 4)
+	Check.eq(filled.dataVersion, 5)
 	Check.eq(#filled.skills, 0)
 
 	local messy = Schema.newProfile(10, "starter")
@@ -373,7 +374,7 @@ Check.test("QA16 owned rites survive a mock rejoin", function()
 	Check.eq(SkillTree.buy(profile, "h1"), true)
 	local encoded = serde.encode("json", profile)
 	local decoded = Schema.migrate(serde.decode("json", encoded))
-	Check.eq(decoded.dataVersion, 4)
+	Check.eq(decoded.dataVersion, Save.DATA_VERSION)
 	Check.eq(decoded.skills[1], "h1")
 	Check.eq(decoded.cash, 4000)
 

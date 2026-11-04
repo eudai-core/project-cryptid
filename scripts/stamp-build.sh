@@ -9,8 +9,6 @@ set -euo pipefail
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$root"
-file="default.project.json"
-
 sha="${1:-}"
 if [[ -z "$sha" && -n "${BUILD_SHA:-}" ]]; then
 	sha="$BUILD_SHA"
@@ -30,12 +28,20 @@ if [[ "$sha" != "dev" && ! "$sha" =~ ^[0-9a-f]{7,40}$ ]]; then
 	exit 1
 fi
 
-if ! grep -q '"BuildSha"' "$file"; then
-	echo "stamp-build: $file has no BuildSha attribute" >&2
-	exit 1
-fi
+stamp_file() {
+	local file="$1"
+	if ! grep -q '"BuildSha"' "$file"; then
+		echo "stamp-build: $file has no BuildSha attribute" >&2
+		exit 1
+	fi
+	local tmp
+	tmp="$(mktemp)"
+	sed -E "s/(\"BuildSha\"[[:space:]]*:[[:space:]]*\")[^\"]*\"/\\1${sha}\"/" "$file" > "$tmp"
+	mv "$tmp" "$file"
+}
 
-tmp="$(mktemp)"
-sed -E "s/(\"BuildSha\"[[:space:]]*:[[:space:]]*\")[^\"]*\"/\\1${sha}\"/" "$file" > "$tmp"
-mv "$tmp" "$file"
+stamp_file "default.project.json"
+if [[ -f "serve.test.project.json" ]]; then
+	stamp_file "serve.test.project.json"
+fi
 echo "stamp-build: BuildSha=${sha}"
