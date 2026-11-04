@@ -53,6 +53,9 @@ end)
 local Ownership = import("./Ownership", function()
 	return script.Parent:WaitForChild("Ownership")
 end)
+local RelicsPip = import("./RelicsPip", function()
+	return script.Parent:WaitForChild("RelicsPip")
+end)
 
 local Transactions = {}
 
@@ -67,6 +70,7 @@ local function addCryptid(profile: any, instanceId: string, speciesId: string, s
 		acquiredAt = now,
 		source = source,
 	}
+	RelicsPip.note(profile, speciesId)
 	return true
 end
 

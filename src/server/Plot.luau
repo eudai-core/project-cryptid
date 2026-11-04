@@ -10,6 +10,7 @@ local PlotSignals = require(script.Parent:WaitForChild("PlotSignals"))
 local AltarTier = require(Shared:WaitForChild("Logic"):WaitForChild("AltarTier")) :: any
 local BoneAltar = require(Shared:WaitForChild("Config"):WaitForChild("BoneAltar")) :: any
 local Economy = require(Shared:WaitForChild("Config"):WaitForChild("Economy")) :: any
+local Monetisation = require(Shared:WaitForChild("Config"):WaitForChild("Monetisation")) :: any
 local Onboarding = require(Shared:WaitForChild("Config"):WaitForChild("Onboarding")) :: any
 local NumberFormat = require(Shared:WaitForChild("Logic"):WaitForChild("NumberFormat")) :: any
 local OnboardingGoals = require(Shared:WaitForChild("Logic"):WaitForChild("OnboardingGoals")) :: any
@@ -435,6 +436,7 @@ function Plot.sync(plot: any, profile: any, guideValue: ObjectValue)
 
 	for _, pad in plot.pads do
 		pad.center:SetAttribute("beingStolen", false)
+		pad.center:SetAttribute("RelicPad", Monetisation.isRelicPad(pad.index))
 		if PlotRing.isSealedPad(pad.index) then
 			pad.center:SetAttribute("Sealed", true)
 			replaceCreature(pad.center, nil, pad.stand)

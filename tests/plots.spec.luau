@@ -293,14 +293,14 @@ Check.test("reservation beats a nearby friend", function()
 end)
 
 Check.test("migration from v2 lands on the current data version and keeps the ledger", function()
-	Check.eq(Save.DATA_VERSION, 6)
+	Check.eq(Save.DATA_VERSION, 7)
 	local v2 = Schema.newProfile(9, "starter")
 	v2.dataVersion = 2
 	v2.totalEarned = 40
 	v2.cash = 65
 	v2.base = nil
 	local migrated = Schema.migrate(v2)
-	Check.eq(migrated.dataVersion, 6)
+	Check.eq(migrated.dataVersion, 7)
 	Check.eq(migrated.totalEarned, 40)
 	Check.eq(migrated.cash, 65)
 	Check.eq(next(migrated.base.defences), nil)
@@ -312,7 +312,7 @@ Check.test("migration from v2 lands on the current data version and keeps the le
 	v1.totalEarned = 45
 	v1.cash = 45
 	local fromV1 = Schema.migrate(v1)
-	Check.eq(fromV1.dataVersion, 6)
+	Check.eq(fromV1.dataVersion, 7)
 	Check.eq(fromV1.totalEarned, 20)
 	Check.eq(next(fromV1.base.defences), nil)
 
@@ -328,14 +328,14 @@ Check.test("migration from v2 lands on the current data version and keeps the le
 	Check.eq(corrupt.base.defences, "no")
 
 	local future = Schema.newProfile(9, "starter")
-	future.dataVersion = 7
+	future.dataVersion = 8
 	Check.eq(Schema.migrate(future), nil)
 
 	local encoded = serde.encode("json", Schema.newProfile(9, "starter"))
 	Check.eq(string.find(encoded, "plotIndex", 1, true), nil)
 	Check.eq(string.find(encoded, "PlotIndex", 1, true), nil)
 	local decoded = Schema.migrate(serde.decode("json", encoded))
-	Check.eq(decoded.dataVersion, 6)
+	Check.eq(decoded.dataVersion, 7)
 	Check.eq(next(decoded.base.defences), nil)
 end)
 

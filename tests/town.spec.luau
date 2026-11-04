@@ -350,12 +350,18 @@ end)
 Check.test("QA11 the town never calls MarketplaceService", function()
 	local files = {}
 	filesUnder("src", files)
+	local shop = "src/server/MonetisationService.luau"
+	local copy = "src/shared/Logic/RelicsCopy.luau"
 	for _, path in files do
 		local text = fs.readFile(path)
-		Check.eq(string.find(text, "MarketplaceService", 1, true), nil, path)
-		Check.eq(string.find(text, "PromptProductPurchase", 1, true), nil, path)
-		Check.eq(string.find(text, "ProcessReceipt", 1, true), nil, path)
-		Check.eq(string.find(text, "Robux", 1, true), nil, path)
+		if path ~= shop then
+			Check.eq(string.find(text, "MarketplaceService", 1, true), nil, path)
+			Check.eq(string.find(text, "PromptProductPurchase", 1, true), nil, path)
+			Check.eq(string.find(text, "ProcessReceipt", 1, true), nil, path)
+		end
+		if path ~= copy then
+			Check.eq(string.find(text, "Robux", 1, true), nil, path)
+		end
 	end
 end)
 
@@ -548,7 +554,7 @@ Check.test("buying rolls into the next rotation and bind at once uses the first 
 end)
 
 Check.test("v3 saves gain an empty shop and bind at once without rewriting the old table", function()
-	Check.eq(Save.DATA_VERSION, 6)
+	Check.eq(Save.DATA_VERSION, 7)
 	local legacy = Schema.newProfile(20, "starter")
 	legacy.dataVersion = 3
 	legacy.cash = 80
@@ -563,7 +569,7 @@ Check.test("v3 saves gain an empty shop and bind at once without rewriting the o
 	}
 	local migrated = Schema.migrate(legacy)
 	Check.truthy(migrated)
-	Check.eq(migrated.dataVersion, 6)
+	Check.eq(migrated.dataVersion, 7)
 	Check.eq(migrated.cash, 80)
 	Check.eq(migrated.settings.reducedMotion, true)
 	Check.eq(migrated.settings.bindAtOnce, false)
@@ -599,7 +605,7 @@ Check.test("v3 saves gain an empty shop and bind at once without rewriting the o
 
 	local encoded = serde.encode("json", current)
 	local decoded = Schema.migrate(serde.decode("json", encoded))
-	Check.eq(decoded.dataVersion, 6)
+	Check.eq(decoded.dataVersion, 7)
 	Check.eq(decoded.shop.boughtSlots[1], true)
 	Check.eq(decoded.shop.boughtSlots[3], true)
 	Check.eq(decoded.settings.bindAtOnce, true)
@@ -610,11 +616,11 @@ Check.test("v3 saves gain an empty shop and bind at once without rewriting the o
 	Check.eq(broken.shop.boughtSlots[1], true)
 
 	local future = Schema.newProfile(4, "starter")
-	future.dataVersion = 7
+	future.dataVersion = 8
 	Check.eq(Schema.migrate(future), nil)
 
 	local fresh = Schema.newProfile(4, "starter")
-	Check.eq(fresh.dataVersion, 6)
+	Check.eq(fresh.dataVersion, 7)
 	Check.eq(fresh.settings.bindAtOnce, false)
 	Check.eq(fresh.shop.lastRotationId, 0)
 	local lean = math.abs(TownLayout.leanDegrees(1))

@@ -8,6 +8,7 @@ local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Monetisation = require(Shared:WaitForChild("Config"):WaitForChild("Monetisation"))
 local QaArgs = require(Shared:WaitForChild("Logic"):WaitForChild("QaArgs"))
 local Return = require(Shared:WaitForChild("Config"):WaitForChild("Return"))
 
@@ -52,6 +53,21 @@ function StudioQa.rewindLastSeen(profile: any)
 		rewound = 0
 	end
 	profile.lastSeenUnix = rewound
+end
+
+function StudioQa.armRelics(profile: any)
+	if not RunService:IsStudio() or type(profile) ~= "table" or type(profile.onboarding) ~= "table" then
+		return
+	end
+	if tokens().relics ~= true then
+		return
+	end
+	if profile.onboarding.step < Monetisation.GATE_STEP then
+		return
+	end
+	if profile.onboarding.playSeconds < Monetisation.GATE_PLAY_SECONDS then
+		profile.onboarding.playSeconds = Monetisation.GATE_PLAY_SECONDS
+	end
 end
 
 function StudioQa.unixNow(): number

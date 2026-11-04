@@ -109,11 +109,14 @@ Check.test("QA14 and QA15 source guards", function()
 	local files = {}
 	filesUnder("src", files)
 	Check.truthy(#files > 0)
+	local shop = "src/server/MonetisationService.luau"
 	for _, path in files do
 		local text = fs.readFile(path)
-		Check.eq(string.find(text, "MarketplaceService", 1, true), nil, path)
-		Check.eq(string.find(text, "PromptProductPurchase", 1, true), nil, path)
-		Check.eq(string.find(text, "ProcessReceipt", 1, true), nil, path)
+		if path ~= shop then
+			Check.eq(string.find(text, "MarketplaceService", 1, true), nil, path)
+			Check.eq(string.find(text, "PromptProductPurchase", 1, true), nil, path)
+			Check.eq(string.find(text, "ProcessReceipt", 1, true), nil, path)
+		end
 		local allowsColor = path == "src/shared/UITheme.luau"
 		if not allowsColor then
 			Check.eq(string.find(text, "Color3.new", 1, true), nil, path)
