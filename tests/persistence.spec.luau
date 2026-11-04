@@ -171,6 +171,7 @@ Check.test("studio api denial installs one mock and warns once", function()
 	local mock = MockDataStore.new()
 	local created = 0
 	local warnings = {}
+	local waits = 0
 	local ledger = Ledger.open({
 		getStore = function()
 			return real
@@ -186,7 +187,9 @@ Check.test("studio api denial installs one mock and warns once", function()
 		now = function()
 			return 50
 		end,
-		waitFor = function() end,
+		waitFor = function()
+			waits += 1
+		end,
 		warn = function(message: string)
 			table.insert(warnings, message)
 		end,
@@ -201,6 +204,7 @@ Check.test("studio api denial installs one mock and warns once", function()
 	Check.eq(calls, 1)
 	Check.eq(#warnings, 1)
 	Check.eq(warnings[1], Ledger.MOCK_WARNING)
+	Check.eq(waits, 0)
 	Check.eq(mock:GetAsync(key(9)).lockJobId, "studio-job")
 
 	local second = ledger.load(10, Schema.newProfile(50, "starter-b"))
