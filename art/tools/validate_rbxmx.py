@@ -35,7 +35,8 @@ def walk(it,path):
         if cl=="Model": groups.append((path+"/"+P(c,"Name").text,attrs(c))); walk(c,path+"/"+P(c,"Name").text)
         else: parts.append((c,path))
 walk(m,"")
-allowed={"Part","WedgePart","CornerWedgePart"}; neon_ok=set(filter(None,a.neon.split(","))); names=set(); mats={}; neon=[]
+allowed={"Part","WedgePart","CornerWedgePart"}; NEON_ALLOW={"mothman_hatchling":{"Eye_R","Eye_L"},"dover_demon":{"Eye_R","Eye_L"}}   # D10, D13 (by CryptidId; placeholders never)
+neon_ok=set(filter(None,a.neon.split(",")))|(set() if at.get("IsPlaceholder") else NEON_ALLOW.get(at.get("CryptidId"),set())); names=set(); mats={}; neon=[]
 for it,path in parts:
     nm=P(it,"Name").text; cl=it.get("class")
     if cl not in allowed: fail(f"{path}/{nm} class {cl}"); continue

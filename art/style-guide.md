@@ -18,6 +18,7 @@
 | D9 | 2026-11-03 | Master Controller / Growth Strategist | **Fog set in spec 03 v1.2 (line 59):** FogStart 250, FogEnd 1100, FogColor #1A1719 (legacy fallback; Atmosphere governs, verify in Studio). Atmosphere Density 0.18 / Haze 0.3 max over gameplay areas | §4 |
 | D10 | 2026-11-03 | Master Controller | **Neon exception: cryptid eyes, Mothman Hatchling only, 2 parts (`Eye_R`, `Eye_L`), Blood `#7A0F12`.** No other cryptid gets Neon without a new decision | §2, §6 |
 | D11 | 2026-11-04 | Master Controller | **Rare silver `#8C9AA3` approved** as a rarity-trim exception outside the fixed palette (rarity trims/labels only) | §1 |
+| D13 | 2026-11-04 | Master Controller | **Neon exception extended: Dover Demon eyes, 2 parts (`Eye_R`, `Eye_L`), GoldBright `#C9A55A`.** Those 2 parts only; placeholders stay Glass. No other cryptid gets Neon without a new decision | §2, §6 |
 | D12 | 2026-11-04 | Master Controller | **Game icon + thumbnails use real Studio captures.** Box renders are a fallback only if Studio imports slip past **Mon 9 Nov** | §9, store art brief |
 
 **One-line direction:** grim, weathered, occult. A **candle-lit ritual ledger** `[S01 A1]`, a **fog-drowned market town** `[S03 §1]`. Dark and heavy, but **always readable**.
@@ -79,7 +80,7 @@ Build with **Parts + built-in `Enum.Material`** first. Use meshes only when Part
 | Cryptid hide / skin | **Slate**, **Basalt**, **Fabric** (fur/wings), **Leather** | per asset | `[PROPOSED]` |
 
 **Material rules**
-- **Neon = rare accent only.** In a lair, the **only** Neon is the Rift Fissure trim `[S01 A4] [S02 §3]`. In town, Rift glow only at the **Great Rift pit** and the **Pedlar's "new stock" lantern** `[S03 §3]`. **Exception `[DECIDED D10]`:** the Mothman Hatchling's two eye parts are Neon Blood.
+- **Neon = rare accent only.** In a lair, the **only** Neon is the Rift Fissure trim `[S01 A4] [S02 §3]`. In town, Rift glow only at the **Great Rift pit** and the **Pedlar's "new stock" lantern** `[S03 §3]`. **Exceptions:** the Mothman Hatchling's two eye parts are Neon Blood `[DECIDED D10]`; the Dover Demon's two eye parts are Neon GoldBright `[DECIDED D13]`. Placeholders, all other cryptids and all other glows use Glass. The validator enforces this allowlist by CryptidId.
 - **No SmoothPlastic or Plastic** on visible surfaces. They look toy-like `[PROPOSED]`.
 - **No Glass/ForceField** except where a spec asks for a glow and Neon is banned `[PROPOSED]`.
 - **Dark parts get lighter than you'd think** `[PROPOSED]`. Roblox materials darken colour, so floors should be about **`#3A3436` `(58, 52, 54)`** (lighter than Soot) so cryptids and pads stand out. Keep pure Void for UI only.
@@ -237,7 +238,7 @@ Build with **Parts + built-in `Enum.Material`** first. Use meshes only when Part
 **Texture limits:** world **≤ 512 × 512**, UI **≤ 1024 × 1024** (9-slice frames, skill-tree stone). Reuse textures; no unique texture per prop.
 
 **Effects limits**
-- **Neon:** ≤ **2% of a view**; only where specs allow (Fissure trim, Great Rift pit, Pedlar lantern) `[S01] [S03]`, plus the Mothman eyes (2 parts) `[D10]`.
+- **Neon:** ≤ **2% of a view**; only where specs allow (Fissure trim, Great Rift pit, Pedlar lantern) `[S01] [S03]`, plus the Mothman eyes (2 parts) `[D10]` and the Dover Demon eyes (2 parts) `[D13]`.
 - **Transparency:** ≤ **4 semi-transparent parts per asset**. No big overlapping transparent planes (overdraw).
 - **ParticleEmitters:** ≤ **2 per asset**, Rate ≤ **10/s**, Lifetime ≤ 2 s; ≤ **200 world particles on screen**.
 - **Lights:** **Shadows = false** on all PointLights except one key light per area. ≤ **8 lights per plot**, ≤ **24 in town**.
@@ -309,4 +310,4 @@ Proposed default: art assets live under **`ReplicatedStorage.Assets.<Category>.<
 **Pending input**
 - Highlight limit: verify in Studio `[D8]`.
 
-**Resolved 2026-11-03 (Master Controller):** Ambient floor (D1), candle lights (D2), seal glow (D3), budgets (D4), meshes (D5), Creator Store (D6), bone hex (D7), Mothman eye Neon (D10). 2026-11-04: Rare silver (D11), icon/thumbnail capture source (D12).
+**Resolved 2026-11-03 (Master Controller):** Ambient floor (D1), candle lights (D2), seal glow (D3), budgets (D4), meshes (D5), Creator Store (D6), bone hex (D7), Mothman eye Neon (D10). 2026-11-04: Rare silver (D11), icon/thumbnail capture source (D12), Dover Demon Neon eyes (D13).

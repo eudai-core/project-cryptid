@@ -1,4 +1,5 @@
 ### Handoff: Hidebehind (v1.0, 2026-11-03)
+> **2026-11-04:** the Starter Pack grants the Hidebehind (spec 09), so its readability (dark body against the stump, in Play lighting) is a **HIGH-PRIORITY** Studio check. Roster size updated to 8 × 5 (model fits).
 - **Asset id / model name:** `Hidebehind` · Attributes `CryptidId = "hidebehind"` (spec 01 B3 / spec 03 §4.3), `AssetVersion = "1.0"`
 - **File path (box):** `/workspace/project-cryptid/art/models/Hidebehind.rbxmx`. Generator: `art/tools/build_assets.py Hidebehind` (shared lib `art/tools/rbxlib.py`; preview data `models/Hidebehind.parts.json`, do NOT map the `.json` into Rojo)
 - **Proposed place path:** `ReplicatedStorage.Assets.Cryptids.Hidebehind` (style guide §8, proposed)

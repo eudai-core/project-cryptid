@@ -16,15 +16,15 @@ Everything here is box-side only (Parts only; no Studio, no meshes, no scripts, 
 | Model | H × L (built) | Roster | Result |
 |---|---|---|---|
 | MothmanHatchling | 4.6 × 3.6 | 4.6 × 3.6 | ✓ |
-| FresnoNightcrawler | 6.2 × 3.3 | 6 × 2 | **FLAG**: L +65% (walking stride depth) |
-| Hidebehind | 8.2 × 5.1 | 8 × 4 | **FLAG**: L +28% (stump branch + roots) |
-| Hodag | 3.1 × 6.0 | 4 × 6 | **FLAG**: H −22% |
+| FresnoNightcrawler | 6.2 × 3.3 | ~~6 × 2~~ **6 × 3.3** | ✓ **RESOLVED** (was L +65%; roster updated) |
+| Hidebehind | 8.2 × 5.1 | ~~8 × 4~~ **8 × 5** | ✓ **RESOLVED** (was L +28%; roster updated). Starter Pack grant → readability is high priority |
+| Hodag | 3.1 × 6.0 | ~~4 × 6~~ **3 × 6** | ✓ **RESOLVED** (was H −22%; roster updated) |
 | Jackalope | 3.0 × 3.8 | 3 × 4 | ✓ |
 | DoverDemon | 4.05 × 2.85 | 4 × 3 | ✓ |
 | Snallygaster | 5.1 × 7.6 | 5 × 7 | ✓ (+9%) |
 | LovelandFrogman | 4.8 × 3.1 | 5 × 3 | ✓ |
 
-No rescale is trivial. A uniform scale fixes one axis and breaks the other, or breaks a cap: Hodag at H 4 becomes L 7.7, over the Common 6 cap. Fresno at L 2 would be only 3.8 tall. **Recommendation:** the roster sizes are [A] assumptions, so the Growth Strategist should update them to **Fresno 6 × 3.3, Hidebehind 8 × 5, Hodag 3 × 6** (or accept the models as built). The alternative is a pose edit: Fresno with a narrower stride, Hidebehind without the branch, or Hodag with taller dorsal spikes. That would use each model's last redesign pass.
+**Update 2026-11-04: RESOLVED.** The Growth Strategist accepted all three size changes in spec 09 (Fresno 6 × 3.3, Hidebehind 8 × 5, Hodag 3 × 6); the roster and these 3 placeholders were updated. Original analysis: no rescale is trivial. A uniform scale fixes one axis and breaks the other, or breaks a cap: Hodag at H 4 becomes L 7.7, over the Common 6 cap. Fresno at L 2 would be only 3.8 tall. **Recommendation:** the roster sizes are [A] assumptions, so the Growth Strategist should update them to **Fresno 6 × 3.3, Hidebehind 8 × 5, Hodag 3 × 6** (or accept the models as built). The alternative is a pose edit: Fresno with a narrower stride, Hidebehind without the branch, or Hodag with taller dorsal spikes. That would use each model's last redesign pass.
 
 ## 5. Uncommon full models (v1.0)
 | Model | Parts | Design | Passes |
@@ -62,6 +62,6 @@ Copy **only `.rbxmx`**. Do not copy `*.parts.json` (preview data) or `placeholde
 3. Lighting read (§4) on a phone at 30 studs: dark Soot bodies (Jackalope, Snallygaster, Frogman), thin antler tines.
 4. Glass "glows": Dover Demon eyes, Frogman wand tip, Hodag eyes, placeholder eyes. If any must really glow, that needs a new Neon decision (D10 covers the Mothman only; proposed D13 for Dover Demon eyes).
 5. Pivot flush on `Pad.CryptidMount`, pad billboard clearance (Hidebehind 8.2 and Snallygaster 5.1 are the tallest), Highlight limit (D8) before any outline, triangle count.
-6. Roster size decision for Fresno, Hidebehind and Hodag (section 4).
+6. ~~Roster size decision for Fresno, Hidebehind and Hodag~~ RESOLVED (spec 09 updated). **Hidebehind readability is high priority** (Starter Pack grants it).
 
 **Not started (by instruction):** Rares/Epics #9–12 (Flatwoods Monster, Beast of Bray Road, Jersey Devil, Loch Ness Serpent). Their placeholders ship until full models exist.

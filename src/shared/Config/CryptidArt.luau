@@ -78,6 +78,7 @@ local CryptidArt = {
 	defaultRarity = "Common",
 	defaultColor = "BoneDim",
 	faceGateYaw = math.pi,
+	billboardMargin = 2,
 	mountName = "CryptidMount",
 	fallbackModelName = "CryptidPlaceholder",
 	shadowVolume = 1,
@@ -141,6 +142,14 @@ local CryptidArt = {
 		}),
 	}),
 }
+
+function CryptidArt.billboardStuds(topY: number, adorneeY: number): number
+	local rise = topY - adorneeY
+	if rise < 0 then
+		rise = 0
+	end
+	return rise + CryptidArt.billboardMargin
+end
 
 function CryptidArt.familyOf(cryptidId: string): string
 	local family = FAMILY_OF[cryptidId]

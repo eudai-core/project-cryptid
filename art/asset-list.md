@@ -58,7 +58,7 @@
 - **Depends on:** pad ring spacing, lighting plan, guide-beam target `[S01 B5]`.
 
 ## 4. Fresno Nightcrawler
-- **STATUS (2026-11-03): v1.0 BUILT, box-side only.** `art/models/FresnoNightcrawler.rbxmx`, **15 parts**, 1.7 × 6.2 × 3.3. **PENDING:** Studio read, screenshots. Handoff: `art/handoff/FresnoNightcrawler.md`. **Size check (Batch 02):** L 3.3 vs roster 2 (+65%); see BATCH-02.
+- **STATUS (2026-11-03): v1.0 BUILT, box-side only.** `art/models/FresnoNightcrawler.rbxmx`, **15 parts**, 1.7 × 6.2 × 3.3. **PENDING:** Studio read, screenshots. Handoff: `art/handoff/FresnoNightcrawler.md`. **Size check:** RESOLVED, roster updated to 6 × 3.3 (spec 09).
 - **Spec facts:** Common, first guaranteed Rift buy **$50**, **$3/s**, placed on Pad 2, id `fresno_nightcrawler`, Pedlar $90. Flagged as a **proposed grimoire entry** `[S01 B3, note] [S03 §4.3]`.
 - **Silhouette** `[PROPOSED]` (folklore: a pale walking pair of legs): **two tall, thin, bone-white legs with a tiny or no torso**, an eerie stride pose. Reads instantly as "legs only".
 - **Build:** **Parts + materials**. Very simple, a few long cylinders/blocks.
@@ -68,7 +68,7 @@
 - **Depends on:** Rift Fissure belt height/width (not specced), pad model, grimoire entry.
 
 ## 5. Hidebehind
-- **STATUS (2026-11-03): v1.0 BUILT, box-side only.** `art/models/Hidebehind.rbxmx`, **27 parts**, 4.9 × 8.2 × 5.1. Stump is **Wood** BoneDim. 2 redesign passes used. **PENDING:** dark-body readability in Play, screenshots. Handoff: `art/handoff/Hidebehind.md`. **Size check (Batch 02):** L 5.1 vs roster 4 (+28%); see BATCH-02.
+- **STATUS (2026-11-03): v1.0 BUILT, box-side only.** `art/models/Hidebehind.rbxmx`, **27 parts**, 4.9 × 8.2 × 5.1. Stump is **Wood** BoneDim. 2 redesign passes used. **PENDING:** dark-body readability in Play, screenshots. Handoff: `art/handoff/Hidebehind.md`. **Size check:** RESOLVED, roster updated to 8 × 5 (spec 09). ⚠️ **Starter Pack grants the Hidebehind (spec 09), so its dark-body readability is a HIGH-PRIORITY Studio check.**
 - **Spec facts:** Common, second guaranteed Rift buy **$75**, **$4/s**, placed on Pad 3, id `hidebehind`, Pedlar $120. A **proposed grimoire entry** `[S01 B3] [S03 §4.3]`.
 - **Silhouette** `[PROPOSED]` (folklore: never seen, always hiding behind something): a **tall, gaunt, stooped shape half-hidden behind a dead tree stump**; long fingers curling round the bark. The stump is part of the model.
 - **Build:** **Parts + materials** (WoodPlanks/Wood stump, thin Basalt limbs).
@@ -78,7 +78,7 @@
 - **Depends on:** pad model, §4 lighting (dark body is the hardest readability case), grimoire entry.
 
 ## 6. Hodag
-- **STATUS (2026-11-03): v1.0 BUILT, box-side only.** `art/models/Hodag.rbxmx`, **35 parts**, Parts only (**no mesh needed**), 2.9 × 3.1 × 6.0 (scaled to 2/3 to fit the Common 6 × 6 footprint). Eyes GoldBright Glass. **PENDING:** Wilds lighting read, screenshots. Handoff: `art/handoff/Hodag.md`. **Size check (Batch 02):** H 3.1 vs roster 4 (−22%); see BATCH-02.
+- **STATUS (2026-11-03): v1.0 BUILT, box-side only.** `art/models/Hodag.rbxmx`, **35 parts**, Parts only (**no mesh needed**), 2.9 × 3.1 × 6.0 (scaled to 2/3 to fit the Common 6 × 6 footprint). Eyes GoldBright Glass. **PENDING:** Wilds lighting read, screenshots. Handoff: `art/handoff/Hodag.md`. **Size check:** RESOLVED, roster updated to 3 × 6 (spec 09).
 - **Spec facts:** wild Common, id `hodag`, **$5/s**, tutorial spawn **20 studs outside the player's Wild Gate**, caught with the **L1 tool / lantern** (3 s catch, ≤ 12 studs) `[S01 B3 #6, B7]`. Placed in goal 7. Pedlar $150. Needs a grimoire entry `[S01 open questions]`.
 - **Silhouette** `[PROPOSED]` (folklore: a horned, spiny beast with a wide grin): a **low, wide quadruped**, **two horns**, a **ridge of back spikes**, an oversized grinning jaw.
 - **Build:** **Parts + materials** (wedges for spikes/horns). Fallback: one generated MeshPart if the spike ridge exceeds budget.
@@ -109,7 +109,13 @@ Every Creator Store asset must be logged here before use: free to use, every scr
 
 ## 8. Uncommons (Batch 02, 2026-11-04)
 - **Jackalope** (`jackalope`). **STATUS: v1.0 BUILT, box-side only.** `art/models/Jackalope.rbxmx`, **26 parts**, H 3.0 × L 3.8 (roster 3 × 4). **PENDING:** Studio read, antler thickness on a phone, screenshots. Handoff: `art/handoff/Jackalope.md`.
-- **Dover Demon** (`dover_demon`). **STATUS: v1.0 BUILT, box-side only.** `art/models/DoverDemon.rbxmx`, **24 parts**, H 4.05 × L 2.85 (roster 4 × 3). Eyes are GoldBright Glass, not Neon (D10). **PENDING:** Studio read, screenshots. Handoff: `art/handoff/DoverDemon.md`.
+- **Dover Demon** (`dover_demon`). **STATUS: v1.1 BUILT, box-side only (2026-11-04).** `art/models/DoverDemon.rbxmx`, **24 parts**, H 4.05 × L 2.85 (roster 4 × 3). v1.1: eyes are **Neon GoldBright (D13)**; placeholder stays Glass. Also PENDING: bloom check. **PENDING:** Studio read, screenshots. Handoff: `art/handoff/DoverDemon.md`.
 - **Snallygaster** (`snallygaster`). **STATUS: v1.0 BUILT, box-side only.** `art/models/Snallygaster.rbxmx`, **33 parts**, H 5.1 × L 7.6 (roster 5 × 7). Wing membranes are wedge triangles. **PENDING:** wedge facing, Studio read, screenshots. Handoff: `art/handoff/Snallygaster.md`.
 - **Loveland Frogman** (`loveland_frogman`). **STATUS: v1.0 BUILT, box-side only.** `art/models/LovelandFrogman.rbxmx`, **24 parts**, H 4.8 × L 3.1 (roster 5 × 3). 1 redesign pass. **PENDING:** Studio read, screenshots. Handoff: `art/handoff/LovelandFrogman.md`.
-- Rares / Epics (#9–12): **not started**; the `_PH` placeholders ship until full models exist.
+
+## 9. Rares / Epics (Batch 03, 2026-11-04)
+- **Flatwoods Monster** (`flatwoods_monster`, Rare). **STATUS: v1.0 BUILT, box-side only.** `art/models/FlatwoodsMonster.rbxmx`, **40 parts**, H 9.0 × L 5.0 (roster 9 × 5). 1 redesign pass. **PENDING:** Studio read (skirt "cake" risk), wedge facing on the hood, screenshots. Handoff: `art/handoff/FlatwoodsMonster.md`.
+- **Beast of Bray Road** (`beast_of_bray_road`, Rare). **STATUS: v1.0 BUILT, box-side only.** `art/models/BeastOfBrayRoad.rbxmx`, **48 parts**, H 5.95 × L 7.4 (roster 6 × 7). **PENDING:** dark-fur lighting read, screenshots. Handoff: `art/handoff/BeastOfBrayRoad.md`.
+- **Jersey Devil** (`jersey_devil`, Epic). **STATUS: v1.0 BUILT, box-side only.** `art/models/JerseyDevil.rbxmx`, **58 parts**, H 8.0 × L 7.1 (roster 8 × 7). **PENDING:** wedge facing (wings, tail fork), screenshots. Handoff: `art/handoff/JerseyDevil.md`.
+- **Loch Ness Serpent** (`loch_ness_serpent`, Epic). **STATUS: v1.0 BUILT, box-side only.** `art/models/LochNessSerpent.rbxmx`, **44 parts**, H 9.0 × L 8.0 (roster 9 × 8). **PENDING:** front-on read (narrow), screenshots. Handoff: `art/handoff/LochNessSerpent.md`.
+- All 12 launch cryptids now have v1 full models (see `art/handoff/BATCH-03.md`). Placeholders stay as a fallback.

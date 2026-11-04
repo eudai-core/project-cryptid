@@ -230,7 +230,7 @@ def jackalope():   # roster 3 H x 4 L; antlered hare
     return a
 
 def dover_demon():   # roster 4 H x 3 L; melon head, thin limbs, glowing eyes
-    a=Asset("DoverDemon",{"CryptidId":"dover_demon","AssetVersion":"1.0"})
+    a=Asset("DoverDemon",{"CryptidId":"dover_demon","AssetVersion":"1.1"})   # v1.1: Neon eyes (D13)
     skin=dict(color="BoneDim",mat="Fabric")
     a.root((1,1,0.8),(0,1.6,0))
     a.add("Head","Part",(1.7,1.7,1.7),(0,3.1,-0.1),shape="Ball",color="BoneDim",mat="Limestone")
@@ -239,7 +239,7 @@ def dover_demon():   # roster 4 H x 3 L; melon head, thin limbs, glowing eyes
     a.add("Torso","Part",(0.6,0.9,0.4),(0,1.55,0.05),**skin)
     a.add("Pelvis","Part",(0.5,0.3,0.35),(0,1.05,0.05),**skin)
     st=len(a.parts)
-    a.add("Eye_R","Part",(0.46,0.46,0.46),(0.38,3.05,-0.8),shape="Ball",color="GoldBright",mat="Glass")
+    a.add("Eye_R","Part",(0.46,0.46,0.46),(0.38,3.05,-0.8),shape="Ball",color="GoldBright",mat="Neon")   # D13
     seg(a,"ArmUpper_R",(0.35,1.95,0.05),(0.85,1.35,-0.2),0.14,**skin)
     seg(a,"ArmFore_R",(0.85,1.35,-0.2),(1.2,0.7,-0.4),0.12,**skin)
     for i,(dx,dz) in enumerate(((0.05,-0.2),(0.2,-0.05),(0.12,0.15))):
@@ -299,8 +299,152 @@ def loveland_frogman():   # roster 5 H x 3 L; upright frog-man with a sparking w
     a.mirror_from(st)
     return a
 
+# ================================================================== Batch 03: Rares / Epics (<=80 parts, large-cryptid cap)
+def chain(a,name,pts,thicks,joints=True,**kw):
+    """segment chain through pts; thicks per segment; ball joints at inner points"""
+    for i in range(len(pts)-1):
+        seg(a,f"{name}{i+1}",pts[i],pts[i+1],thicks[i],**kw)
+        if joints and 0<i: a.add(f"{name}J{i}","Part",(thicks[i],)*3 if not isinstance(thicks[i],tuple) else (max(thicks[i]),)*3,pts[i],shape="Ball",**kw)
+
+def disc(a,name,d,t,pos,**kw):   # flat round plate facing Z (cylinder axis along Z)
+    return a.add(name,"Part",(t,d,d),pos,ry(90),shape="Cylinder",**kw)
+
+def vcyl(a,name,d,h,pos,**kw):   # vertical cylinder
+    return a.add(name,"Part",(h,d,d),pos,rz(90),shape="Cylinder",**kw)
+
+def flatwoods_monster():   # roster 9 H x 5 L; Rare: spade hood, dark face, skirt body, clawed arms
+    a=Asset("FlatwoodsMonster",{"CryptidId":"flatwoods_monster","AssetVersion":"1.0"})
+    robe=dict(color="Ash",mat="Fabric"); hood=dict(color="Blood",mat="Fabric"); silver=dict(color="Silver",mat="CorrodedMetal")
+    bone=dict(color="Bone",mat="Limestone")
+    a.root((2,1,2),(0,2.0,0.0))
+    vcyl(a,"SkirtTier1",3.8,1.6,(0,0.8,0),**robe)
+    vcyl(a,"SkirtHem",3.95,0.2,(0,0.15,0),**silver)                      # Rare trim
+    a.add("SkirtTier2","Part",(1.5,3.2,3.2),(0,2.35,0),rz(90)@rx(4),shape="Cylinder",**robe)   # pass 1: tilted tiers (wear)
+    a.add("SkirtTier3","Part",(1.3,2.5,2.5),(0,3.75,0),rz(90)@rx(-5),shape="Cylinder",**robe)
+    for i in range(6):   # pleat ridges
+        ang=np.radians(30+60*i); x,z=np.sin(ang)*1.85,-np.cos(ang)*1.85
+        a.add(f"Pleat{i+1}","Part",(0.2,1.5,0.25),(x,0.8,z),ry(-np.degrees(ang)),color="Soot",mat="Fabric")
+        a.add(f"PleatUpper{i+1}","Part",(0.18,1.4,0.22),(x*0.83,2.35,z*0.83),ry(-np.degrees(ang)),color="Soot",mat="Fabric")
+    a.add("Torso","Part",(1.6,1.4,1.1),(0,5.0,0),color="Soot",mat="Slate")
+    a.add("Collar","Part",(1.9,0.3,1.3),(0,5.75,0),**silver)               # Rare trim
+    a.add("Face","Part",(0.9,1.0,0.6),(0,6.4,-0.25),color="Void",mat="Basalt")
+    z=0.2   # hood plane, behind the face
+    tri(a,"HoodSpade",(-1.6,6.9,z),(1.6,6.9,z),(0,9.0,z-0.5),0.35,**hood)   # pass 1: thicker, tip leans over the face
+    st=len(a.parts)
+    seg(a,"HoodRim_R",(0.05,8.95,z-0.55),(1.65,6.9,z-0.12),0.16,**silver)   # crest edge (Rare)
+    disc(a,"HoodLobe_R",1.7,0.35,(0.85,6.55,z+0.05),**hood)
+    a.add("Cowl_R","Part",(0.3,1.4,0.9),(0.62,6.3,-0.15),**hood)
+    a.add("Eye_R","Part",(0.26,0.26,0.26),(0.22,6.5,-0.56),shape="Ball",color="GoldBright",mat="Glass")
+    seg(a,"ArmUpper_R",(0.85,5.4,-0.1),(1.6,4.4,-0.7),0.26,color="Soot",mat="Slate")
+    seg(a,"ArmFore_R",(1.6,4.4,-0.7),(2.15,3.6,-1.3),0.22,color="Soot",mat="Slate")
+    for i,q in enumerate(((2.25,3.0,-1.75),(2.45,3.2,-1.5),(2.05,3.05,-1.85))):
+        seg(a,f"Claw{i+1}_R",(2.15,3.6,-1.3),q,0.09,**bone)
+    a.mirror_from(st)
+    return a
+
+def beast_of_bray_road():   # roster 6 H x 7 L; Rare: hunched wolf-beast on all fours
+    a=Asset("BeastOfBrayRoad",{"CryptidId":"beast_of_bray_road","AssetVersion":"1.0"})
+    fur=dict(color="Ash",mat="Fabric"); dark=dict(color="Soot",mat="Fabric"); pale=dict(color="BoneDim",mat="Fabric")
+    bone=dict(color="Bone",mat="Limestone"); silver=dict(color="Silver",mat="Fabric")
+    a.root((2,1,3),(0,2.5,0.1))
+    a.add("Hip","Part",(1.6,1.6,1.6),(0,2.6,2.0),shape="Ball",**fur)
+    a.add("Waist","Part",(1.3,1.3,1.6),(0,2.9,1.0),rx(-8),**fur)
+    a.add("Ribcage","Part",(1.8,1.9,1.8),(0,3.4,-0.3),rx(10),**fur)
+    a.add("Hump","Part",(2.0,2.0,2.0),(0,4.3,-0.6),shape="Ball",**dark)
+    a.add("ChestRuff","Part",(1.2,1.2,0.5),(0,3.1,-1.2),rx(15),**pale)
+    seg(a,"Neck",(0,4.1,-1.1),(0,3.4,-2.0),1.0,**dark)
+    a.add("Head","Part",(1.1,1.0,1.2),(0,3.35,-2.3),**dark)
+    seg(a,"Muzzle",(0,3.2,-2.8),(0,3.0,-3.45),(0.6,0.55),**fur)
+    a.add("Jaw","Part",(0.5,0.2,0.8),(0,2.72,-3.0),**pale)
+    a.add("Nose","Part",(0.24,0.24,0.24),(0,3.15,-3.55),shape="Ball",color="Void",mat="Basalt")
+    for i,(y,z,h) in enumerate(((5.75,-0.55,0.9),(5.45,-1.15,0.75),(5.6,0.1,0.8),(5.05,0.7,0.6),(4.5,-1.6,0.5))):  # silver mane (Rare crest)
+        a.add(f"Mane{i+1}","WedgePart",(0.22,h,0.7),(0,y-0.25,z),**silver)
+    seg(a,"Tail1",(0,2.9,2.7),(0,2.3,3.3),0.45,**dark); seg(a,"Tail2",(0,2.3,3.3),(0,1.6,3.6),0.32,**silver)
+    st=len(a.parts)
+    a.add("Eye_R","Part",(0.2,0.2,0.2),(0.35,3.5,-2.88),shape="Ball",color="Blood",mat="Glass")
+    a.add("Ear_R","WedgePart",(0.15,0.6,0.45),(0.38,4.05,-2.05),**dark)
+    a.add("Fang_R","WedgePart",(0.08,0.22,0.1),(0.16,2.78,-3.3),rz(180),**bone)
+    seg(a,"ForelegUpper_R",(0.75,3.7,-0.6),(0.8,1.8,-1.0),0.55,**fur)
+    seg(a,"ForelegLower_R",(0.8,1.8,-1.0),(0.75,0.3,-1.1),0.4,**fur)
+    a.add("Forepaw_R","Part",(0.5,0.3,0.7),(0.75,0.15,-1.25),**dark)
+    for i,dx in enumerate((-0.15,0,0.15)):
+        a.add(f"ForeClaw{i+1}_R","WedgePart",(0.08,0.12,0.25),(0.75+dx,0.06,-1.7),**bone)
+    seg(a,"Thigh_R",(0.65,2.7,2.0),(0.75,1.6,1.4),0.65,**fur)
+    seg(a,"Hock_R",(0.75,1.6,1.4),(0.7,0.9,2.3),0.4,**fur)
+    seg(a,"HindLower_R",(0.7,0.9,2.3),(0.7,0.25,2.0),0.32,**fur)
+    a.add("Hindpaw_R","Part",(0.45,0.25,0.65),(0.7,0.125,1.8),**dark)
+    for i,dx in enumerate((-0.1,0.1)):
+        a.add(f"HindClaw{i+1}_R","WedgePart",(0.08,0.12,0.22),(0.7+dx,0.06,1.4),**bone)
+    a.mirror_from(st)
+    return a
+
+def jersey_devil():   # roster 8 H x 7 L; Epic: horse head, horns, bat wings, hooves, forked tail, crimson accent
+    a=Asset("JerseyDevil",{"CryptidId":"jersey_devil","AssetVersion":"1.0"})
+    hide=dict(color="Soot",mat="Slate"); memb=dict(color="Ash",mat="Fabric"); strut=dict(color="BoneDim",mat="Limestone")
+    bone=dict(color="Bone",mat="Limestone"); blood=dict(color="Blood",mat="Fabric")
+    a.root((1.5,1,1.5),(0,3.5,0.4))
+    a.add("Pelvis","Part",(1.3,1.3,1.3),(0,2.6,0.6),shape="Ball",**hide)
+    a.add("Torso","Part",(1.3,2.0,1.1),(0,3.8,0.1),rx(-20),**hide)
+    a.add("Chest","Part",(1.3,1.3,1.3),(0,4.5,-0.3),shape="Ball",**hide)
+    a.add("Mane","Part",(1.4,0.5,1.0),(0,5.1,-0.45),rx(-25),**blood)        # Epic crimson band
+    seg(a,"Neck",(0,4.9,-0.5),(0,5.9,-1.2),0.6,**hide)
+    seg(a,"Head",(0,6.35,-1.2),(0,5.65,-2.55),(0.7,0.8),**hide)             # long horse skull
+    seg(a,"Muzzle",(0,5.65,-2.5),(0,5.4,-2.95),(0.55,0.55),**strut)
+    for i,(z,y) in enumerate(((-0.6,5.95),(0.0,4.9),(0.6,3.9))):             # crimson dorsal spines (Epic)
+        a.add(f"Spine{i+1}","WedgePart",(0.15,0.45,0.5),(0,y,z+0.05),**blood)
+    chain(a,"Tail",[(0,2.4,1.2),(0,1.6,2.2),(0,1.2,3.0),(0,1.1,3.55)],[0.35,0.28,0.2],joints=False,**hide)
+    st=len(a.parts)
+    a.add("Eye_R","Part",(0.22,0.22,0.22),(0.36,6.15,-1.6),shape="Ball",color="Blood",mat="Glass")
+    seg(a,"HornBase_R",(0.25,6.55,-1.2),(0.55,7.35,-0.9),0.2,**bone)
+    seg(a,"HornTip_R",(0.55,7.35,-0.9),(0.4,7.95,-0.55),0.13,**bone)
+    seg(a,"Ear_R",(0.3,6.45,-1.05),(0.5,6.85,-0.75),(0.12,0.25),**hide)
+    seg(a,"ArmUpper_R",(0.6,4.6,-0.4),(0.8,3.9,-0.9),0.22,**hide)
+    seg(a,"ArmFore_R",(0.8,3.9,-0.9),(0.7,3.4,-1.3),0.18,**hide)
+    seg(a,"Claw_R",(0.7,3.4,-1.3),(0.7,3.15,-1.55),0.08,**bone)
+    S,E,T,F2,F3=np.array([0.5,5.0,0.4]),np.array([2.0,6.6,0.8]),np.array([3.5,7.4,1.0]),np.array([3.3,4.6,1.2]),np.array([2.0,3.8,1.0])
+    seg(a,"WingArm_R",S,E,0.22,**strut); seg(a,"WingFinger1_R",E,T,0.16,**strut)
+    seg(a,"WingFinger2_R",E,F2,0.12,**strut); seg(a,"WingFinger3_R",E,F3,0.12,**strut)
+    off=np.array([0,0,0.06])
+    tri(a,"WingA_R",S+off,E+off,F3+off,0.08,**memb); tri(a,"WingB_R",E+off,T+off,F2+off,0.08,**memb); tri(a,"WingC_R",E+off,F2+off,F3+off,0.08,**memb)
+    seg(a,"Thigh_R",(0.5,2.5,0.6),(0.6,1.5,-0.3),0.55,**hide)
+    seg(a,"Shin_R",(0.6,1.5,-0.3),(0.55,0.7,0.6),0.38,**hide)
+    seg(a,"Cannon_R",(0.55,0.7,0.6),(0.5,0.25,0.3),0.3,**hide)
+    a.add("Hoof_R","Part",(0.42,0.25,0.45),(0.5,0.125,0.2),color="Void",mat="Basalt")
+    a.add("TailFork_R","WedgePart",(0.1,0.18,0.45),(0.17,1.1,3.8),ry(-30),**blood)
+    a.mirror_from(st)
+    return a
+
+def loch_ness_serpent():   # roster 9 H x 8 L; Epic: long neck rising from 2 humps resting on the base (no water)
+    a=Asset("LochNessSerpent",{"CryptidId":"loch_ness_serpent","AssetVersion":"1.0"})
+    skin=dict(color="Soot",mat="Slate"); pale=dict(color="BoneDim",mat="Slate"); blood=dict(color="Blood",mat="Fabric"); bone=dict(color="Bone",mat="Limestone")
+    a.root((1.5,1,2),(0,2.0,0.3))
+    a.add("Base","Part",(1.7,1.7,1.7),(0,0.85,-1.2),shape="Ball",**skin)
+    N=[(0,1.0,-1.3),(0,2.4,-1.95),(0,3.9,-2.3),(0,5.4,-2.4),(0,6.8,-2.2),(0,7.9,-2.4)]
+    chain(a,"Neck",N,[1.2,1.05,0.9,0.78,0.68],**skin)
+    for i,(p,q) in enumerate(((N[1],N[2]),(N[2],N[3]),(N[3],N[4]))):   # pale throat plates (contrast)
+        pp=np.array(p)+[0,0,-0.42+0.06*i]; qq=np.array(q)+[0,0,-0.36+0.06*i]
+        seg(a,f"Throat{i+1}",pp,qq,(0.55-0.07*i,0.12),**pale)
+    a.add("Head","Part",(0.8,0.7,1.3),(0,8.25,-2.95),**skin)
+    a.add("Jaw","Part",(0.65,0.2,1.0),(0,7.85,-3.1),**pale)
+    for i,(y,z) in enumerate(((6.1,-1.85),(4.65,-1.9),(3.2,-1.65),(1.8,-1.15))):  # crimson dorsal fins (Epic)
+        a.add(f"NeckFin{i+1}","WedgePart",(0.12,0.5,0.55),(0,y,z+0.05),rx(15),**blood)
+    H1=[(0,0.45,-0.35),(0,1.6,0.15),(0,2.0,0.95),(0,1.6,1.7),(0,0.45,2.1)]
+    chain(a,"HumpA",H1,[1.05,1.0,1.0,0.95],**skin)
+    H2=[(0,0.35,2.55),(0,1.15,2.95),(0,1.4,3.45),(0,1.05,3.85),(0,0.3,4.15)]
+    chain(a,"HumpB",H2,[0.8,0.75,0.7,0.6],**skin)
+    a.add("HumpFinA","WedgePart",(0.12,0.55,0.7),(0,2.7,1.0),**blood)
+    a.add("HumpFinB","WedgePart",(0.12,0.4,0.55),(0,1.95,3.5),**blood)
+    st=len(a.parts)
+    a.add("Eye_R","Part",(0.22,0.22,0.22),(0.38,8.4,-3.1),shape="Ball",color="Blood",mat="Glass")
+    seg(a,"Horn_R",(0.2,8.55,-2.6),(0.35,9.0,-2.25),0.12,**bone)              # Epic horns
+    a.add("FlipperFront_R","WedgePart",(0.9,0.18,1.1),(0.95,0.09,-0.75),ry(-35),**skin)
+    a.add("FlipperBack_R","WedgePart",(0.7,0.16,0.9),(0.7,0.08,2.35),ry(-35),**skin)
+    a.mirror_from(st)
+    return a
+
 ALL={"MothmanHatchling":mothman,"Pad":pad,"BoneAltar":bone_altar,"FresnoNightcrawler":fresno,"Hidebehind":hidebehind,"Hodag":hodag,
-     "Jackalope":jackalope,"DoverDemon":dover_demon,"Snallygaster":snallygaster,"LovelandFrogman":loveland_frogman}
+     "Jackalope":jackalope,"DoverDemon":dover_demon,"Snallygaster":snallygaster,"LovelandFrogman":loveland_frogman,
+     "FlatwoodsMonster":flatwoods_monster,"BeastOfBrayRoad":beast_of_bray_road,"JerseyDevil":jersey_devil,"LochNessSerpent":loch_ness_serpent}
 if __name__=="__main__":
     os.makedirs(MODELS, exist_ok=True)
     for n in (sys.argv[1:] or ALL):

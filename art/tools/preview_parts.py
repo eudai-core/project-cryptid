@@ -79,7 +79,7 @@ for view,(elev,azim) in {"preview-front34":(16,55),"preview-side":(6,0)}.items()
     n=len(sets); cols=int(__import__("os").environ.get("COLS",min(n,3))); rows=math.ceil(n/cols); W,H=520,560
     sheet=Image.new("RGB",(W*cols,H*rows+70),BG); dr=ImageDraw.Draw(sheet)
     for i,st in enumerate(sets):
-        im=render(st["groups"],elev,azim,W,H,scale=W*1.15/span,center=center)
+        im=render(st["groups"],elev,azim,W,H,scale=W*1.15/span*float(__import__("os").environ.get("ZOOM",1)),center=center)   # ZOOM keeps one shared scale (true relative size)
         sheet.paste(im,((i%cols)*W,(i//cols)*H+50))
         if n>1: dr.text(((i%cols)*W+W/2,(i//cols)*H+62),st["label"],fill=(232,224,207),font=font,anchor="mt")
     dr.text((sheet.width/2,8),title,fill=(232,224,207),font=font,anchor="mt")

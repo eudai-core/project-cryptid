@@ -19,6 +19,10 @@ local FULL_MODELS = {
 	"DoverDemon",
 	"Snallygaster",
 	"LovelandFrogman",
+	"FlatwoodsMonster",
+	"BeastOfBrayRoad",
+	"JerseyDevil",
+	"LochNessSerpent",
 }
 
 local WEDGE_COUNTS = {
@@ -30,13 +34,31 @@ local WEDGE_COUNTS = {
 	DoverDemon = 0,
 	Snallygaster = 13,
 	LovelandFrogman = 5,
+	FlatwoodsMonster = 2,
+	BeastOfBrayRoad = 19,
+	JerseyDevil = 17,
+	LochNessSerpent = 10,
 }
 
-local ROSTER_ONLY = {
-	"flatwoods_monster",
-	"beast_of_bray_road",
-	"jersey_devil",
-	"loch_ness_serpent",
+local ROSTER_IDS = {
+	mothman_hatchling = "MothmanHatchling",
+	fresno_nightcrawler = "FresnoNightcrawler",
+	hidebehind = "Hidebehind",
+	hodag = "Hodag",
+	jackalope = "Jackalope",
+	dover_demon = "DoverDemon",
+	snallygaster = "Snallygaster",
+	loveland_frogman = "LovelandFrogman",
+	flatwoods_monster = "FlatwoodsMonster",
+	beast_of_bray_road = "BeastOfBrayRoad",
+	jersey_devil = "JerseyDevil",
+	loch_ness_serpent = "LochNessSerpent",
+}
+
+local NEON_MATERIAL = 288
+local NEON_EYES = {
+	["assets/cryptids/MothmanHatchling.rbxmx"] = true,
+	["assets/cryptids/DoverDemon.rbxmx"] = true,
 }
 
 local ALPHA = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
@@ -199,7 +221,7 @@ Check.test("asset folders hold rbxmx only, with no sample kits", function()
 			table.insert(paths, path)
 		end
 	end
-	Check.eq(#paths, 22)
+	Check.eq(#paths, 26)
 	for _, path in paths do
 		Check.eq(assetViolation(path), nil, path)
 		Check.eq(string.sub(path, -6), ".rbxmx", path)
@@ -270,11 +292,9 @@ Check.test("imported colours match UITheme and decorative parts do not collide",
 	end
 	Check.eq(#conflicts, 0, table.concat(conflicts, ", "))
 	Check.truthy(parts > 0)
-	for _, id in ROSTER_ONLY do
-		Check.truthy(string.find(ids[id] or "", "/placeholders/", 1, true) ~= nil, id)
+	for id in ROSTER_IDS do
+		Check.truthy(string.find(ids[id] or "", "/cryptids/", 1, true) ~= nil, id)
 	end
-	Check.truthy(string.find(ids.jackalope or "", "/cryptids/", 1, true) ~= nil)
-	Check.truthy(string.find(ids.mothman_hatchling or "", "/cryptids/", 1, true) ~= nil)
 	print(string.format("PALETTE match UITheme, %d parts, 0 conflicting colours", parts))
 end)
 
@@ -355,25 +375,23 @@ end)
 
 Check.test("cryptid lookup prefers the full model, then the roster placeholder", function()
 	CryptidModels.resetWarnings()
-	local real = { jackalope = true, mothman_hatchling = true, hodag = true }
-	local placeholders = {
-		jackalope = true,
-		flatwoods_monster = true,
-		beast_of_bray_road = true,
-		jersey_devil = true,
-		loch_ness_serpent = true,
-	}
-	local full = CryptidModels.choose("jackalope", real, placeholders)
-	Check.eq(full.placeholder, false)
-	Check.eq(full.procedural, false)
-	Check.eq(full.warn, false)
-	Check.eq(full.sourceId, "jackalope")
-	for _, id in ROSTER_ONLY do
-		local choice = CryptidModels.choose(id, real, placeholders)
-		Check.eq(choice.placeholder, true, id)
-		Check.eq(choice.procedural, false, id)
-		Check.eq(choice.warn, true, id)
-		Check.eq(choice.sourceId, id, id)
+	local real = {}
+	local placeholders = {}
+	for id in ROSTER_IDS do
+		real[id] = true
+		placeholders[id] = true
+	end
+	for id in ROSTER_IDS do
+		local full = CryptidModels.choose(id, real, placeholders)
+		Check.eq(full.placeholder, false, id)
+		Check.eq(full.procedural, false, id)
+		Check.eq(full.warn, false, id)
+		Check.eq(full.sourceId, id, id)
+		local fallback = CryptidModels.choose(id, {}, placeholders)
+		Check.eq(fallback.placeholder, true, id)
+		Check.eq(fallback.procedural, false, id)
+		Check.eq(fallback.warn, true, id)
+		Check.eq(fallback.sourceId, id, id)
 	end
 	local unknown = CryptidModels.choose("not_a_cryptid", real, placeholders)
 	Check.eq(unknown.procedural, true)
@@ -425,4 +443,128 @@ Check.test("pad states and altar tiers come from config", function()
 	Check.eq(CryptidArt.tierShown(2, 1), false)
 	Check.eq(CryptidArt.tierShown(2, 2), true)
 	Check.eq(CryptidArt.faceGateYaw, math.pi)
+end)
+
+local function partCorners(cf: { [string]: number }, size: { [string]: number }): { { number } }
+	local points = {}
+	for _, x in { -size.x / 2, size.x / 2 } do
+		for _, y in { -size.y / 2, size.y / 2 } do
+			for _, z in { -size.z / 2, size.z / 2 } do
+				local px, py, pz = transform(cf, x, y, z)
+				table.insert(points, { px, py, pz })
+			end
+		end
+	end
+	return points
+end
+
+local function modelExtent(modelName: string): (number, number)
+	local xml = fs.readFile("assets/cryptids/" .. modelName .. ".rbxmx")
+	local minX, minY, minZ = math.huge, math.huge, math.huge
+	local maxX, maxY, maxZ = -math.huge, -math.huge, -math.huge
+	local cursor = 1
+	while true do
+		local startAt = string.find(xml, '<Item class="', cursor, true)
+		if startAt == nil then
+			break
+		end
+		local classAt = startAt + #'<Item class="'
+		local classEnd = string.find(xml, '"', classAt, true) or classAt
+		local className = string.sub(xml, classAt, classEnd - 1)
+		local closeAt = string.find(xml, "</Item>", classEnd, true) or classEnd
+		local body = string.sub(xml, classEnd, closeAt)
+		cursor = closeAt + 7
+		if className ~= "Part" and className ~= "WedgePart" and className ~= "CornerWedgePart" then
+			continue
+		end
+		local name = string.match(body, '<string name="Name">([^<]*)</string>') or ""
+		local transparency = tonumber(string.match(body, '<float name="Transparency">([^<]*)</float>') or "0") or 0
+		if name == "Root" or transparency >= 1 then
+			continue
+		end
+		for _, point in partCorners(frameOf(body), sizeOf(body)) do
+			minX = math.min(minX, point[1])
+			minY = math.min(minY, point[2])
+			minZ = math.min(minZ, point[3])
+			maxX = math.max(maxX, point[1])
+			maxY = math.max(maxY, point[2])
+			maxZ = math.max(maxZ, point[3])
+		end
+	end
+	local height = maxY - minY
+	local length = math.max(maxX - minX, maxZ - minZ)
+	return height, length
+end
+
+Check.test("neon eyes are only the four allowed cryptid parts", function()
+	local neonParts = {}
+	for _, root in CryptidArt.assetDirs do
+		for _, path in filesIn(root) do
+			local xml = fs.readFile(path)
+			local attrs = readAttributes(xml)
+			local cursor = 1
+			while true do
+				local startAt = string.find(xml, '<Item class="', cursor, true)
+				if startAt == nil then
+					break
+				end
+				local classAt = startAt + #'<Item class="'
+				local classEnd = string.find(xml, '"', classAt, true) or classAt
+				local closeAt = string.find(xml, "</Item>", classEnd, true) or classEnd
+				local body = string.sub(xml, classEnd, closeAt)
+				cursor = closeAt + 7
+				local material = string.match(body, '<token name="Material">([^<]*)</token>')
+				if material == tostring(NEON_MATERIAL) then
+					local name = string.match(body, '<string name="Name">([^<]*)</string>') or ""
+					table.insert(neonParts, path .. " " .. name)
+					Check.eq(attrs.IsPlaceholder, nil, path)
+					Check.eq(NEON_EYES[path], true, path)
+					Check.eq(name == "Eye_L" or name == "Eye_R", true, name)
+				end
+			end
+			if path == "assets/cryptids/DoverDemon.rbxmx" then
+				Check.eq(attrs.AssetVersion, "1.1")
+			end
+		end
+	end
+	table.sort(neonParts)
+	Check.eq(#neonParts, 4)
+	print("NEON " .. table.concat(neonParts, ", "))
+end)
+
+Check.test("the pad name plate clears the placed model", function()
+	local margin = CryptidArt.billboardMargin
+	Check.eq(CryptidArt.billboardStuds(9, 0), 9 + margin)
+	Check.eq(CryptidArt.billboardStuds(3.1, 0.4), 3.1 - 0.4 + margin)
+	Check.eq(CryptidArt.billboardStuds(1, 4), margin)
+	local boards = fs.readFile("src/client/WorldBoards.luau")
+	Check.eq(string.find(boards, "billboardStuds", 1, true) ~= nil, true)
+	Check.eq(string.find(boards, "Vector3.new(0, 5, 0)", 1, true), nil)
+	local roster = {
+		FresnoNightcrawler = { 6, 3.3 },
+		Hidebehind = { 8, 5 },
+		Hodag = { 3, 6 },
+	}
+	for modelName, target in roster do
+		local height, length = modelExtent(modelName)
+		Check.truthy(height > 1, modelName)
+		Check.truthy(length > 1, modelName)
+		print(
+			string.format(
+				"MEASURE %s height %.2f length %.2f against roster %.1f x %.1f",
+				modelName,
+				height,
+				length,
+				target[1],
+				target[2]
+			)
+		)
+	end
+	for _, modelName in { "FlatwoodsMonster", "LochNessSerpent" } do
+		local height = modelExtent(modelName)
+		local lift = CryptidArt.billboardStuds(height, 0)
+		Check.truthy(height >= 9, modelName)
+		Check.truthy(lift > height, modelName)
+		print(string.format("BILLBOARD %s height %.2f lift %.2f", modelName, height, lift))
+	end
 end)
