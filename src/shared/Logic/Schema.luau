@@ -11,6 +11,9 @@ end
 local Economy = import("../Config/Economy", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Economy")
 end)
+local Plots = import("../Config/Plots", function()
+	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Plots")
+end)
 local Save = import("../Config/Save", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Save")
 end)
@@ -189,7 +192,6 @@ local function normalizeV1(raw: any): any?
 	end
 
 	return {
-		dataVersion = Save.DATA_VERSION,
 		cash = Money.round(raw.cash),
 		totalEarned = Money.round(raw.totalEarned),
 		padsUnlocked = raw.padsUnlocked,
@@ -209,6 +211,41 @@ local function normalizeV1(raw: any): any?
 			reducedMotion = reducedMotion,
 		},
 	}
+end
+
+local function parseDefences(base: any): { [number]: string }?
+	if base == nil then
+		return {}
+	end
+	if type(base) ~= "table" then
+		return nil
+	end
+	local raw = base.defences
+	if raw == nil then
+		return {}
+	end
+	if type(raw) ~= "table" then
+		return nil
+	end
+	local defences = {}
+	for key, value in raw do
+		local index: number? = nil
+		if type(key) == "number" and key == math.floor(key) then
+			index = key
+		elseif type(key) == "string" and string.match(key, "^%d+$") ~= nil then
+			index = tonumber(key)
+		else
+			return nil
+		end
+		if index == nil or index < 1 or index > Plots.DEFENCE_KEY_MAX then
+			return nil
+		end
+		if type(value) ~= "string" or string.match(value, "^[%w_%-]+$") == nil then
+			return nil
+		end
+		defences[index] = value
+	end
+	return defences
 end
 
 function Schema.migrate(raw: any): any?
@@ -233,6 +270,18 @@ function Schema.migrate(raw: any): any?
 		end
 		profile.totalEarned = Money.round(incomeOnly)
 	end
+	local defences = {}
+	if version >= 3 then
+		local parsed = parseDefences(raw.base)
+		if parsed == nil then
+			return nil
+		end
+		defences = parsed
+	end
+	profile.dataVersion = Save.DATA_VERSION
+	profile.base = {
+		defences = defences,
+	}
 	return profile
 end
 
@@ -268,6 +317,9 @@ function Schema.newProfile(now: number, starterInstanceId: string): any
 		firstJoinUnix = now,
 		settings = {
 			reducedMotion = false,
+		},
+		base = {
+			defences = {},
 		},
 	}
 end

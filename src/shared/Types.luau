@@ -32,6 +32,9 @@ export type Profile = {
 	settings: {
 		reducedMotion: boolean,
 	},
+	base: {
+		defences: { [number]: string },
+	},
 }
 
 return {}

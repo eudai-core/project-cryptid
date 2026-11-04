@@ -24,7 +24,7 @@ Use the banner button or the in-world prompt (E). Both send the same remote. The
 
 ## Session lock
 
-Profiles live in the DataStore `ProjectCryptid_Player_v1`, key `player_<userId>`. The document is `{ lockJobId, lockExpiresAt, profile }`. New profiles are `dataVersion` 2. `totalEarned` is lifetime income and starts at 0, so the $25 grant is not counted. A version 1 save counted that grant, so loading one subtracts $25 from `totalEarned` once and floors at 0. Loading a version 2 save does not subtract again. A cryptid still stored as `wild_common` is renamed to `hodag` on load. The original document is not edited in place; a failed migration does not write.
+Profiles live in the DataStore `ProjectCryptid_Player_v1`, key `player_<userId>`. The document is `{ lockJobId, lockExpiresAt, profile }`. Spec 01 wrote `dataVersion` 2. `totalEarned` is lifetime income and starts at 0, so the $25 grant is not counted. A version 1 save counted that grant, so loading one subtracts $25 from `totalEarned` once and floors at 0. Loading a version 2 or 3 save does not subtract again. Spec 02 writes `dataVersion` 3 and adds `base.defences` (see [`spec-02.md`](spec-02.md)). A cryptid still stored as `wild_common` is renamed to `hodag` on load. The original document is not edited in place; a failed migration does not write.
 
 This is a purpose-built `UpdateAsync` lock, not ProfileStore. The save is one small document and the lock rules are covered by Lune tests. A later spec can swap in ProfileStore without changing the profile shape.
 

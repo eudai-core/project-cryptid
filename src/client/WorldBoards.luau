@@ -8,6 +8,7 @@ local ThemeBind = require(script.Parent:WaitForChild("ThemeBind"))
 local UiFactory = require(script.Parent:WaitForChild("UiFactory"))
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local NumberFormat = require(Shared:WaitForChild("Logic"):WaitForChild("NumberFormat")) :: any
+local Plots = require(Shared:WaitForChild("Config"):WaitForChild("Plots")) :: any
 local UITheme = require(Shared:WaitForChild("UITheme")) :: any
 
 local player = Players.LocalPlayer
@@ -82,7 +83,23 @@ local function riftEntry(snapshot: any, slot: number): any?
 end
 
 local function paintPad(part: BasePart, snapshot: any)
+	if part:GetAttribute("Sealed") == true then
+		local board = ensure(part, "header")
+		board.gui.Enabled = true
+		board.name.Text = UITheme.sigil
+		board.name.TextColor3 = UITheme.color("BoneDim")
+		board.line.Text = Plots.SEALED_LABEL
+		board.line.TextColor3 = UITheme.color("BoneDim")
+		if board.stroke ~= nil then
+			board.stroke.Color = UITheme.color("BoneDim")
+		end
+		return
+	end
 	if not ownerMatches(part) then
+		local existing = boards[part]
+		if existing ~= nil then
+			existing.gui.Enabled = false
+		end
 		return
 	end
 	local index = part:GetAttribute("PadIndex")

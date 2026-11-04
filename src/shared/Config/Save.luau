@@ -1,7 +1,7 @@
 --!strict
 
 local Save = {
-	DATA_VERSION = 2,
+	DATA_VERSION = 3,
 	STORE_NAME = "ProjectCryptid_Player_v1",
 	KEY_PREFIX = "player_",
 	MAX_ATTEMPTS = 3,

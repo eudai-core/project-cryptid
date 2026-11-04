@@ -71,11 +71,17 @@ function Interactions.start(player: Player, remotes: Folder, names: any, beginCa
 		local function refresh()
 			local owner = inst:GetAttribute("OwnerUserId")
 			local available = inst:GetAttribute("Available") == true
-			inst.Enabled = owner == player.UserId and available
+			local parent = inst.Parent
+			local sealed = parent ~= nil and parent:GetAttribute("Sealed") == true
+			inst.Enabled = owner == player.UserId and available and not sealed
 		end
 		refresh()
 		inst:GetAttributeChangedSignal("Available"):Connect(refresh)
 		inst:GetAttributeChangedSignal("OwnerUserId"):Connect(refresh)
+		local parent = inst.Parent
+		if parent ~= nil then
+			parent:GetAttributeChangedSignal("Sealed"):Connect(refresh)
+		end
 		plateFor(inst)
 		inst.Triggered:Connect(function()
 			if inst:GetAttribute("Kind") == "Catch" then
@@ -99,10 +105,8 @@ function Interactions.start(player: Player, remotes: Folder, names: any, beginCa
 			end
 		end
 	end
-	local lairs = workspace:FindFirstChild("Lairs")
-	if lairs ~= nil then
-		scan(lairs)
-	end
+	local plots = workspace:WaitForChild("Plots")
+	scan(plots)
 	workspace.DescendantAdded:Connect(function(desc)
 		if desc:IsA("ProximityPrompt") then
 			hook(desc)

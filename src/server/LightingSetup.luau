@@ -17,7 +17,6 @@ function LightingSetup.apply()
 	Lighting.ClockTime = lighting.clockTime
 	Lighting.GeographicLatitude = lighting.geographicLatitude
 	Lighting.GlobalShadows = lighting.globalShadows
-	Lighting.Technology = Enum.Technology[lighting.technology]
 	Lighting.FogColor = UITheme.color("Void")
 	Lighting.FogStart = lighting.fogStart
 	Lighting.FogEnd = lighting.fogEnd

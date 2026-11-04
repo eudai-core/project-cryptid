@@ -7,14 +7,20 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CashPlaque = require(script.Parent:WaitForChild("CashPlaque"))
 local GoalBanner = require(script.Parent:WaitForChild("GoalBanner"))
 local GuideArrow = require(script.Parent:WaitForChild("GuideArrow"))
+local HomeBeam = require(script.Parent:WaitForChild("HomeBeam"))
 local Interactions = require(script.Parent:WaitForChild("Interactions"))
+local LairBanners = require(script.Parent:WaitForChild("LairBanners"))
+local ReturnButton = require(script.Parent:WaitForChild("ReturnButton"))
+local SealToast = require(script.Parent:WaitForChild("SealToast"))
 local ThemeBind = require(script.Parent:WaitForChild("ThemeBind"))
 local UiFactory = require(script.Parent:WaitForChild("UiFactory"))
 local WorldBoards = require(script.Parent:WaitForChild("WorldBoards"))
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Economy = require(Shared:WaitForChild("Config"):WaitForChild("Economy")) :: any
+local HudSlots = require(Shared:WaitForChild("Logic"):WaitForChild("HudSlots")) :: any
 local GameInfo = require(Shared:WaitForChild("GameInfo")) :: any
+local Plots = require(Shared:WaitForChild("Config"):WaitForChild("Plots")) :: any
 local Names = require(Shared:WaitForChild("Config"):WaitForChild("Remotes")) :: any
 local UITheme = require(Shared:WaitForChild("UITheme")) :: any
 
@@ -75,11 +81,17 @@ end, function()
 	fire(Names.SKIP)
 end)
 
+local hud = Plots.RETURN_BUTTON
+ReturnButton.mount(gui, function()
+	fire(Names.RETURN_TO_LAIR)
+end)
+SealToast.mount(gui, player)
+
 local steady = UiFactory.button(gui, UITheme.text.minSize)
 steady.Name = "ReducedMotion"
 steady.AnchorPoint = Vector2.new(0, 1)
-steady.Position = UDim2.new(0, 12, 1, -12)
-steady.Size = UDim2.fromOffset(168, 32)
+steady.Position = UDim2.new(0, HudSlots.origin(1), 1, -hud.margin)
+steady.Size = UDim2.fromOffset(hud.width, hud.steadyHeight)
 steady.BackgroundColor3 = UITheme.color("Soot")
 steady.TextColor3 = UITheme.color("BoneDim")
 ThemeBind.apply(steady, "body", UITheme.text.minSize)
@@ -208,6 +220,8 @@ end
 
 Interactions.start(player, remotes :: Folder, Names, beginCatch)
 GuideArrow.start(player)
+LairBanners.start(player)
+HomeBeam.start(player)
 WorldBoards.start(function()
 	return latestSnapshot
 end)
