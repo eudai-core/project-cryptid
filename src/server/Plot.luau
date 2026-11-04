@@ -16,6 +16,7 @@ local PlotRing = require(Shared:WaitForChild("Logic"):WaitForChild("PlotRing")) 
 local Plots = require(Shared:WaitForChild("Config"):WaitForChild("Plots")) :: any
 local ProfileQuery = require(Shared:WaitForChild("Logic"):WaitForChild("ProfileQuery")) :: any
 local Species = require(Shared:WaitForChild("Config"):WaitForChild("Species")) :: any
+local SkillEffects = require(script.Parent:WaitForChild("SkillEffects")) :: any
 local StealGuard = require(Shared:WaitForChild("Logic"):WaitForChild("StealGuard")) :: any
 local Transactions = require(Shared:WaitForChild("Logic"):WaitForChild("Transactions")) :: any
 local UITheme = require(Shared:WaitForChild("UITheme")) :: any
@@ -454,7 +455,7 @@ function Plot.sync(plot: any, profile: any, guideValue: ObjectValue)
 		replaceCreature(pad.center, speciesId, pad.stand)
 		local lockedPad = pad.index > profile.padsUnlocked
 		local nextPad = pad.index == profile.padsUnlocked + 1
-		local cost = Economy.PAD_COST[pad.index]
+		local cost = SkillEffects.padCost(profile, pad.index)
 		if lockedPad and nextPad and type(cost) == "number" and profile.cash + 1e-9 >= cost then
 			pad.ring.Color = UITheme.color("Blood")
 		else
@@ -504,6 +505,7 @@ function Plot.sync(plot: any, profile: any, guideValue: ObjectValue)
 	local showWild = profile.onboarding.step == 6 and not ProfileQuery.hasSource(profile, "wild")
 	replaceCreature(plot.wildPad, if showWild then Species.WILD_ID else nil, plot.wildStand)
 	plot.wildPrompt:SetAttribute("Available", showWild)
+	plot.wildPrompt.MaxActivationDistance = SkillEffects.catchRange(profile)
 	plot.wildPrompt.ActionText = "Catch"
 	local wildSpecies = Species.get(Species.WILD_ID)
 	plot.wildPrompt.ObjectText = wildSpecies.displayName

@@ -20,6 +20,9 @@ end)
 local Shop = import("../Config/Shop", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Shop")
 end)
+local SkillConfig = import("../Config/SkillConfig", function()
+	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("SkillConfig")
+end)
 local Species = import("../Config/Species", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Species")
 end)
@@ -271,6 +274,55 @@ local function parseShop(raw: any, version: number): any?
 	}
 end
 
+local function parseSkills(raw: any): { string }?
+	if type(raw) ~= "table" or raw.skills == nil then
+		return {}
+	end
+	if type(raw.skills) ~= "table" then
+		return nil
+	end
+	local list = {}
+	local seen: { [string]: boolean } = {}
+	local function take(id: any): boolean
+		if type(id) ~= "string" then
+			return false
+		end
+		if #id < 1 or #id > SkillConfig.ID_MAX or string.match(id, "^[%w]+$") == nil or SkillConfig.get(id) == nil then
+			warn("[Cryptid:Skill] ignored unknown rite")
+			return true
+		end
+		if id == SkillConfig.ROOT or seen[id] == true then
+			return true
+		end
+		seen[id] = true
+		table.insert(list, id)
+		return true
+	end
+	local count = #raw.skills
+	if count > SkillConfig.SAVE_MAX then
+		return nil
+	end
+	if count > 0 then
+		for index = 1, count do
+			if not take(raw.skills[index]) then
+				return nil
+			end
+		end
+		return list
+	end
+	local extras = 0
+	for _, value in raw.skills do
+		extras += 1
+		if extras > SkillConfig.SAVE_MAX then
+			return nil
+		end
+		if not take(value) then
+			return nil
+		end
+	end
+	return list
+end
+
 local function parseBind(raw: any, version: number): boolean?
 	if version < 4 then
 		return false
@@ -354,12 +406,17 @@ function Schema.migrate(raw: any): any?
 	if bindAtOnce == nil then
 		return nil
 	end
+	local skills = parseSkills(raw)
+	if skills == nil then
+		return nil
+	end
 	profile.dataVersion = Save.DATA_VERSION
 	profile.base = {
 		defences = defences,
 	}
 	profile.shop = shop
 	profile.settings.bindAtOnce = bindAtOnce
+	profile.skills = skills
 	return profile
 end
 
@@ -401,6 +458,7 @@ function Schema.newProfile(now: number, starterInstanceId: string): any
 		base = {
 			defences = {},
 		},
+		skills = {},
 	}
 end
 

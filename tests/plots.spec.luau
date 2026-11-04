@@ -512,7 +512,7 @@ Check.test("the home beam tip is inside the clear fog band under the live atmosp
 	Check.eq(across < UITheme.lighting.fogEnd, true)
 end)
 
-Check.test("the slot to the right of both lair buttons stays empty", function()
+Check.test("the rites button uses the reserved slot to the right of both lair buttons", function()
 	local hud = Plots.RETURN_BUTTON
 	Check.eq(hud.occupiedSlots, 2)
 	Check.eq(HudSlots.origin(0), hud.margin)
@@ -532,11 +532,16 @@ Check.test("the slot to the right of both lair buttons stays empty", function()
 		end
 	end
 	walk("src/client")
+	local ritesFiles = 0
 	for _, path in files do
 		local text = fs.readFile(path)
 		Check.eq(string.find(text, "HudSlots.origin(2)", 1, true), nil, path)
-		Check.eq(string.find(text, "HudSlots.ritesOrigin", 1, true), nil, path)
+		if string.find(text, "HudSlots.ritesOrigin", 1, true) ~= nil then
+			ritesFiles += 1
+			Check.eq(string.find(path, "SkillTree.luau", 1, true) ~= nil, true, path)
+		end
 	end
+	Check.eq(ritesFiles, 1)
 end)
 
 Check.test("lair stone stays the playtest colours and the live light follows v1.2", function()

@@ -10,6 +10,7 @@ require("./plots.spec")
 require("./town.spec")
 require("./watchdog.spec")
 require("./persistence.spec")
+require("./skill_tree.spec")
 
 local Check = require("./check")
 Check.finish()

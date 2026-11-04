@@ -13,6 +13,7 @@ local Remotes = {
 	RETURN_TO_LAIR = "RequestReturnToLair",
 	PEDLAR_BUY = "RequestPedlarBuy",
 	BIND_AT_ONCE = "RequestSetBindAtOnce",
+	BUY_SKILL = "RequestBuySkill",
 }
 
 return table.freeze(Remotes)

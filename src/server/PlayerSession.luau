@@ -23,6 +23,9 @@ local Town = require(Shared:WaitForChild("Config"):WaitForChild("Town")) :: any
 local RemoteArgs = require(Shared:WaitForChild("Logic"):WaitForChild("RemoteArgs")) :: any
 local Save = require(Shared:WaitForChild("Config"):WaitForChild("Save")) :: any
 local Schema = require(Shared:WaitForChild("Logic"):WaitForChild("Schema")) :: any
+local SkillConfig = require(Shared:WaitForChild("Config"):WaitForChild("SkillConfig")) :: any
+local SkillEffects = require(script.Parent:WaitForChild("SkillEffects")) :: any
+local SkillTree = require(Shared:WaitForChild("Logic"):WaitForChild("SkillTree")) :: any
 local Snapshot = require(Shared:WaitForChild("Logic"):WaitForChild("Snapshot")) :: any
 local StealGuard = require(Shared:WaitForChild("Logic"):WaitForChild("StealGuard")) :: any
 local Transactions = require(Shared:WaitForChild("Logic"):WaitForChild("Transactions")) :: any
@@ -139,6 +142,10 @@ local function publish(session: any, credit: number)
 	local player = session.player
 	player:SetAttribute("Cash", profile.cash)
 	player:SetAttribute("IncomePerSecond", income)
+	player:SetAttribute("CatchSeconds", SkillEffects.catchSeconds(profile))
+	player:SetAttribute("CatchStuds", SkillEffects.catchRange(profile))
+	player:SetAttribute("SkillIncome", SkillEffects.skillIncome(profile))
+	player:SetAttribute("AltarPerLevel", SkillEffects.altarPerLevel(profile))
 	player:SetAttribute("LastCredit", credit)
 	player:SetAttribute("ReducedMotion", profile.settings.reducedMotion == true)
 	player:SetAttribute("OnboardingStep", profile.onboarding.step)
@@ -321,7 +328,8 @@ local function onBeginCatch(session: any)
 		task.wait()
 	end
 	local distance = distanceTo(player, session.plot.wildPad)
-	local ready = lanternInHand(player) and RemoteArgs.withinDistance(distance, Economy.CATCH_DISTANCE_STUDS)
+	local ready = lanternInHand(player)
+		and RemoteArgs.withinDistance(distance, SkillEffects.catchRange(session.profile))
 	session.catchBusy = false
 	if not ready or not session.alive or session.catchStart ~= nil then
 		return
@@ -340,11 +348,11 @@ local function onCompleteCatch(session: any)
 	end
 	local elapsed = os.clock() - session.catchStart
 	local distance = distanceTo(session.player, session.plot.wildPad)
-	if not RemoteArgs.withinDistance(distance, Economy.CATCH_DISTANCE_STUDS) then
+	if not RemoteArgs.withinDistance(distance, SkillEffects.catchRange(session.profile)) then
 		session.catchStart = nil
 		return
 	end
-	if not RemoteArgs.catchElapsed(elapsed, Economy.CATCH_SECONDS) then
+	if not RemoteArgs.catchElapsed(elapsed, SkillEffects.catchSeconds(session.profile)) then
 		return
 	end
 	session.catchStart = nil
@@ -444,6 +452,36 @@ local function onBind(session: any, enabled: any)
 	queueSave(session)
 end
 
+local function onBuySkill(session: any, nodeId: any)
+	if not allowRequest(session) then
+		return
+	end
+	local parsed = RemoteArgs.skillId(nodeId)
+	if parsed == nil then
+		warn(string.format("%s rejected skill request", SkillConfig.LOG_PREFIX))
+		return
+	end
+	local ready, reason = SkillTree.evaluate(session.profile, parsed)
+	if not ready then
+		if reason == "sealed" then
+			warn(
+				string.format(
+					"%s %s user %d",
+					SkillConfig.LOG_PREFIX,
+					SkillConfig.SEALED_REFUSAL,
+					session.player.UserId
+				)
+			)
+		end
+		return
+	end
+	if not allowPurchase(session) then
+		return
+	end
+	local ok = Transactions.buySkill(session.profile, parsed)
+	commit(session, ok)
+end
+
 local function onReducedMotion(session: any, enabled: any)
 	if not allowRequest(session) then
 		return
@@ -486,6 +524,7 @@ local function bind(folder: Folder)
 	listen(Names.RETURN_TO_LAIR, onReturn)
 	listen(Names.PEDLAR_BUY, onPedlarBuy)
 	listen(Names.BIND_AT_ONCE, onBind)
+	listen(Names.BUY_SKILL, onBuySkill)
 end
 
 local function startLoops(session: any)

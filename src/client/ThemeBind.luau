@@ -30,4 +30,15 @@ function ThemeBind.apply(label: TextLabel | TextButton, role: string, size: numb
 	constraint.MinTextSize = UITheme.text.minSize
 end
 
+function ThemeBind.italic(label: TextLabel | TextButton, role: string, size: number)
+	ThemeBind.apply(label, role, size)
+	local spec = UITheme.fonts[role]
+	local ok, face = pcall(function()
+		return Font.fromEnum(Enum.Font[spec.family])
+	end)
+	if ok and face ~= nil then
+		label.FontFace = Font.new(face.Family, Enum.FontWeight.Regular, Enum.FontStyle.Italic)
+	end
+end
+
 return ThemeBind
