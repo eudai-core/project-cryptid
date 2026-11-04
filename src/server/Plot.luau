@@ -604,4 +604,15 @@ function Plot.spawnCFrame(plot: any): CFrame
 	return plot.spawnLocation.CFrame
 end
 
+function Plot.insideOwn(plot: any, player: Player): boolean
+	if plot == nil or player == nil then
+		return false
+	end
+	local root = rootOf(player)
+	if root == nil then
+		return false
+	end
+	return contains(plot, root.Position)
+end
+
 return Plot

@@ -110,6 +110,32 @@ local UITheme = {
 		plaqueStrokePx = 2,
 		plaqueTopPx = 24,
 		plaqueGapPx = 8,
+		plaqueBowlPx = 20,
+		screenInset = 12,
+		offeringPip = 8,
+		escapePriority = 3000,
+		busyPoll = 0.05,
+		touchPx = 44,
+		haulPanel = table.freeze({
+			desktop = table.freeze({ w = 560, h = 360 }),
+			mobileH = 360,
+			title = 32,
+			body = 18,
+			amount = 40,
+			detail = 14,
+			buttonW = 220,
+		}),
+		offeringPanel = table.freeze({
+			desktop = table.freeze({ w = 720, h = 460 }),
+			mobileH = 520,
+			title = 32,
+			card = 14,
+			body = 18,
+			detail = 14,
+			buttonW = 240,
+			cardDesktop = table.freeze({ w = 88, h = 110 }),
+			cardMobile = table.freeze({ w = 148, h = 92 }),
+		}),
 		plaqueSize = table.freeze({
 			desktop = table.freeze({ w = 320, h = 72 }),
 			mobile = table.freeze({ w = 240, h = 60 }),
@@ -208,13 +234,32 @@ local UITheme = {
 			direction = "Out",
 			kind = "flash" :: MotionKind,
 		}),
+		haulCount = table.freeze({
+			duration = 0.60,
+			easing = "Quad",
+			direction = "Out",
+			kind = "count" :: MotionKind,
+		}),
 	}),
 	reducedMotion = table.freeze({
 		maxFade = 0.15,
 	}),
-	sigil = "✶",
+	-- GrenzeGotisch draws basic Latin only. A star dingbat shows as an empty box.
+	sigil = "+",
 	disabledMark = "⊘",
 }
+
+function UITheme.textIsSafe(value: string): boolean
+	if type(value) ~= "string" then
+		return false
+	end
+	for _, code in utf8.codes(value) do
+		if code < 32 or code > 126 then
+			return false
+		end
+	end
+	return true
+end
 
 function UITheme.color(token: string): Color3
 	local hex = palette[token]

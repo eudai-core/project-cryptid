@@ -20,9 +20,6 @@ end)
 local Money = import("./Money", function()
 	return script.Parent:WaitForChild("Money")
 end)
-local Income = import("./Income", function()
-	return script.Parent:WaitForChild("Income")
-end)
 local ProfileQuery = import("./ProfileQuery", function()
 	return script.Parent:WaitForChild("ProfileQuery")
 end)
@@ -46,6 +43,12 @@ local Town = import("../Config/Town", function()
 end)
 local OnboardingGoals = import("./OnboardingGoals", function()
 	return script.Parent:WaitForChild("OnboardingGoals")
+end)
+local Bowl = import("./Bowl", function()
+	return script.Parent:WaitForChild("Bowl")
+end)
+local Ownership = import("./Ownership", function()
+	return script.Parent:WaitForChild("Ownership")
 end)
 
 local Transactions = {}
@@ -215,16 +218,23 @@ function Transactions.skip(profile: any, now: number, makeId: () -> string): (bo
 	return true, "ok"
 end
 
-function Transactions.creditIncome(profile: any, seconds: number): number
+function Transactions.creditIncome(
+	profile: any,
+	seconds: number,
+	inside: boolean?,
+	autoCollect: boolean?
+): (number, boolean)
 	if seconds <= 0 then
-		return 0
+		return 0, false
 	end
-	local amount = Money.round(Income.perSecond(profile) * seconds)
-	profile.cash = Money.round(profile.cash + amount)
-	profile.totalEarned = Money.round(profile.totalEarned + amount)
+	local tick = Ownership.cryptidTick(profile, seconds)
+	if tick.tithe > 0 then
+		profile.tithe = Money.round(profile.tithe + tick.tithe)
+	end
 	profile.onboarding.playSeconds += seconds
 	OnboardingGoals.advance(profile)
-	return amount
+	local gained, changed = Bowl.route(profile, tick.cash, inside == true, autoCollect == true)
+	return gained, changed or tick.tithe > 0
 end
 
 function Transactions.buySkill(profile: any, nodeId: any): (boolean, string)
@@ -258,6 +268,22 @@ local function firstEmptyPad(profile: any): number?
 		end
 	end
 	return nil
+end
+
+function Transactions.grantOffering(profile: any, speciesId: string, now: number, newId: string): (boolean, string)
+	if type(speciesId) ~= "string" or Species.get(speciesId) == nil then
+		return false, "species"
+	end
+	if not addCryptid(profile, newId, speciesId, "offering", now) then
+		return false, "id"
+	end
+	if profile.settings.bindAtOnce == true then
+		local pad = firstEmptyPad(profile)
+		if pad ~= nil then
+			profile.pads[tostring(pad)] = newId
+		end
+	end
+	return true, "ok"
 end
 
 function Transactions.buyPedlar(

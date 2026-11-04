@@ -52,14 +52,21 @@ function SessionDocument.buildWrite(
 	jobId: string,
 	now: number,
 	ttl: number,
-	createProfile: any
+	createProfile: any,
+	settle: ((any, number) -> ())?
 ): (any?, string)
+	local function finish(profile: any, status: string): (any?, string)
+		if settle ~= nil then
+			settle(profile, now)
+		end
+		return sealed(profile, jobId, now, ttl), status
+	end
 	if old == nil then
-		local profile = Schema.migrate(createProfile)
+		local profile = Schema.migrate(createProfile, now)
 		if profile == nil then
 			return nil, "corrupt"
 		end
-		return sealed(profile, jobId, now, ttl), "created"
+		return finish(profile, "created")
 	end
 	if type(old) ~= "table" or type(old.profile) ~= "table" then
 		return nil, "corrupt"
@@ -67,11 +74,11 @@ function SessionDocument.buildWrite(
 	if lockActive(old, jobId, now) then
 		return nil, "locked"
 	end
-	local profile = Schema.migrate(old.profile)
+	local profile = Schema.migrate(old.profile, now)
 	if profile == nil then
 		return nil, "corrupt"
 	end
-	return sealed(profile, jobId, now, ttl), "loaded"
+	return finish(profile, "loaded")
 end
 
 function SessionDocument.buildSave(
