@@ -1,0 +1,42 @@
+--!strict
+
+_G.LUNE = true
+
+local fs = require("@lune/fs")
+local Check = require("./check")
+local WatchdogBudget = require("../src/server/Dev/WatchdogBudget")
+
+Check.test("watchdog ignores manual play and non-string args", function()
+	Check.eq(WatchdogBudget.secondsFor(nil), nil)
+	Check.eq(WatchdogBudget.secondsFor(""), nil)
+	Check.eq(WatchdogBudget.secondsFor("play"), nil)
+	Check.eq(WatchdogBudget.secondsFor("QA:10"), nil)
+	Check.eq(WatchdogBudget.secondsFor({ "qa:10" }), nil)
+end)
+
+Check.test("watchdog reads qa seconds and clamps them", function()
+	Check.eq(WatchdogBudget.secondsFor("qa:300"), 300)
+	Check.eq(WatchdogBudget.secondsFor("qa:420:plots3"), 420)
+	Check.eq(WatchdogBudget.secondsFor("qa:30extra"), 30)
+	Check.eq(WatchdogBudget.secondsFor("qa:0"), WatchdogBudget.MIN_SECONDS)
+	Check.eq(WatchdogBudget.secondsFor("qa:000"), WatchdogBudget.MIN_SECONDS)
+	Check.eq(WatchdogBudget.secondsFor("qa:1800"), WatchdogBudget.MAX_SECONDS)
+	Check.eq(WatchdogBudget.secondsFor("qa:1801"), WatchdogBudget.MAX_SECONDS)
+	Check.eq(WatchdogBudget.secondsFor("qa:"), WatchdogBudget.DEFAULT_SECONDS)
+	Check.eq(WatchdogBudget.secondsFor("qa:abc"), WatchdogBudget.DEFAULT_SECONDS)
+	Check.eq(WatchdogBudget.MIN_SECONDS >= 1, true)
+	Check.eq(WatchdogBudget.MAX_SECONDS, 1800)
+end)
+
+Check.test("watchdog script is studio-only and ends the test", function()
+	local text = fs.readFile("src/server/Dev/StudioTestWatchdog.server.luau")
+	local studioAt = string.find(text, "if not RunService:IsStudio() then", 1, true)
+	local argsAt = string.find(text, "StudioTestService:GetTestArgs()", 1, true)
+	Check.truthy(studioAt)
+	Check.truthy(argsAt)
+	Check.eq(studioAt < argsAt, true)
+	Check.contains(text, "EndTest")
+	Check.contains(text, "watchdog-timeout")
+	Check.contains(text, "[Cryptid:Watchdog] armed for ")
+	Check.contains(text, "[Cryptid:Watchdog] ending bot playtest after ")
+end)

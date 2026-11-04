@@ -8,6 +8,8 @@ require("./session_document.spec")
 require("./theme_and_source.spec")
 require("./plots.spec")
 require("./town.spec")
+require("./watchdog.spec")
+require("./persistence.spec")
 
 local Check = require("./check")
 Check.finish()
