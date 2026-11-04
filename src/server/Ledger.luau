@@ -258,6 +258,28 @@ function Ledger.open(options: {
 		return false, status, nil
 	end
 
+	function api.seedForeignLock(userId: number, stale: boolean): boolean
+		local now = options.now()
+		local expires = now + Save.LOCK_TTL_SECONDS
+		if stale then
+			expires = now - Save.QA_STALE_LOCK_AGE_SECONDS
+		end
+		local ok, _status, result = runUpdate("seed", key(userId), function(old)
+			if type(old) ~= "table" or type(old.profile) ~= "table" then
+				return nil, "missing"
+			end
+			return {
+				lockJobId = Save.QA_FOREIGN_JOB_ID,
+				lockTimestamp = now,
+				lockLeaseSeconds = Save.LOCK_TTL_SECONDS,
+				lockExpiresAt = expires,
+				profile = old.profile,
+			},
+				"seeded"
+		end)
+		return ok == true and type(result) == "table" and result.lockJobId == Save.QA_FOREIGN_JOB_ID
+	end
+
 	function api.release(userId: number, profile: any, rebirth: boolean?): (boolean, string)
 		if not requireReady(userId, "release") then
 			return false, "unloaded"

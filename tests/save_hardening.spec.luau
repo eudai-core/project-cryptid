@@ -8,6 +8,7 @@ local Economy = require("../src/shared/Config/Economy")
 local Save = require("../src/shared/Config/Save")
 local Schema = require("../src/shared/Logic/Schema")
 local Autosave = require("../src/shared/Logic/Autosave")
+local SessionClose = require("../src/shared/Logic/SessionClose")
 local Retry = require("../src/shared/Logic/Retry")
 local ShutdownFlush = require("../src/shared/Logic/ShutdownFlush")
 local Ledger = require("../src/server/Ledger")
@@ -477,7 +478,7 @@ Check.test("the wipe guard refuses a collapsed lair unless rebirth is set", func
 	Check.eq(sawWipe, true)
 end)
 
-Check.test("BindToClose flushes every loaded profile and Studio does not wait", function()
+Check.test("BindToClose flushes every loaded profile and Studio waits within the close limit", function()
 	local store = MockDataStore.new()
 	local now = 100
 	local ledger = open(store, "job-a", function()
@@ -520,6 +521,9 @@ Check.test("BindToClose flushes every loaded profile and Studio does not wait", 
 	})
 	Check.eq(ShutdownFlush.budget(true), Save.STUDIO_SHUTDOWN_TIMEOUT_SECONDS)
 	Check.eq(ShutdownFlush.budget(false), Save.SHUTDOWN_TIMEOUT_SECONDS)
+	Check.eq(Save.STUDIO_SHUTDOWN_TIMEOUT_SECONDS > 0, true)
+	Check.eq(Save.STUDIO_SHUTDOWN_TIMEOUT_SECONDS <= Save.BIND_TO_CLOSE_LIMIT_SECONDS, true)
+	Check.eq(Save.SHUTDOWN_TIMEOUT_SECONDS <= Save.BIND_TO_CLOSE_LIMIT_SECONDS, true)
 	Check.eq(result.pending, 0)
 	Check.eq(result.saved, 2)
 	Check.eq(result.released, 2)
@@ -531,8 +535,8 @@ Check.test("BindToClose flushes every loaded profile and Studio does not wait", 
 	Check.eq(store:GetAsync(key(33)), nil)
 
 	local queued = {}
-	local waited = 0
-	local clock = 0
+	local studioClock = 0
+	local studioWaits = 0
 	local deferred = ShutdownFlush.run({
 		{ loaded = true, dirty = true },
 		{ loaded = true, dirty = false },
@@ -546,18 +550,20 @@ Check.test("BindToClose flushes every loaded profile and Studio does not wait", 
 		spawn = function(body)
 			table.insert(queued, body)
 		end,
-		waitFor = function()
-			error("studio budget waited")
+		waitFor = function(seconds: number)
+			studioWaits += 1
+			studioClock += seconds
 		end,
 		now = function()
-			return clock
+			return studioClock
 		end,
 		budgetSeconds = ShutdownFlush.budget(true),
 	})
 	Check.eq(#queued, 2)
-	Check.eq(waited, 0)
+	Check.eq(studioWaits > 0, true)
 	Check.eq(deferred.pending, 2)
 	Check.eq(deferred.saved, 0)
+	Check.near(studioClock, Save.STUDIO_SHUTDOWN_TIMEOUT_SECONDS, Save.SHUTDOWN_POLL_SECONDS)
 
 	local liveClock = 0
 	local liveWaits = 0
@@ -726,7 +732,7 @@ Check.test("the test place project matches default.project.json plus the place i
 	Check.contains(fs.readFile("scripts/stamp-build.ps1"), "serve.test.project.json")
 	local session = fs.readFile("src/server/PlayerSession.luau")
 	Check.contains(session, "Autosave.apply")
-	Check.contains(session, "ShutdownFlush.run")
+	Check.contains(session, "SessionClose.shutdown")
 	Check.contains(session, "DataStoreGateway.setHurry")
 	local respawnAt = string.find(session, "player.RespawnLocation = fallback", 1, true)
 	local loadAt = string.find(session, "DataStoreGateway.load(player.UserId, created)", 1, true)
@@ -737,4 +743,163 @@ Check.test("the test place project matches default.project.json plus the place i
 	local gateway = fs.readFile("src/server/DataStoreGateway.luau")
 	Check.contains(gateway, "GetRequestBudgetForRequestType")
 	Check.contains(gateway, "SaveHooks.fire")
+	Check.contains(fs.readFile("src/server/PlayerSession.luau"), "[Cryptid:DataStore] shutdown flush saved=")
+	Check.contains(fs.readFile("src/server/PlayerSession.luau"), "released=")
+	Check.contains(fs.readFile("src/server/PlayerSession.luau"), "pending=")
+	Check.contains(fs.readFile("src/server/PlayerSession.luau"), "elapsed=")
+end)
+
+Check.test("detach during shutdown saves the latest cash and releases the lock", function()
+	local store = MockDataStore.new()
+	local now = 1000
+	local ledger = open(store, "job-a", function()
+		return now
+	end)
+	local loaded = ledger.load(77, Schema.newProfile(now, "starter"))
+	loaded.profile.cash = 3169
+	Check.eq(ledger.save(77, loaded.profile), true)
+	loaded.profile.cash = 3195
+
+	local active = {}
+	local detaching = {}
+	local session = {
+		loaded = true,
+		dirty = true,
+		ephemeral = false,
+		alive = true,
+		leaving = false,
+		saveBusy = false,
+		profile = loaded.profile,
+	}
+	active[77] = session
+	local role = SessionClose.begin(active, detaching, 77)
+	Check.eq(role, "owner")
+	Check.eq(active[77], nil)
+	local again = SessionClose.begin(active, detaching, 77)
+	Check.eq(again, "pending")
+
+	local writes = 0
+	local clock = 0
+	local ownerDone = false
+	local tally = { saved = 0, released = 0 }
+	local outcome = SessionClose.shutdown(active, detaching, {
+		budgetSeconds = Save.STUDIO_SHUTDOWN_TIMEOUT_SECONDS,
+		now = function()
+			return clock
+		end,
+		waitFor = function(seconds: number)
+			clock += seconds
+			if ownerDone then
+				return
+			end
+			ownerDone = true
+			local saved, released, state = SessionClose.persist(session, {
+				now = function()
+					return clock
+				end,
+				budgetSeconds = Save.STUDIO_SHUTDOWN_TIMEOUT_SECONDS,
+				waitFor = function() end,
+				save = function(current)
+					writes += 1
+					return ledger.save(77, current.profile)
+				end,
+				release = function(current)
+					writes += 1
+					return ledger.release(77, current.profile)
+				end,
+			})
+			Check.eq(state, "closed")
+			SessionClose.note(tally, saved, released)
+			SessionClose.finish(detaching, 77)
+		end,
+		spawn = function()
+			error("shutdown started a second close")
+		end,
+		persist = function()
+			error("shutdown started a second write")
+		end,
+	})
+	Check.eq(ownerDone, true)
+	Check.eq(writes, 2)
+	Check.eq(tally.saved, 1)
+	Check.eq(tally.released, 1)
+	Check.eq(outcome.pending, 0)
+	Check.eq(clock > 0, true)
+	Check.eq(clock <= Save.STUDIO_SHUTDOWN_TIMEOUT_SECONDS, true)
+	Check.eq(store:GetAsync(key(77)).profile.cash, 3195)
+	Check.eq(store:GetAsync(key(77)).lockJobId, "")
+end)
+
+Check.test("a final save waits out the in-flight autosave and writes once", function()
+	local store = MockDataStore.new()
+	local now = 1000
+	local ledger = open(store, "job-a", function()
+		return now
+	end)
+	local loaded = ledger.load(78, Schema.newProfile(now, "starter"))
+	loaded.profile.cash = 3169
+	Check.eq(ledger.save(78, loaded.profile), true)
+	loaded.profile.cash = 3195
+	local session = {
+		loaded = true,
+		dirty = true,
+		ephemeral = false,
+		saveBusy = true,
+		profile = loaded.profile,
+	}
+	local calls = 0
+	local clock = 0
+	local saved, released, state = SessionClose.persist(session, {
+		now = function()
+			return clock
+		end,
+		budgetSeconds = Save.STUDIO_SHUTDOWN_TIMEOUT_SECONDS,
+		waitFor = function(seconds: number)
+			clock += seconds
+			session.saveBusy = false
+		end,
+		save = function(current)
+			calls += 1
+			Check.eq(current.saveBusy, true)
+			Check.eq(current.profile.cash, 3195)
+			return ledger.save(78, current.profile)
+		end,
+		release = function(current)
+			calls += 1
+			return ledger.release(78, current.profile)
+		end,
+	})
+	Check.eq(state, "closed")
+	Check.eq(saved, true)
+	Check.eq(released, true)
+	Check.eq(calls, 2)
+	Check.eq(store:GetAsync(key(78)).profile.cash, 3195)
+	Check.eq(store:GetAsync(key(78)).lockJobId, "")
+	Check.eq(session.saveBusy, false)
+
+	session.saveBusy = true
+	local blocked = 0
+	local busySaved, busyReleased, busyState = SessionClose.persist(session, {
+		now = function()
+			return 0
+		end,
+		budgetSeconds = 0,
+		waitFor = function()
+			error("a busy profile must not wait when the budget is already spent")
+		end,
+		save = function()
+			blocked += 1
+			return true
+		end,
+		release = function()
+			blocked += 1
+			return true
+		end,
+	})
+	Check.eq(busyState, "busy")
+	Check.eq(busySaved, false)
+	Check.eq(busyReleased, false)
+	Check.eq(blocked, 0)
+	Check.eq(session.saveBusy, true)
+	Check.eq(store:GetAsync(key(78)).profile.cash, 3195)
 end)

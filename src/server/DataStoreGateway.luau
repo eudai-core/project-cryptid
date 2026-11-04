@@ -95,4 +95,11 @@ function DataStoreGateway.setHurry(value: boolean)
 	hurry = value
 end
 
+function DataStoreGateway.seedForeignLock(userId: number, stale: boolean): boolean
+	if not RunService:IsStudio() then
+		return false
+	end
+	return ledger.seedForeignLock(userId, stale == true)
+end
+
 return DataStoreGateway
