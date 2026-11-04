@@ -11,11 +11,11 @@ end
 local Return = import("../Config/Return", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Return")
 end)
-local Income = import("./Income", function()
-	return script.Parent:WaitForChild("Income")
-end)
 local Money = import("./Money", function()
 	return script.Parent:WaitForChild("Money")
+end)
+local Ownership = import("./Ownership", function()
+	return script.Parent:WaitForChild("Ownership")
 end)
 
 local Offline = {}
@@ -27,14 +27,10 @@ local function nonNegative(value: any): number
 	return value
 end
 
-function Offline.capture(profile: any, multiplier: number?)
-	local base = Income.perSecond(profile)
-	local mult = 1
-	if type(multiplier) == "number" and multiplier == multiplier and multiplier > 0 and multiplier < 1e6 then
-		mult = multiplier
-	end
-	profile.offline.rateNoPass = base
-	profile.offline.rate = Money.round(base * mult)
+function Offline.capture(profile: any, forcedCash: number?)
+	local noPass, withPass = Ownership.leaveRates(profile, forcedCash)
+	profile.offline.rateNoPass = noPass
+	profile.offline.rate = withPass
 end
 
 function Offline.amount(rate: any, awaySeconds: any): (number, boolean)
@@ -101,6 +97,7 @@ function Offline.fold(
 	profile.cash = Money.round(profile.cash + haul)
 	profile.totalEarned = Money.round(profile.totalEarned + haul)
 	profile.tithe = Money.round(profile.tithe + tithe)
+	profile.offline.notice = haul
 	return {
 		changed = true,
 		show = false,

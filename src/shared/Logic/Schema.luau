@@ -374,6 +374,7 @@ local function freshOffline(): any
 		pendingTithe = 0,
 		awaySeconds = 0,
 		capped = false,
+		notice = 0,
 	}
 end
 
@@ -406,7 +407,15 @@ local function parseOffline(raw: any, version: number): any?
 	local pending = nonNegative(raw.offline.pending)
 	local pendingTithe = nonNegative(raw.offline.pendingTithe)
 	local awaySeconds = wholeNumber(raw.offline.awaySeconds, 0, 1e12)
-	if rate == nil or rateNoPass == nil or pending == nil or pendingTithe == nil or awaySeconds == nil then
+	local notice = nonNegative(raw.offline.notice)
+	if
+		rate == nil
+		or rateNoPass == nil
+		or pending == nil
+		or pendingTithe == nil
+		or awaySeconds == nil
+		or notice == nil
+	then
 		return nil
 	end
 	if type(raw.offline.capped) ~= "boolean" then
@@ -419,6 +428,7 @@ local function parseOffline(raw: any, version: number): any?
 		pendingTithe = pendingTithe,
 		awaySeconds = awaySeconds,
 		capped = raw.offline.capped,
+		notice = notice,
 	}
 end
 
@@ -597,6 +607,7 @@ function Schema.newProfile(now: number, starterInstanceId: string): any
 			pendingTithe = 0,
 			awaySeconds = 0,
 			capped = false,
+			notice = 0,
 		},
 		daily = {
 			step = 1,

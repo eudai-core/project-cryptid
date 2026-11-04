@@ -8,7 +8,9 @@ local RunService = game:GetService("RunService")
 local Ledger = require(script.Parent:WaitForChild("Ledger"))
 local MockDataStore = require(script.Parent:WaitForChild("MockDataStore"))
 local SaveHooks = require(script.Parent:WaitForChild("SaveHooks"))
+local StudioQa = require(script.Parent:WaitForChild("Dev"):WaitForChild("StudioQa"))
 local Save = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("Save")) :: any
+local Offline = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Logic"):WaitForChild("Offline")) :: any
 
 local jobId = game.JobId
 if jobId == "" then
@@ -70,6 +72,10 @@ local ledger = Ledger.open({
 	end,
 	confirmLive = function()
 		liveConfirmed = true
+	end,
+	settle = function(profile: any, now: number)
+		StudioQa.rewindLastSeen(profile)
+		Offline.fold(profile, now)
 	end,
 })
 

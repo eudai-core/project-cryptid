@@ -41,6 +41,7 @@ export type Profile = {
 		pendingTithe: number,
 		awaySeconds: number,
 		capped: boolean,
+		notice: number,
 	},
 	daily: {
 		step: number,

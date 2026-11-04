@@ -103,11 +103,18 @@ function Snapshot.build(profile: any, lastCredit: number, revision: number, view
 
 	local viewNow = 0
 	local autoOpen = false
+	local silentNotice = profile.offline.notice
+	if type(silentNotice) ~= "number" or silentNotice < 0 then
+		silentNotice = 0
+	end
 	if type(view) == "table" then
 		if type(view.now) == "number" then
 			viewNow = view.now
 		end
 		autoOpen = view.dailyAutoOpen == true
+		if type(view.silentNotice) == "number" and view.silentNotice >= 0 then
+			silentNotice = view.silentNotice
+		end
 	end
 	local rate = Income.perSecond(profile)
 	local steps = {}
@@ -168,6 +175,7 @@ function Snapshot.build(profile: any, lastCredit: number, revision: number, view
 			awaySeconds = awaySeconds,
 			capped = profile.offline.capped == true,
 			show = pending >= Return.SCREEN_MIN_HAUL and awaySeconds >= Return.SCREEN_AWAY_SECONDS,
+			notice = silentNotice,
 		},
 		daily = {
 			step = profile.daily.step,

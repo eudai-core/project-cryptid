@@ -20,9 +20,6 @@ end)
 local Money = import("./Money", function()
 	return script.Parent:WaitForChild("Money")
 end)
-local Income = import("./Income", function()
-	return script.Parent:WaitForChild("Income")
-end)
 local ProfileQuery = import("./ProfileQuery", function()
 	return script.Parent:WaitForChild("ProfileQuery")
 end)
@@ -43,6 +40,9 @@ local OnboardingGoals = import("./OnboardingGoals", function()
 end)
 local Bowl = import("./Bowl", function()
 	return script.Parent:WaitForChild("Bowl")
+end)
+local Ownership = import("./Ownership", function()
+	return script.Parent:WaitForChild("Ownership")
 end)
 
 local Transactions = {}
@@ -221,10 +221,14 @@ function Transactions.creditIncome(
 	if seconds <= 0 then
 		return 0, false
 	end
-	local amount = Money.round(Income.perSecond(profile) * seconds)
+	local tick = Ownership.cryptidTick(profile, seconds)
+	if tick.tithe > 0 then
+		profile.tithe = Money.round(profile.tithe + tick.tithe)
+	end
 	profile.onboarding.playSeconds += seconds
 	OnboardingGoals.advance(profile)
-	return Bowl.route(profile, amount, inside == true, autoCollect == true)
+	local gained, changed = Bowl.route(profile, tick.cash, inside == true, autoCollect == true)
+	return gained, changed or tick.tithe > 0
 end
 
 function Transactions.canSell(profile: any): boolean

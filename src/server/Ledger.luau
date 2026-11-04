@@ -69,6 +69,7 @@ function Ledger.open(options: {
 	onSaved: ((number, any, string) -> ())?,
 	isHurry: (() -> boolean)?,
 	confirmLive: (() -> ())?,
+	settle: ((any, number) -> ())?,
 }): any
 	local mock: any = nil
 	local warned = false
@@ -183,7 +184,14 @@ function Ledger.open(options: {
 	function api.load(userId: number, createProfile: any): any
 		ready[userId] = false
 		local ok, status, result = runUpdate("read", key(userId), function(old)
-			return SessionDocument.buildWrite(old, options.jobId, options.now(), Save.LOCK_TTL_SECONDS, createProfile)
+			return SessionDocument.buildWrite(
+				old,
+				options.jobId,
+				options.now(),
+				Save.LOCK_TTL_SECONDS,
+				createProfile,
+				options.settle
+			)
 		end)
 		if ok and type(result) == "table" and result.lockJobId == options.jobId then
 			local profile = Schema.migrate(result.profile, options.now())

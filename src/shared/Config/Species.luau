@@ -1,5 +1,17 @@
 --!strict
 
+local function import(lunePath: string, getRoblox: () -> any): any
+	-- selene: allow(global_usage)
+	if _G.LUNE == true then
+		return require(lunePath)
+	end
+	return require(getRoblox())
+end
+
+local Return = import("./Return", function()
+	return script.Parent:WaitForChild("Return")
+end)
+
 export type Rarity = "Common" | "Uncommon" | "Rare" | "Epic" | "Legendary" | "Mythic"
 
 export type SpeciesRecord = {
@@ -45,8 +57,8 @@ local BY_ID: { [string]: SpeciesRecord } = {
 	legendary_02 = record("legendary_02", "Placeholder Legendary II", 600, nil, "Legendary"),
 	mythic_01 = record("mythic_01", "Placeholder Mythic", 2500, nil, "Mythic"),
 	mythic_02 = record("mythic_02", "Placeholder Mythic II", 2500, nil, "Mythic"),
-	snallygaster = record("snallygaster", "Snallygaster", 16, nil, "Uncommon"),
-	flatwoods_monster = record("flatwoods_monster", "Flatwoods Monster", 40, nil, "Rare"),
+	snallygaster = record("snallygaster", "Snallygaster", Return.SNALLYGASTER_INCOME, nil, "Uncommon"),
+	flatwoods_monster = record("flatwoods_monster", "Flatwoods Monster", Return.FLATWOODS_INCOME, nil, "Rare"),
 }
 
 local Species = {

@@ -8,6 +8,7 @@ local UiFactory = require(script.Parent:WaitForChild("UiFactory"))
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local NumberFormat = require(Shared:WaitForChild("Logic"):WaitForChild("NumberFormat")) :: any
 local OfferingCopy = require(Shared:WaitForChild("Logic"):WaitForChild("OfferingCopy")) :: any
+local Plots = require(Shared:WaitForChild("Config"):WaitForChild("Plots")) :: any
 local Return = require(Shared:WaitForChild("Config"):WaitForChild("Return")) :: any
 local UITheme = require(Shared:WaitForChild("UITheme")) :: any
 
@@ -69,6 +70,28 @@ function HaulPanel.mount(parent: Instance, isReduced: () -> boolean, claim: () -
 	cap.Visible = false
 	cap.ZIndex = 32
 
+	local toast = UiFactory.label(parent, "body", UITheme.fonts.body.desktop, "GoldBright")
+	toast.Name = "HaulToast"
+	toast.AnchorPoint = Vector2.new(0.5, 0)
+	toast.BackgroundTransparency = 1
+	toast.TextXAlignment = Enum.TextXAlignment.Center
+	toast.TextWrapped = true
+	toast.Visible = false
+	toast.ZIndex = 28
+	local toastToken = 0
+	local function showToast(paid: number)
+		toast.Text = OfferingCopy.silentToast(paid)
+		toast.TextColor3 = UITheme.color("GoldBright")
+		toast.Visible = true
+		toastToken += 1
+		local shown = toastToken
+		task.delay(Return.SILENT_TOAST_SECONDS, function()
+			if toastToken == shown then
+				toast.Visible = false
+			end
+		end)
+	end
+
 	local button = UiFactory.button(frame, UITheme.fonts.body.desktop)
 	button.Name = "Take"
 	button.Text = Return.HAUL_BUTTON
@@ -86,6 +109,7 @@ function HaulPanel.mount(parent: Instance, isReduced: () -> boolean, claim: () -
 
 	local open = false
 	local shownKey = ""
+	local shownNotice = 0
 
 	local function setOpen(on: boolean)
 		open = on
@@ -145,9 +169,16 @@ function HaulPanel.mount(parent: Instance, isReduced: () -> boolean, claim: () -
 		button.AnchorPoint = Vector2.new(0.5, 1)
 		button.Position = UDim2.new(0.5, 0, 1, -inset)
 		button.Size = UDim2.fromOffset(spec.buttonW, UITheme.shape.touchPx)
+		toast.Position = UDim2.new(0.5, 0, 0, Plots.TOAST_TOP)
+		toast.Size = UDim2.new(1, -UITheme.shape.screenInset * 2, 0, UITheme.fonts.body.desktop + 8)
 	end
 
 	function api.apply(haul: any)
+		local notice = if type(haul) == "table" then haul.notice else nil
+		if type(notice) == "number" and notice > 0 and notice ~= shownNotice then
+			shownNotice = notice
+			showToast(notice)
+		end
 		local pending = if type(haul) == "table" then haul.pending else nil
 		local away = if type(haul) == "table" then haul.awaySeconds else nil
 		local visible = type(haul) == "table"

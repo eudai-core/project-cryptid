@@ -148,6 +148,7 @@ local function publish(session: any, credit: number)
 	local snap = Snapshot.build(profile, credit, session.revision, {
 		now = offeringNow,
 		dailyAutoOpen = session.dailyAutoOpen == true,
+		silentNotice = session.silentNotice or 0,
 	})
 	local player = session.player
 	player:SetAttribute("Cash", profile.cash)
@@ -171,7 +172,7 @@ local performSave: (any) -> (boolean, string)
 local queueSave: (any) -> ()
 
 local function stampOnline(session: any)
-	Offline.capture(session.profile, Ownership.cashMultiplier(session.profile))
+	Offline.capture(session.profile)
 	session.profile.lastSeenUnix = os.time()
 end
 
@@ -713,8 +714,11 @@ function PlayerSession.onPlayer(player: Player)
 	end
 	local profile = loaded.profile
 	local grantedStarter = Schema.ensureStarter(profile, os.time(), HttpService:GenerateGUID(false))
-	StudioQa.rewindLastSeen(profile)
-	local folded = Offline.fold(profile, os.time())
+	local silentNotice = 0
+	if type(profile.offline.notice) == "number" and profile.offline.notice > 0 then
+		silentNotice = profile.offline.notice
+		profile.offline.notice = 0
+	end
 	local offeringNow = StudioQa.unixNow()
 	local dailyAutoOpen = Daily.shouldAutoOpen(Daily.offerButton(profile), Daily.ready(profile, offeringNow))
 
@@ -757,8 +761,9 @@ function PlayerSession.onPlayer(player: Player)
 		loaded = true,
 		alive = true,
 		leaving = false,
-		dirty = grantedStarter or folded.changed,
+		dirty = grantedStarter or silentNotice > 0,
 		dailyAutoOpen = dailyAutoOpen,
+		silentNotice = silentNotice,
 		lockExpiresAt = lockExpiresAt,
 		saveBusy = false,
 		saveScheduled = false,

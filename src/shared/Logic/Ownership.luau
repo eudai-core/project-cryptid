@@ -11,8 +11,41 @@ end
 local Return = import("../Config/Return", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Return")
 end)
+local Income = import("./Income", function()
+	return script.Parent:WaitForChild("Income")
+end)
+local Money = import("./Money", function()
+	return script.Parent:WaitForChild("Money")
+end)
 
 local Ownership = {}
+
+function Ownership.layers(profile: any, forcedCash: number?): { skills: number, rebirth: number, cashPass: number }
+	return {
+		skills = 1,
+		rebirth = 1,
+		cashPass = Ownership.cashMultiplier(profile, forcedCash),
+	}
+end
+
+function Ownership.leaveRates(profile: any, forcedCash: number?): (number, number)
+	local layers = Ownership.layers(profile, forcedCash)
+	local noPass = Money.round(Income.perSecond(profile) * layers.skills * layers.rebirth)
+	local withPass = Money.round(noPass * layers.cashPass)
+	return noPass, withPass
+end
+
+function Ownership.cryptidTick(profile: any, seconds: number, forcedCash: number?): { cash: number, tithe: number }
+	local span = seconds
+	if type(span) ~= "number" or span ~= span or span < 0 or span == math.huge then
+		span = 0
+	end
+	local noPass, withPass = Ownership.leaveRates(profile, forcedCash)
+	return {
+		cash = Money.round(withPass * span),
+		tithe = Money.round(noPass * span),
+	}
+end
 
 function Ownership.autoCollect(profile: any, forced: boolean?): boolean
 	if forced == true then

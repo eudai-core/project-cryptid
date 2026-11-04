@@ -56,6 +56,10 @@ local Return = {
 	BOWL_PREFIX = "In the bowl: ",
 	SNALLYGASTER_ID = "snallygaster",
 	FLATWOODS_ID = "flatwoods_monster",
+	SNALLYGASTER_INCOME = 16,
+	FLATWOODS_INCOME = 40,
+	SILENT_TOAST_SECONDS = 3,
+	SILENT_TOAST = "The lair kept earning: +",
 	STEPS = table.freeze({
 		reward(5, 250, nil),
 		reward(10, 500, nil),

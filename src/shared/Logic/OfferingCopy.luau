@@ -60,4 +60,8 @@ function OfferingCopy.bowlLine(amount: number): string
 	return Return.BOWL_PREFIX .. NumberFormat.formatCash(amount)
 end
 
+function OfferingCopy.silentToast(amount: number): string
+	return Return.SILENT_TOAST .. NumberFormat.formatCash(amount)
+end
+
 return OfferingCopy

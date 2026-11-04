@@ -7,16 +7,22 @@ local Check = require("./check")
 local Bowl = require("../src/shared/Logic/Bowl")
 local Daily = require("../src/shared/Logic/Daily")
 local Duration = require("../src/shared/Logic/Duration")
+local Economy = require("../src/shared/Config/Economy")
 local Income = require("../src/shared/Logic/Income")
+local Ledger = require("../src/server/Ledger")
+local MockDataStore = require("../src/server/MockDataStore")
 local OfferingCopy = require("../src/shared/Logic/OfferingCopy")
 local Offline = require("../src/shared/Logic/Offline")
 local Ownership = require("../src/shared/Logic/Ownership")
+local ProfileQuery = require("../src/shared/Logic/ProfileQuery")
 local QaArgs = require("../src/shared/Logic/QaArgs")
 local Return = require("../src/shared/Config/Return")
 local Save = require("../src/shared/Config/Save")
 local Schema = require("../src/shared/Logic/Schema")
 local SessionDocument = require("../src/shared/Logic/SessionDocument")
 local Settings = require("../src/shared/Logic/Settings")
+local ShopPools = require("../src/shared/Config/ShopPools")
+local ShopRoll = require("../src/server/ShopRoll")
 local Snapshot = require("../src/shared/Logic/Snapshot")
 local Species = require("../src/shared/Config/Species")
 local Transactions = require("../src/shared/Logic/Transactions")
@@ -111,24 +117,115 @@ Check.test("a short or negative absence pays nothing and a sub-five-minute haul 
 	Check.eq(newbie.cash, 25)
 end)
 
-Check.test("a doubled leave rate books the pre-pass amount on the tithe", function()
+Check.test("tithe is pre-2x lifetime income and the leave rate includes the altar", function()
 	local profile = fresh()
 	profile.onboarding.step = 8
-	Offline.capture(profile, Ownership.cashMultiplier(profile, 2))
+	profile.upgrades.boneAltar = 1
+	Check.eq(Income.multiplier(1), 1 + Economy.ALTAR_BONUS_PER_LEVEL)
+	Check.eq(Income.perSecond(profile), 2.5)
+	Offline.capture(profile)
 	Check.eq(profile.offline.rateNoPass, Income.perSecond(profile))
-	Check.eq(profile.offline.rate, Income.perSecond(profile) * 2)
+	Check.eq(profile.offline.rate, profile.offline.rateNoPass)
+	local layers = Ownership.layers(profile, 2)
+	Check.eq(layers.skills, 1)
+	Check.eq(layers.rebirth, 1)
+	Check.eq(layers.cashPass, 2)
+	local tick = Ownership.cryptidTick(profile, 10, 2)
+	Check.eq(tick.tithe, 25)
+	Check.eq(tick.cash, 50)
+	local lived = fresh()
+	lived.upgrades.boneAltar = 1
+	Transactions.creditIncome(lived, 4)
+	Check.eq(lived.tithe, Ownership.cryptidTick(lived, 4).tithe)
+	local carried = lived.tithe
+	Transactions.creditIncome(lived, 1)
+	Check.eq(lived.tithe, carried + Ownership.cryptidTick(lived, 1).tithe)
+
 	profile.offline.rate = 200
 	profile.offline.rateNoPass = 100
+	profile.tithe = 50
 	profile.lastSeenUnix = 100
 	local folded = Offline.fold(profile, 100 + 2 * Return.SECONDS_PER_HOUR)
 	Check.eq(folded.haul, 288_000)
 	Check.eq(folded.tithe, 144_000)
-	local _, tithe = Offline.claim(profile)
+	local amount, tithe = Offline.claim(profile)
+	Check.eq(amount, 288_000)
 	Check.eq(tithe, 144_000)
-	Check.eq(profile.tithe, 144_000)
+	Check.eq(profile.tithe, 50 + 144_000)
+	Check.eq(profile.totalEarned, 288_000)
+	Check.eq(profile.cash, 25 + 288_000)
 	Check.eq(Ownership.cashMultiplier(profile), 1)
 	Check.eq(Return.CASH_DOUBLE_ENABLED, false)
 	Check.eq(Return.CASH_DOUBLE_PASS_ID, nil)
+end)
+
+Check.test("an unclaimed haul is written with lastSeen and pays once on rejoin", function()
+	local clock = 5_000_000
+	local store = MockDataStore.new()
+	local ledger = Ledger.open({
+		getStore = function()
+			return store
+		end,
+		createMock = function()
+			error("store already provided")
+		end,
+		allowMock = function()
+			return false
+		end,
+		jobId = "job-haul",
+		now = function()
+			return clock
+		end,
+		waitFor = function() end,
+		warn = function() end,
+		settle = function(profile: any, now: number)
+			Offline.fold(profile, now)
+		end,
+	})
+	local created = ledger.load(7, Schema.newProfile(clock, "starter"))
+	Check.eq(created.ok, true)
+	created.profile.onboarding.step = 8
+	created.profile.offline.rate = 100
+	created.profile.offline.rateNoPass = 100
+	created.profile.lastSeenUnix = clock - 2 * Return.SECONDS_PER_HOUR
+	created.profile.cash = 25
+	created.profile.totalEarned = 0
+	created.profile.tithe = 0
+	Check.eq(ledger.release(7, created.profile), true)
+
+	local returned = ledger.load(7, Schema.newProfile(clock, "decoy"))
+	Check.eq(returned.ok, true)
+	Check.eq(returned.profile.offline.pending, 144_000)
+	Check.eq(returned.profile.lastSeenUnix, clock)
+	Check.eq(returned.profile.cash, 25)
+	Check.eq(returned.profile.totalEarned, 0)
+	local written = store:GetAsync(Save.KEY_PREFIX .. "7")
+	Check.eq(written.profile.offline.pending, 144_000)
+	Check.eq(written.profile.lastSeenUnix, clock)
+	Check.eq(ledger.release(7, returned.profile), true)
+
+	local rejoined = ledger.load(7, Schema.newProfile(clock, "decoy"))
+	Check.eq(rejoined.ok, true)
+	Check.eq(rejoined.profile.offline.pending, 144_000)
+	Check.eq(rejoined.profile.cash, 25)
+	Check.eq(rejoined.profile.totalEarned, 0)
+	local amount, tithe = Offline.claim(rejoined.profile)
+	Check.eq(amount, 144_000)
+	Check.eq(tithe, 144_000)
+	Check.eq(rejoined.profile.offline.pending, 0)
+	Check.eq(rejoined.profile.cash, 25 + 144_000)
+	Check.eq(rejoined.profile.totalEarned, 144_000)
+	Check.eq(rejoined.profile.tithe, 144_000)
+	Check.eq(Offline.claim(rejoined.profile), 0)
+	Check.eq(ledger.save(7, rejoined.profile), true)
+	Check.eq(ledger.release(7, rejoined.profile), true)
+
+	local after = ledger.load(7, Schema.newProfile(clock, "decoy"))
+	Check.eq(after.ok, true)
+	Check.eq(after.profile.offline.pending, 0)
+	Check.eq(after.profile.cash, 25 + 144_000)
+	Check.eq(after.profile.totalEarned, 144_000)
+	Check.eq(after.profile.tithe, 144_000)
 end)
 
 Check.test("the nightly offering pauses, rolls the UTC day, and pays once", function()
@@ -190,10 +287,12 @@ end)
 
 Check.test("creature steps grant the named species once and can bind at once", function()
 	Check.eq(Species.get(Species.SNALLYGASTER_ID).displayName, "Snallygaster")
-	Check.eq(Species.get(Species.SNALLYGASTER_ID).baseIncome, 16)
+	Check.eq(Species.get(Species.SNALLYGASTER_ID).baseIncome, Return.SNALLYGASTER_INCOME)
+	Check.eq(Return.SNALLYGASTER_INCOME, 16)
 	Check.eq(Species.get(Species.SNALLYGASTER_ID).rarity, "Uncommon")
 	Check.eq(Species.get(Species.FLATWOODS_ID).displayName, "Flatwoods Monster")
-	Check.eq(Species.get(Species.FLATWOODS_ID).baseIncome, 40)
+	Check.eq(Species.get(Species.FLATWOODS_ID).baseIncome, Return.FLATWOODS_INCOME)
+	Check.eq(Return.FLATWOODS_INCOME, 40)
 	Check.eq(Species.get(Species.FLATWOODS_ID).rarity, "Rare")
 
 	local profile = fresh()
@@ -222,6 +321,36 @@ Check.test("creature steps grant the named species once and can bind at once", f
 	Check.eq(bound.daily.step, 1)
 	Check.eq(Daily.claim(bound, 80, ids()), false)
 	Check.eq(bound.daily.totalClaims, 1)
+	Check.eq(ProfileQuery.ownsSpecies(profile, Species.SNALLYGASTER_ID), true)
+	Check.eq(ProfileQuery.ownsSpecies(bound, Species.FLATWOODS_ID), true)
+
+	local function listed(pool: { string }, speciesId: string): boolean
+		for _, id in pool do
+			if id == speciesId then
+				return true
+			end
+		end
+		return false
+	end
+	for _, pool in ShopPools do
+		Check.eq(listed(pool, Species.SNALLYGASTER_ID), false)
+		Check.eq(listed(pool, Species.FLATWOODS_ID), false)
+	end
+	for _, guarantee in Species.GUARANTEES do
+		Check.eq(guarantee.speciesId == Species.SNALLYGASTER_ID, false)
+		Check.eq(guarantee.speciesId == Species.FLATWOODS_ID, false)
+	end
+	for rotation = 1, 400 do
+		local stock = ShopRoll.generate(rotation)
+		for _, offer in stock.offers do
+			Check.eq(offer.speciesId == Species.SNALLYGASTER_ID, false)
+			Check.eq(offer.speciesId == Species.FLATWOODS_ID, false)
+		end
+	end
+	for _, offer in Transactions.currentOffers(fresh()) do
+		Check.eq(offer.speciesId == Species.SNALLYGASTER_ID, false)
+		Check.eq(offer.speciesId == Species.FLATWOODS_ID, false)
+	end
 end)
 
 Check.test("the bowl holds outside income and banks on the threshold or the forced hook", function()
@@ -381,6 +510,18 @@ Check.test("haul and offering copy stays free of shop prompts", function()
 		"Next offering in 7h 12m"
 	)
 	Check.eq(OfferingCopy.progress(1), "1 of 7")
+	Check.eq(Return.SILENT_TOAST_SECONDS, 3)
+	Check.eq(OfferingCopy.silentToast(2_400), "The lair kept earning: +$2,400")
+	local quietHaul = fresh()
+	quietHaul.onboarding.step = 8
+	quietHaul.offline.rate = 100
+	quietHaul.offline.rateNoPass = 100
+	quietHaul.lastSeenUnix = 2_000
+	local silent = Offline.fold(quietHaul, 2_000 + 120)
+	Check.eq(silent.show, false)
+	Check.eq(silent.granted, 2_400)
+	Check.eq(quietHaul.offline.notice, 2_400)
+	Check.eq(quietHaul.totalEarned, 2_400)
 
 	local profile = fresh()
 	profile.onboarding.step = 8
