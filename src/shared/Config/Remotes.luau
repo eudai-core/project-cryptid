@@ -16,6 +16,7 @@ local Remotes = {
 	CLAIM_HAUL = "RequestClaimHaul",
 	CLAIM_DAILY = "RequestClaimDaily",
 	SET_SETTINGS = "RequestSetSettings",
+	BUY_SKILL = "RequestBuySkill",
 }
 
 return table.freeze(Remotes)

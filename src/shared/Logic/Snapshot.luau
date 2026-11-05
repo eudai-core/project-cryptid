@@ -32,6 +32,9 @@ end)
 local Income = import("./Income", function()
 	return script.Parent:WaitForChild("Income")
 end)
+local SkillEffects = import("./SkillEffects", function()
+	return script.Parent:WaitForChild("SkillEffects")
+end)
 local OnboardingGoals = import("./OnboardingGoals", function()
 	return script.Parent:WaitForChild("OnboardingGoals")
 end)
@@ -51,7 +54,8 @@ function Snapshot.build(profile: any, lastCredit: number, revision: number, view
 	local goal = OnboardingGoals.view(profile)
 	local pads = {}
 	for index = 1, Economy.MAX_PADS do
-		local cost = Economy.PAD_COST[index] or 0
+		local priced = SkillEffects.padCost(profile, index)
+		local cost = if type(priced) == "number" then priced else 0
 		local instanceId = ProfileQuery.padAt(profile, index)
 		local entry = {
 			index = index,
@@ -73,7 +77,13 @@ function Snapshot.build(profile: any, lastCredit: number, revision: number, view
 			entry.instanceId = instanceId
 			entry.displayName = if species ~= nil then species.displayName else ""
 			entry.income = if record ~= nil
-				then Income.contribution(record.speciesId, profile.upgrades.boneAltar, BoneAltar.l3Owned(profile))
+				then Income.contribution(
+					record.speciesId,
+					profile.upgrades.boneAltar,
+					BoneAltar.l3Owned(profile),
+					SkillEffects.skillIncome(profile)
+						+ if record.source == "wild" then SkillEffects.wildIncome(profile) else 0
+				)
 				else 0
 		end
 		table.insert(pads, entry)
@@ -101,6 +111,16 @@ function Snapshot.build(profile: any, lastCredit: number, revision: number, view
 	table.sort(inventory, function(a, b)
 		return a.instanceId < b.instanceId
 	end)
+
+	local skills = {}
+	if type(profile.skills) == "table" then
+		for index = 1, #profile.skills do
+			local id = profile.skills[index]
+			if type(id) == "string" then
+				table.insert(skills, id)
+			end
+		end
+	end
 
 	local pedlarBought = {}
 	for slot = 1, Shop.SLOT_COUNT do
@@ -219,6 +239,7 @@ function Snapshot.build(profile: any, lastCredit: number, revision: number, view
 			progress = profile.daily.step,
 			steps = steps,
 		},
+		skills = skills,
 	}
 end
 

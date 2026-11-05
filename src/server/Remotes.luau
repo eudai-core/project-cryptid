@@ -29,6 +29,7 @@ function Remotes.create(): Folder
 		Names.CLAIM_HAUL,
 		Names.CLAIM_DAILY,
 		Names.SET_SETTINGS,
+		Names.BUY_SKILL,
 	}
 	for _, name in names do
 		local remote = Instance.new("RemoteEvent")

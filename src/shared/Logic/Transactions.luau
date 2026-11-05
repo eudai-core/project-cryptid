@@ -41,6 +41,12 @@ end)
 local RemoteArgs = import("./RemoteArgs", function()
 	return script.Parent:WaitForChild("RemoteArgs")
 end)
+local SkillEffects = import("./SkillEffects", function()
+	return script.Parent:WaitForChild("SkillEffects")
+end)
+local SkillTree = import("./SkillTree", function()
+	return script.Parent:WaitForChild("SkillTree")
+end)
 local Town = import("../Config/Town", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Town")
 end)
@@ -132,7 +138,7 @@ function Transactions.unlockPad(profile: any, index: number): (boolean, string)
 	if index ~= profile.padsUnlocked + 1 or index > Economy.MAX_PADS then
 		return false, "order"
 	end
-	local cost = Economy.PAD_COST[index]
+	local cost = SkillEffects.padCost(profile, index)
 	if type(cost) ~= "number" then
 		return false, "range"
 	end
@@ -249,6 +255,10 @@ function Transactions.creditIncome(
 	OnboardingGoals.advance(profile)
 	local gained, changed = Bowl.route(profile, tick.cash, inside == true, autoCollect == true)
 	return gained, changed or tick.tithe > 0
+end
+
+function Transactions.buySkill(profile: any, nodeId: any): (boolean, string)
+	return SkillTree.buy(profile, nodeId)
 end
 
 function Transactions.canSell(profile: any): boolean

@@ -1,0 +1,353 @@
+<roblox xmlns:xmime="http://www.w3.org/2005/05/xmlmime" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4">
+	<Meta name="ExplicitAutoJoints">true</Meta>
+	<Item class="Model" referent="RBXA5C40805000000000000000000000001">
+		<Properties>
+			<string name="Name">Pad</string>
+			<Ref name="PrimaryPart">RBXA5C40805000000000000000000000002</Ref>
+			<BinaryString name="AttributesSerialize">AwAAAAcAAABBc3NldElkAgMAAABQYWQMAAAAQXNzZXRWZXJzaW9uAgMAAAAxLjAGAAAAU3RhdGVzAhwAAABPY2N1cGllZCxFbXB0eSxMb2NrZWQsU2VhbGVk</BinaryString>
+		</Properties>
+		<Item class="Part" referent="RBXA5C40805000000000000000000000002">
+			<Properties>
+				<string name="Name">Root</string>
+				<bool name="Anchored">true</bool>
+				<bool name="CanCollide">false</bool>
+				<bool name="CanTouch">false</bool>
+				<bool name="CanQuery">false</bool>
+				<bool name="CastShadow">false</bool>
+				<bool name="Locked">false</bool>
+				<CoordinateFrame name="CFrame"><X>0</X><Y>0.2</Y><Z>0</Z><R00>1</R00><R01>0</R01><R02>0</R02><R10>0</R10><R11>1</R11><R12>0</R12><R20>0</R20><R21>0</R21><R22>1</R22></CoordinateFrame>
+				<CoordinateFrame name="PivotOffset"><X>0</X><Y>-0.2</Y><Z>0</Z><R00>1</R00><R01>0</R01><R02>0</R02><R10>0</R10><R11>1</R11><R12>0</R12><R20>0</R20><R21>0</R21><R22>1</R22></CoordinateFrame>
+				<Color3uint8 name="Color3uint8">4279899929</Color3uint8>
+				<token name="Material">1312</token>
+				<float name="Transparency">1</float>
+				<float name="Reflectance">0</float>
+				<token name="TopSurface">0</token>
+				<token name="BottomSurface">0</token>
+				<token name="FrontSurface">0</token>
+				<token name="BackSurface">0</token>
+				<token name="LeftSurface">0</token>
+				<token name="RightSurface">0</token>
+				<Vector3 name="size"><X>2</X><Y>0.4</Y><Z>2</Z></Vector3>
+				<token name="shape">1</token>
+			</Properties>
+		</Item>
+		<Item class="Part" referent="RBXA5C40805000000000000000000000003">
+			<Properties>
+				<string name="Name">Ring</string>
+				<bool name="Anchored">true</bool>
+				<bool name="CanCollide">false</bool>
+				<bool name="CanTouch">false</bool>
+				<bool name="CanQuery">false</bool>
+				<bool name="CastShadow">true</bool>
+				<bool name="Locked">false</bool>
+				<CoordinateFrame name="CFrame"><X>0</X><Y>0.2</Y><Z>0</Z><R00>0</R00><R01>-1</R01><R02>0</R02><R10>1</R10><R11>0</R11><R12>0</R12><R20>0</R20><R21>0</R21><R22>1</R22></CoordinateFrame>
+				<Color3uint8 name="Color3uint8">4288444988</Color3uint8>
+				<token name="Material">1040</token>
+				<float name="Transparency">0</float>
+				<float name="Reflectance">0</float>
+				<token name="TopSurface">0</token>
+				<token name="BottomSurface">0</token>
+				<token name="FrontSurface">0</token>
+				<token name="BackSurface">0</token>
+				<token name="LeftSurface">0</token>
+				<token name="RightSurface">0</token>
+				<Vector3 name="size"><X>0.4</X><Y>10</Y><Z>10</Z></Vector3>
+				<token name="shape">2</token>
+			</Properties>
+		</Item>
+		<Item class="Part" referent="RBXA5C40805000000000000000000000004">
+			<Properties>
+				<string name="Name">Centre</string>
+				<bool name="Anchored">true</bool>
+				<bool name="CanCollide">false</bool>
+				<bool name="CanTouch">false</bool>
+				<bool name="CanQuery">false</bool>
+				<bool name="CastShadow">true</bool>
+				<bool name="Locked">false</bool>
+				<CoordinateFrame name="CFrame"><X>0</X><Y>0.23</Y><Z>0</Z><R00>0</R00><R01>-1</R01><R02>0</R02><R10>1</R10><R11>0</R11><R12>0</R12><R20>0</R20><R21>0</R21><R22>1</R22></CoordinateFrame>
+				<Color3uint8 name="Color3uint8">4280951847</Color3uint8>
+				<token name="Material">800</token>
+				<float name="Transparency">0</float>
+				<float name="Reflectance">0</float>
+				<token name="TopSurface">0</token>
+				<token name="BottomSurface">0</token>
+				<token name="FrontSurface">0</token>
+				<token name="BackSurface">0</token>
+				<token name="LeftSurface">0</token>
+				<token name="RightSurface">0</token>
+				<Vector3 name="size"><X>0.46</X><Y>8.6</Y><Z>8.6</Z></Vector3>
+				<token name="shape">2</token>
+			</Properties>
+		</Item>
+		<Item class="Part" referent="RBXA5C40805000000000000000000000005">
+			<Properties>
+				<string name="Name">CryptidMount</string>
+				<bool name="Anchored">true</bool>
+				<bool name="CanCollide">false</bool>
+				<bool name="CanTouch">false</bool>
+				<bool name="CanQuery">false</bool>
+				<bool name="CastShadow">false</bool>
+				<bool name="Locked">false</bool>
+				<CoordinateFrame name="CFrame"><X>0</X><Y>0.51</Y><Z>0</Z><R00>1</R00><R01>0</R01><R02>0</R02><R10>0</R10><R11>1</R11><R12>0</R12><R20>0</R20><R21>0</R21><R22>1</R22></CoordinateFrame>
+				<Color3uint8 name="Color3uint8">4279899929</Color3uint8>
+				<token name="Material">1312</token>
+				<float name="Transparency">1</float>
+				<float name="Reflectance">0</float>
+				<token name="TopSurface">0</token>
+				<token name="BottomSurface">0</token>
+				<token name="FrontSurface">0</token>
+				<token name="BackSurface">0</token>
+				<token name="LeftSurface">0</token>
+				<token name="RightSurface">0</token>
+				<Vector3 name="size"><X>1</X><Y>0.1</Y><Z>1</Z></Vector3>
+				<token name="shape">1</token>
+			</Properties>
+		</Item>
+		<Item class="Model" referent="RBXA5C4080500000000000000000000000F">
+			<Properties>
+				<string name="Name">State_Occupied</string>
+				<BinaryString name="AttributesSerialize">AQAAAAUAAABTdGF0ZQIIAAAAT2NjdXBpZWQ=</BinaryString>
+			</Properties>
+			<Item class="Part" referent="RBXA5C40805000000000000000000000006">
+				<Properties>
+					<string name="Name">BoundBand</string>
+					<bool name="Anchored">true</bool>
+					<bool name="CanCollide">false</bool>
+					<bool name="CanTouch">false</bool>
+					<bool name="CanQuery">false</bool>
+					<bool name="CastShadow">true</bool>
+					<bool name="Locked">false</bool>
+					<CoordinateFrame name="CFrame"><X>0</X><Y>0.22</Y><Z>0</Z><R00>0</R00><R01>-1</R01><R02>0</R02><R10>1</R10><R11>0</R11><R12>0</R12><R20>0</R20><R21>0</R21><R22>1</R22></CoordinateFrame>
+					<Color3uint8 name="Color3uint8">4291405146</Color3uint8>
+					<token name="Material">1040</token>
+					<float name="Transparency">0</float>
+					<float name="Reflectance">0</float>
+					<token name="TopSurface">0</token>
+					<token name="BottomSurface">0</token>
+					<token name="FrontSurface">0</token>
+					<token name="BackSurface">0</token>
+					<token name="LeftSurface">0</token>
+					<token name="RightSurface">0</token>
+					<Vector3 name="size"><X>0.44</X><Y>9.15</Y><Z>9.15</Z></Vector3>
+					<token name="shape">2</token>
+				</Properties>
+			</Item>
+		</Item>
+		<Item class="Model" referent="RBXA5C40805000000000000000000000010">
+			<Properties>
+				<string name="Name">State_Empty</string>
+				<BinaryString name="AttributesSerialize">AQAAAAUAAABTdGF0ZQIFAAAARW1wdHk=</BinaryString>
+			</Properties>
+			<Item class="Part" referent="RBXA5C40805000000000000000000000007">
+				<Properties>
+					<string name="Name">Sigil1</string>
+					<bool name="Anchored">true</bool>
+					<bool name="CanCollide">false</bool>
+					<bool name="CanTouch">false</bool>
+					<bool name="CanQuery">false</bool>
+					<bool name="CastShadow">false</bool>
+					<bool name="Locked">false</bool>
+					<CoordinateFrame name="CFrame"><X>0</X><Y>0.47</Y><Z>0</Z><R00>0.766044</R00><R01>0</R01><R02>0.642788</R02><R10>0</R10><R11>1</R11><R12>0</R12><R20>-0.642788</R20><R21>0</R21><R22>0.766044</R22></CoordinateFrame>
+					<Color3uint8 name="Color3uint8">4289175440</Color3uint8>
+					<token name="Material">820</token>
+					<float name="Transparency">0.55</float>
+					<float name="Reflectance">0</float>
+					<token name="TopSurface">0</token>
+					<token name="BottomSurface">0</token>
+					<token name="FrontSurface">0</token>
+					<token name="BackSurface">0</token>
+					<token name="LeftSurface">0</token>
+					<token name="RightSurface">0</token>
+					<Vector3 name="size"><X>0.4</X><Y>0.04</Y><Z>6.2</Z></Vector3>
+					<token name="shape">1</token>
+				</Properties>
+			</Item>
+			<Item class="Part" referent="RBXA5C40805000000000000000000000008">
+				<Properties>
+					<string name="Name">Sigil2</string>
+					<bool name="Anchored">true</bool>
+					<bool name="CanCollide">false</bool>
+					<bool name="CanTouch">false</bool>
+					<bool name="CanQuery">false</bool>
+					<bool name="CastShadow">false</bool>
+					<bool name="Locked">false</bool>
+					<CoordinateFrame name="CFrame"><X>0</X><Y>0.47</Y><Z>0</Z><R00>0.766044</R00><R01>0</R01><R02>-0.642788</R02><R10>0</R10><R11>1</R11><R12>0</R12><R20>0.642788</R20><R21>0</R21><R22>0.766044</R22></CoordinateFrame>
+					<Color3uint8 name="Color3uint8">4289175440</Color3uint8>
+					<token name="Material">820</token>
+					<float name="Transparency">0.55</float>
+					<float name="Reflectance">0</float>
+					<token name="TopSurface">0</token>
+					<token name="BottomSurface">0</token>
+					<token name="FrontSurface">0</token>
+					<token name="BackSurface">0</token>
+					<token name="LeftSurface">0</token>
+					<token name="RightSurface">0</token>
+					<Vector3 name="size"><X>0.4</X><Y>0.04</Y><Z>6.2</Z></Vector3>
+					<token name="shape">1</token>
+				</Properties>
+			</Item>
+		</Item>
+		<Item class="Model" referent="RBXA5C40805000000000000000000000011">
+			<Properties>
+				<string name="Name">State_Locked</string>
+				<BinaryString name="AttributesSerialize">AQAAAAUAAABTdGF0ZQIGAAAATG9ja2Vk</BinaryString>
+			</Properties>
+			<Item class="Part" referent="RBXA5C40805000000000000000000000009">
+				<Properties>
+					<string name="Name">LockSigil1</string>
+					<bool name="Anchored">true</bool>
+					<bool name="CanCollide">false</bool>
+					<bool name="CanTouch">false</bool>
+					<bool name="CanQuery">false</bool>
+					<bool name="CastShadow">false</bool>
+					<bool name="Locked">false</bool>
+					<CoordinateFrame name="CFrame"><X>0</X><Y>0.47</Y><Z>0</Z><R00>0.766044</R00><R01>0</R01><R02>0.642788</R02><R10>0</R10><R11>1</R11><R12>0</R12><R20>-0.642788</R20><R21>0</R21><R22>0.766044</R22></CoordinateFrame>
+					<Color3uint8 name="Color3uint8">4289175440</Color3uint8>
+					<token name="Material">820</token>
+					<float name="Transparency">0</float>
+					<float name="Reflectance">0</float>
+					<token name="TopSurface">0</token>
+					<token name="BottomSurface">0</token>
+					<token name="FrontSurface">0</token>
+					<token name="BackSurface">0</token>
+					<token name="LeftSurface">0</token>
+					<token name="RightSurface">0</token>
+					<Vector3 name="size"><X>0.45</X><Y>0.05</Y><Z>6.2</Z></Vector3>
+					<token name="shape">1</token>
+				</Properties>
+			</Item>
+			<Item class="Part" referent="RBXA5C4080500000000000000000000000A">
+				<Properties>
+					<string name="Name">LockSigil2</string>
+					<bool name="Anchored">true</bool>
+					<bool name="CanCollide">false</bool>
+					<bool name="CanTouch">false</bool>
+					<bool name="CanQuery">false</bool>
+					<bool name="CastShadow">false</bool>
+					<bool name="Locked">false</bool>
+					<CoordinateFrame name="CFrame"><X>0</X><Y>0.47</Y><Z>0</Z><R00>0.766044</R00><R01>0</R01><R02>-0.642788</R02><R10>0</R10><R11>1</R11><R12>0</R12><R20>0.642788</R20><R21>0</R21><R22>0.766044</R22></CoordinateFrame>
+					<Color3uint8 name="Color3uint8">4289175440</Color3uint8>
+					<token name="Material">820</token>
+					<float name="Transparency">0</float>
+					<float name="Reflectance">0</float>
+					<token name="TopSurface">0</token>
+					<token name="BottomSurface">0</token>
+					<token name="FrontSurface">0</token>
+					<token name="BackSurface">0</token>
+					<token name="LeftSurface">0</token>
+					<token name="RightSurface">0</token>
+					<Vector3 name="size"><X>0.45</X><Y>0.05</Y><Z>6.2</Z></Vector3>
+					<token name="shape">1</token>
+				</Properties>
+			</Item>
+		</Item>
+		<Item class="Model" referent="RBXA5C40805000000000000000000000012">
+			<Properties>
+				<string name="Name">State_Sealed</string>
+				<BinaryString name="AttributesSerialize">AQAAAAUAAABTdGF0ZQIGAAAAU2VhbGVk</BinaryString>
+			</Properties>
+			<Item class="Part" referent="RBXA5C4080500000000000000000000000C">
+				<Properties>
+					<string name="Name">CrackedSigil1</string>
+					<bool name="Anchored">true</bool>
+					<bool name="CanCollide">false</bool>
+					<bool name="CanTouch">false</bool>
+					<bool name="CanQuery">false</bool>
+					<bool name="CastShadow">false</bool>
+					<bool name="Locked">false</bool>
+					<CoordinateFrame name="CFrame"><X>-1.1</X><Y>0.47</Y><Z>-1.2</Z><R00>0.766044</R00><R01>0</R01><R02>0.642788</R02><R10>0</R10><R11>1</R11><R12>0</R12><R20>-0.642788</R20><R21>0</R21><R22>0.766044</R22></CoordinateFrame>
+					<Color3uint8 name="Color3uint8">4289175440</Color3uint8>
+					<token name="Material">820</token>
+					<float name="Transparency">0</float>
+					<float name="Reflectance">0</float>
+					<token name="TopSurface">0</token>
+					<token name="BottomSurface">0</token>
+					<token name="FrontSurface">0</token>
+					<token name="BackSurface">0</token>
+					<token name="LeftSurface">0</token>
+					<token name="RightSurface">0</token>
+					<Vector3 name="size"><X>0.4</X><Y>0.05</Y><Z>3</Z></Vector3>
+					<token name="shape">1</token>
+				</Properties>
+			</Item>
+			<Item class="Part" referent="RBXA5C4080500000000000000000000000D">
+				<Properties>
+					<string name="Name">CrackedSigil2</string>
+					<bool name="Anchored">true</bool>
+					<bool name="CanCollide">false</bool>
+					<bool name="CanTouch">false</bool>
+					<bool name="CanQuery">false</bool>
+					<bool name="CastShadow">false</bool>
+					<bool name="Locked">false</bool>
+					<CoordinateFrame name="CFrame"><X>1.3</X><Y>0.47</Y><Z>-0.9</Z><R00>0.669131</R00><R01>0</R01><R02>-0.743145</R02><R10>0</R10><R11>1</R11><R12>0</R12><R20>0.743145</R20><R21>0</R21><R22>0.669131</R22></CoordinateFrame>
+					<Color3uint8 name="Color3uint8">4289175440</Color3uint8>
+					<token name="Material">820</token>
+					<float name="Transparency">0</float>
+					<float name="Reflectance">0</float>
+					<token name="TopSurface">0</token>
+					<token name="BottomSurface">0</token>
+					<token name="FrontSurface">0</token>
+					<token name="BackSurface">0</token>
+					<token name="LeftSurface">0</token>
+					<token name="RightSurface">0</token>
+					<Vector3 name="size"><X>0.4</X><Y>0.05</Y><Z>2.4</Z></Vector3>
+					<token name="shape">1</token>
+				</Properties>
+			</Item>
+			<Item class="Part" referent="RBXA5C4080500000000000000000000000E">
+				<Properties>
+					<string name="Name">CrackedSigil3</string>
+					<bool name="Anchored">true</bool>
+					<bool name="CanCollide">false</bool>
+					<bool name="CanTouch">false</bool>
+					<bool name="CanQuery">false</bool>
+					<bool name="CastShadow">false</bool>
+					<bool name="Locked">false</bool>
+					<CoordinateFrame name="CFrame"><X>0.6</X><Y>0.47</Y><Z>1.6</Z><R00>0.906308</R00><R01>0</R01><R02>0.422618</R02><R10>0</R10><R11>1</R11><R12>0</R12><R20>-0.422618</R20><R21>0</R21><R22>0.906308</R22></CoordinateFrame>
+					<Color3uint8 name="Color3uint8">4289175440</Color3uint8>
+					<token name="Material">820</token>
+					<float name="Transparency">0</float>
+					<float name="Reflectance">0</float>
+					<token name="TopSurface">0</token>
+					<token name="BottomSurface">0</token>
+					<token name="FrontSurface">0</token>
+					<token name="BackSurface">0</token>
+					<token name="LeftSurface">0</token>
+					<token name="RightSurface">0</token>
+					<Vector3 name="size"><X>0.4</X><Y>0.05</Y><Z>2.6</Z></Vector3>
+					<token name="shape">1</token>
+				</Properties>
+			</Item>
+		</Item>
+		<Item class="Model" referent="RBXA5C40805000000000000000000000013">
+			<Properties>
+				<string name="Name">Mod_Affordable</string>
+				<BinaryString name="AttributesSerialize">AQAAAAUAAABTdGF0ZQIKAAAAQWZmb3JkYWJsZQ==</BinaryString>
+			</Properties>
+			<Item class="Part" referent="RBXA5C4080500000000000000000000000B">
+				<Properties>
+					<string name="Name">AffordableBorder</string>
+					<bool name="Anchored">true</bool>
+					<bool name="CanCollide">false</bool>
+					<bool name="CanTouch">false</bool>
+					<bool name="CanQuery">false</bool>
+					<bool name="CastShadow">true</bool>
+					<bool name="Locked">false</bool>
+					<CoordinateFrame name="CFrame"><X>0</X><Y>0.15</Y><Z>0</Z><R00>0</R00><R01>-1</R01><R02>0</R02><R10>1</R10><R11>0</R11><R12>0</R12><R20>0</R20><R21>0</R21><R22>1</R22></CoordinateFrame>
+					<Color3uint8 name="Color3uint8">4286189330</Color3uint8>
+					<token name="Material">1312</token>
+					<float name="Transparency">0</float>
+					<float name="Reflectance">0</float>
+					<token name="TopSurface">0</token>
+					<token name="BottomSurface">0</token>
+					<token name="FrontSurface">0</token>
+					<token name="BackSurface">0</token>
+					<token name="LeftSurface">0</token>
+					<token name="RightSurface">0</token>
+					<Vector3 name="size"><X>0.3</X><Y>10.5</Y><Z>10.5</Z></Vector3>
+					<token name="shape">2</token>
+				</Properties>
+			</Item>
+		</Item>
+	</Item>
+</roblox>
