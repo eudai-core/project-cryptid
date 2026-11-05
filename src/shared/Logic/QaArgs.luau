@@ -4,6 +4,7 @@
 -- `offline:<seconds>` rewinds lastSeen. `utc:<days>` shifts the offering day.
 -- `utcjump:<seconds>` adds one more day after that many seconds of the test.
 -- Unknown suffixes (such as `plots3`) are ignored so the watchdog still arms.
+-- `fresh` asks Studio to load a throwaway key instead of the real save.
 
 local QaArgs = {}
 
@@ -13,6 +14,7 @@ export type Tokens = {
 	utcJumpSeconds: number,
 	openTree: boolean,
 	reducedMotion: string,
+	fresh: boolean,
 }
 
 local function empty(): Tokens
@@ -22,6 +24,7 @@ local function empty(): Tokens
 		utcJumpSeconds = 0,
 		openTree = false,
 		reducedMotion = "",
+		fresh = false,
 	}
 end
 
@@ -49,8 +52,12 @@ function QaArgs.parse(args: any): Tokens
 	local index = 3
 	while index <= #parts do
 		local key = parts[index]
-		if key == "opentree" then
-			tokens.openTree = true
+		if key == "opentree" or key == "fresh" then
+			if key == "fresh" then
+				tokens.fresh = true
+			else
+				tokens.openTree = true
+			end
 			index += 1
 		elseif key == "reducedmotion" then
 			local flag = parts[index + 1]
@@ -84,6 +91,13 @@ function QaArgs.openTree(isStudio: boolean, args: any): boolean
 		return false
 	end
 	return QaArgs.parse(args).openTree == true
+end
+
+function QaArgs.wantsFresh(isStudio: boolean, args: any): boolean
+	if isStudio ~= true then
+		return false
+	end
+	return QaArgs.parse(args).fresh == true
 end
 
 function QaArgs.reducedMotion(isStudio: boolean, args: any): boolean?

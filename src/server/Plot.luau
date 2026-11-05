@@ -9,7 +9,8 @@ local CryptidModels = require(Shared:WaitForChild("CryptidModels")) :: any
 local LairVisual = require(script.Parent:WaitForChild("LairVisual"))
 local PlotBuilder = require(script.Parent:WaitForChild("PlotBuilder"))
 local PlotSignals = require(script.Parent:WaitForChild("PlotSignals"))
-local Economy = require(Shared:WaitForChild("Config"):WaitForChild("Economy")) :: any
+local BoneAltar = require(Shared:WaitForChild("Config"):WaitForChild("BoneAltar")) :: any
+local Onboarding = require(Shared:WaitForChild("Config"):WaitForChild("Onboarding")) :: any
 local NumberFormat = require(Shared:WaitForChild("Logic"):WaitForChild("NumberFormat")) :: any
 local OnboardingGoals = require(Shared:WaitForChild("Logic"):WaitForChild("OnboardingGoals")) :: any
 local PlotAccess = require(Shared:WaitForChild("Logic"):WaitForChild("PlotAccess")) :: any
@@ -497,11 +498,15 @@ function Plot.sync(plot: any, profile: any, guideValue: ObjectValue)
 			rift.prompt:SetAttribute("Available", true)
 			rift.prompt:SetAttribute("Slot", offer.slot)
 			rift.prompt.ActionText = "Claim"
-			rift.prompt.ObjectText = NumberFormat.formatCash(offer.price)
+			if offer.pad > profile.padsUnlocked then
+				rift.prompt.ObjectText = Onboarding.NEEDS_CIRCLE
+			else
+				rift.prompt.ObjectText = NumberFormat.formatCash(offer.price)
+			end
 		end
 	end
 
-	local showWild = profile.onboarding.step == 6 and not ProfileQuery.hasSource(profile, "wild")
+	local showWild = profile.onboarding.step == Onboarding.CATCH_STEP and not ProfileQuery.hasSource(profile, "wild")
 	replaceCreature(plot.wildPad, if showWild then Species.WILD_ID else nil, plot.wildStand)
 	plot.wildPrompt:SetAttribute("Available", showWild)
 	plot.wildPrompt.MaxActivationDistance = SkillEffects.catchRange(profile)
@@ -510,7 +515,7 @@ function Plot.sync(plot: any, profile: any, guideValue: ObjectValue)
 	plot.wildPrompt.ObjectText = wildSpecies.displayName
 
 	local nextAltar = profile.upgrades.boneAltar + 1
-	local altarCost = Economy.ALTAR_COST[nextAltar]
+	local altarCost = BoneAltar.cost(nextAltar, BoneAltar.rebirths(profile))
 	if type(altarCost) == "number" then
 		plot.altarPrompt:SetAttribute("Available", true)
 		plot.altarPrompt.ActionText = "Raise"

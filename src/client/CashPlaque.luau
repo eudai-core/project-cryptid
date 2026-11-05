@@ -51,6 +51,7 @@ function CashPlaque.mount(parent: Instance, isReduced: () -> boolean)
 	local lastFloated = -1
 	local mobileLayout = false
 	local bowlAmount = 0
+	local topOffset = UITheme.shape.plaqueTopPx
 	local value = Instance.new("NumberValue")
 	value.Value = 0
 	value.Parent = frame
@@ -100,13 +101,16 @@ function CashPlaque.mount(parent: Instance, isReduced: () -> boolean)
 
 	local api = {}
 
-	function api.layout(mobile: boolean): number
+	function api.layout(mobile: boolean, topPx: number?): number
 		mobileLayout = mobile
+		if type(topPx) == "number" then
+			topOffset = topPx
+		end
 		local size = if mobile then UITheme.shape.plaqueSize.mobile else UITheme.shape.plaqueSize.desktop
 		local extra = if bowlAmount > 0 then UITheme.shape.plaqueBowlPx else 0
 		local height = size.h + extra
 		frame.Size = UDim2.fromOffset(size.w, height)
-		frame.Position = UDim2.new(0.5, 0, 0, UITheme.shape.plaqueTopPx)
+		frame.Position = UDim2.new(0.5, 0, 0, topOffset)
 		local numberSize = if mobile then UITheme.fonts.number.plaqueMobile else UITheme.fonts.number.plaqueDesktop
 		local incomeSize = if mobile then UITheme.fonts.income.mobile else UITheme.fonts.income.desktop
 		local pad = if mobile then 8 else 12

@@ -97,6 +97,12 @@ function Ledger.open(options: {
 	end
 
 	local function key(userId: number): string
+		if options.profileKey ~= nil then
+			local named = options.profileKey(userId)
+			if type(named) == "string" and named ~= "" then
+				return named
+			end
+		end
 		return Save.KEY_PREFIX .. tostring(userId)
 	end
 

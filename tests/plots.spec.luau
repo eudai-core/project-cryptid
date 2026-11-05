@@ -9,6 +9,7 @@ local Check = require("./check")
 local Debounce = require("../src/shared/Logic/Debounce")
 local HudSlots = require("../src/shared/Logic/HudSlots")
 local SpawnSafety = require("../src/shared/Logic/SpawnSafety")
+local AltarTier = require("../src/shared/Logic/AltarTier")
 local Economy = require("../src/shared/Config/Economy")
 local Income = require("../src/shared/Logic/Income")
 local Lair = require("../src/shared/Config/Lair")
@@ -292,7 +293,7 @@ Check.test("reservation beats a nearby friend", function()
 end)
 
 Check.test("migration from v2 lands on the current data version and keeps the ledger", function()
-	Check.eq(Save.DATA_VERSION, 6)
+	Check.eq(Save.DATA_VERSION, 7)
 	local v2 = Schema.newProfile(9, "starter")
 	v2.dataVersion = 2
 	v2.totalEarned = 40
@@ -568,4 +569,15 @@ Check.test("lair stone stays the playtest colours and the live light follows v1.
 	Check.eq(UITheme.lighting.atmosphereGlare, 0)
 	Check.eq(UITheme.lighting.atmosphereColor, "Ash")
 	Check.eq(UITheme.lighting.atmosphereDecay, "Void")
+end)
+
+Check.test("altar tiers stay positive through level X", function()
+	local earlyShrink = Plots.ALTAR_TIER_INSET
+	Check.eq(AltarTier.span(Plots.ALTAR_SIZE.z, earlyShrink), Plots.ALTAR_SIZE.z - Plots.PAD_RING_MARGIN - earlyShrink)
+	local topShrink = (Economy.MAX_ALTAR_LEVEL - 1) * Plots.ALTAR_TIER_INSET
+	Check.eq(AltarTier.span(Plots.ALTAR_SIZE.z, topShrink), Plots.ALTAR_TIER_MIN)
+	local width, height, depth = AltarTier.size(Economy.MAX_ALTAR_LEVEL)
+	Check.eq(width > 0, true)
+	Check.eq(height > 0, true)
+	Check.eq(depth > 0, true)
 end)

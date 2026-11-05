@@ -10,6 +10,7 @@ local MockDataStore = require(script.Parent:WaitForChild("MockDataStore"))
 local SaveHooks = require(script.Parent:WaitForChild("SaveHooks"))
 local StudioQaHooks = require(script.Parent:WaitForChild("Dev"):WaitForChild("StudioQaHooks"))
 local Save = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("Save")) :: any
+local QaFresh = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Logic"):WaitForChild("QaFresh")) :: any
 local Offline = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Logic"):WaitForChild("Offline")) :: any
 
 local jobId = game.JobId
@@ -76,6 +77,12 @@ local ledger = Ledger.open({
 	settle = function(profile: any, now: number)
 		StudioQaHooks.rewindLastSeen(profile)
 		Offline.fold(profile, now)
+	end,
+	profileKey = function(userId: number): string
+		if not RunService:IsStudio() then
+			return Save.KEY_PREFIX .. tostring(userId)
+		end
+		return QaFresh.sessionKey(userId, RunService:IsStudio(), StudioQaHooks.args(), jobId, os.time())
 	end,
 })
 

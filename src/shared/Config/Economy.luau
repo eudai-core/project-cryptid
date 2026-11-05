@@ -1,5 +1,17 @@
 --!strict
 
+local function import(lunePath: string, getRoblox: () -> any): any
+	-- selene: allow(global_usage)
+	if _G.LUNE == true then
+		return require(lunePath)
+	end
+	return require(getRoblox())
+end
+
+local BoneAltar = import("./BoneAltar", function()
+	return script.Parent:WaitForChild("BoneAltar")
+end)
+
 local Economy = {
 	STARTING_CASH = 25,
 	INCOME_INTERVAL_SECONDS = 1,
@@ -11,8 +23,8 @@ local Economy = {
 	WILD_SPAWN_STUDS = 20,
 	STARTING_PADS_UNLOCKED = 2,
 	MAX_PADS = 6,
-	ALTAR_BONUS_PER_LEVEL = 0.25,
-	MAX_ALTAR_LEVEL = 2,
+	ALTAR_BONUS_PER_LEVEL = BoneAltar.LINEAR_BONUS,
+	MAX_ALTAR_LEVEL = BoneAltar.MAX_LEVEL,
 	WARD_CANDLES_COST = 1200,
 	STEAL_PROTECTION_PLAY_SECONDS = 300,
 	TOOL_NAME = "Lantern",
@@ -24,10 +36,7 @@ local Economy = {
 		[5] = 1200,
 		[6] = 3000,
 	}),
-	ALTAR_COST = table.freeze({
-		[1] = 300,
-		[2] = 1500,
-	}),
+	ALTAR_COST = BoneAltar.COST,
 }
 
 return table.freeze(Economy)

@@ -8,8 +8,14 @@ local function import(lunePath: string, getRoblox: () -> any): any
 	return require(getRoblox())
 end
 
+local BoneAltar = import("../Config/BoneAltar", function()
+	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("BoneAltar")
+end)
 local Economy = import("../Config/Economy", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Economy")
+end)
+local Onboarding = import("../Config/Onboarding", function()
+	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Onboarding")
 end)
 local Return = import("../Config/Return", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Return")
@@ -74,7 +80,7 @@ function Snapshot.build(profile: any, lastCredit: number, revision: number, view
 				then Income.contribution(
 					record.speciesId,
 					profile.upgrades.boneAltar,
-					SkillEffects.altarPerLevel(profile),
+					BoneAltar.l3Owned(profile),
 					SkillEffects.skillIncome(profile)
 						+ if record.source == "wild" then SkillEffects.wildIncome(profile) else 0
 				)
@@ -156,12 +162,34 @@ function Snapshot.build(profile: any, lastCredit: number, revision: number, view
 	local rift = {}
 	for _, offer in Transactions.currentOffers(profile) do
 		local species = Species.get(offer.speciesId)
+		local needsCircle = offer.pad > profile.padsUnlocked
 		table.insert(rift, {
 			slot = offer.slot,
 			speciesId = offer.speciesId,
 			displayName = if species ~= nil then species.displayName else offer.speciesId,
 			price = offer.price,
+			needsCircle = needsCircle,
+			hint = if needsCircle then Onboarding.NEEDS_CIRCLE else "",
 		})
+	end
+	local reveal = nil
+	local revealSerial = 0
+	if type(view) == "table" and type(view.revealSerial) == "number" and view.revealSerial > 0 then
+		revealSerial = math.floor(view.revealSerial)
+	end
+	if revealSerial > 0 then
+		local wild = Species.get(Species.WILD_ID)
+		reveal = {
+			token = revealSerial,
+			speciesName = if wild ~= nil then wild.displayName else "",
+			rarity = if wild ~= nil then wild.rarity else "Common",
+			line = Onboarding.TEASE_LINE,
+			pips = Onboarding.TEASE_PIPS,
+			revealSeconds = Onboarding.REVEAL_SECONDS,
+			fadeIn = Onboarding.TEASE_FADE_IN,
+			hold = Onboarding.TEASE_HOLD,
+			fadeOut = Onboarding.TEASE_FADE_OUT,
+		}
 	end
 
 	return {
@@ -177,6 +205,7 @@ function Snapshot.build(profile: any, lastCredit: number, revision: number, view
 		rift = rift,
 		goal = goal,
 		guide = goal.guide,
+		reveal = reveal,
 		stealProtected = StealGuard.isProtected(profile),
 		pedlar = {
 			lastRotationId = profile.shop.lastRotationId,

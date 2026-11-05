@@ -11,6 +11,12 @@ end
 local Economy = import("../Config/Economy", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Economy")
 end)
+local Onboarding = import("../Config/Onboarding", function()
+	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Onboarding")
+end)
+local OnboardingGoals = import("./OnboardingGoals", function()
+	return script.Parent:WaitForChild("OnboardingGoals")
+end)
 local Plots = import("../Config/Plots", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Plots")
 end)
@@ -570,6 +576,21 @@ local function migrateToV5(profile: any, raw: any, _version: number, _now: numbe
 	return true
 end
 
+local function migrateToV7(profile: any, _raw: any, version: number, _now: number): boolean
+	if version >= 7 then
+		return true
+	end
+	if profile.onboarding.step >= 8 then
+		return true
+	end
+	if profile.onboarding.step > 1 and profile.onboarding.playSeconds < Onboarding.GOAL_ONE_SECONDS then
+		profile.onboarding.playSeconds = Onboarding.GOAL_ONE_SECONDS
+	end
+	profile.onboarding.step = 1
+	OnboardingGoals.advance(profile)
+	return true
+end
+
 local MIGRATION_STEPS: { { to: number, apply: (any, any, number, number) -> boolean } } = {
 	{
 		to = 2,
@@ -591,6 +612,7 @@ local MIGRATION_STEPS: { { to: number, apply: (any, any, number, number) -> bool
 	},
 	{ to = 5, apply = migrateToV5 },
 	{ to = 6, apply = migrateToV6 },
+	{ to = 7, apply = migrateToV7 },
 }
 
 function Schema.migrationTargets(): { number }

@@ -28,6 +28,7 @@ local Plots = {
 	ALTAR_SIZE = table.freeze({ x = 8, y = 3, z = 4 }),
 	ALTAR_TIER_HEIGHT = 0.4,
 	ALTAR_TIER_INSET = 0.35,
+	ALTAR_TIER_MIN = 0.2,
 	BANNER_WIDTH = 16,
 	BANNER_HEIGHT = 3.5,
 	BANNER_LIFT = 2.4,

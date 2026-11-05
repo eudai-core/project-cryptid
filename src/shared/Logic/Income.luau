@@ -8,8 +8,8 @@ local function import(lunePath: string, getRoblox: () -> any): any
 	return require(getRoblox())
 end
 
-local Economy = import("../Config/Economy", function()
-	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Economy")
+local BoneAltar = import("../Config/BoneAltar", function()
+	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("BoneAltar")
 end)
 local Species = import("../Config/Species", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Species")
@@ -26,42 +26,43 @@ end)
 
 local Income = {}
 
-function Income.multiplier(altarLevel: number): number
-	local level = altarLevel
-	if level < 0 then
-		level = 0
-	end
-	if level > Economy.MAX_ALTAR_LEVEL then
-		level = Economy.MAX_ALTAR_LEVEL
-	end
-	return 1 + Economy.ALTAR_BONUS_PER_LEVEL * level
+function Income.multiplier(altarLevel: number, l3: boolean?): number
+	return BoneAltar.multiplier(altarLevel, l3 == true)
 end
 
-function Income.contribution(speciesId: string, altarLevel: number, perLevel: number?, skillIncome: number?): number
+function Income.contribution(
+	speciesId: string,
+	altarLevel: number,
+	altarArg: number | boolean | nil,
+	skillIncome: number?
+): number
 	local species = Species.get(speciesId)
 	if species == nil then
 		return 0
-	end
-	local level = altarLevel
-	if level < 0 then
-		level = 0
-	end
-	if level > Economy.MAX_ALTAR_LEVEL then
-		level = Economy.MAX_ALTAR_LEVEL
-	end
-	local rate = Economy.ALTAR_BONUS_PER_LEVEL
-	if type(perLevel) == "number" then
-		rate = perLevel
 	end
 	local skill = 0
 	if type(skillIncome) == "number" then
 		skill = skillIncome
 	end
-	return Money.round(species.baseIncome * (1 + rate * level) * (1 + skill))
+	local altar
+	if type(altarArg) == "number" then
+		local level = altarLevel
+		if type(level) ~= "number" or level < 0 then
+			level = 0
+		end
+		if level > BoneAltar.MAX_LEVEL then
+			level = BoneAltar.MAX_LEVEL
+		end
+		level = math.floor(level)
+		altar = 1 + altarArg * level
+	else
+		altar = Income.multiplier(altarLevel, altarArg == true)
+	end
+	return Money.round(species.baseIncome * altar * (1 + skill))
 end
 
 function Income.perSecond(profile: any): number
-	local altar = SkillEffects.altarMultiplier(profile)
+	local altar = Income.multiplier(profile.upgrades.boneAltar, BoneAltar.l3Owned(profile))
 	local skill = SkillEffects.skillIncome(profile)
 	local wild = SkillEffects.wildIncome(profile)
 	local total = 0
