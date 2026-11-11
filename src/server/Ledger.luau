@@ -23,43 +23,30 @@ local SessionDocument = import("../shared/Logic/SessionDocument", function()
 		:WaitForChild("Logic")
 		:WaitForChild("SessionDocument")
 end)
+local StudioDataStore = import("../shared/Config/StudioDataStore", function()
+	return game:GetService("ReplicatedStorage")
+		:WaitForChild("Shared")
+		:WaitForChild("Config")
+		:WaitForChild("StudioDataStore")
+end)
+local StudioStore = import("../shared/Logic/StudioStore", function()
+	return game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Logic"):WaitForChild("StudioStore")
+end)
 
 local Ledger = {}
 
-Ledger.MOCK_WARNING =
-	"[Cryptid:DataStore] Studio has no DataStore API access. Using an in-memory mock store. This session is not saved to a live DataStore."
+Ledger.MOCK_WARNING = StudioDataStore.MOCK_WARNING
 
 function Ledger.studioApiDenied(message: string): boolean
-	local lower = string.lower(message)
-	local phrases = {
-		"studioaccesstoapisnotallowed",
-		"studio access to apis",
-		"api access is not",
-		"enable studio access",
-		"cannot write to datastore",
-		"not published",
-		"must be published",
-		"place has to be published",
-		"publish the place",
-	}
-	for _, phrase in phrases do
-		if string.find(lower, phrase, 1, true) ~= nil then
-			return true
-		end
-	end
-	if string.find(lower, "studio", 1, true) == nil then
-		return false
-	end
-	return string.find(lower, "datastore", 1, true) ~= nil
-		or string.find(lower, "api", 1, true) ~= nil
-		or string.find(lower, "publish", 1, true) ~= nil
-		or string.find(lower, "403", 1, true) ~= nil
+	return StudioStore.isAccessDenied(message)
 end
 
 function Ledger.open(options: {
 	getStore: () -> any,
 	createMock: () -> any,
 	allowMock: () -> boolean,
+	isStudio: boolean?,
+	placeId: number?,
 	jobId: string,
 	now: () -> number,
 	waitFor: (number) -> (),
@@ -75,6 +62,23 @@ function Ledger.open(options: {
 	local warned = false
 	local ready: { [number]: boolean } = {}
 
+	local function studioNow(): boolean
+		if options.allowMock() ~= true then
+			return false
+		end
+		if options.isStudio ~= nil then
+			return options.isStudio == true
+		end
+		return true
+	end
+
+	local function placeNow(): number?
+		if type(options.placeId) == "number" then
+			return options.placeId
+		end
+		return nil
+	end
+
 	local function store(): any
 		if mock ~= nil then
 			return mock
@@ -82,17 +86,26 @@ function Ledger.open(options: {
 		return options.getStore()
 	end
 
+	local function armMock()
+		if mock ~= nil then
+			return
+		end
+		if not warned then
+			warned = true
+			options.warn(Ledger.MOCK_WARNING)
+		end
+		mock = options.createMock()
+	end
+
+	if StudioStore.preferMock(studioNow(), placeNow(), nil) then
+		armMock()
+	end
+
 	local function installMockIfDenied(err: any): boolean
-		if not options.allowMock() or not Ledger.studioApiDenied(tostring(err)) then
+		if not StudioStore.preferMock(studioNow(), placeNow(), err) then
 			return false
 		end
-		if mock == nil then
-			if not warned then
-				warned = true
-				options.warn(Ledger.MOCK_WARNING)
-			end
-			mock = options.createMock()
-		end
+		armMock()
 		return mock ~= nil
 	end
 

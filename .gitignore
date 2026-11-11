@@ -6,6 +6,8 @@
 
 # Source art models are the Rojo inputs. Generator previews are not.
 !assets/**/*.rbxmx
+# VFX handoff models under art/vfx/templates are source art, same as assets/.
+!art/vfx/**/*.rbxmx
 *.parts.json
 *_roster_sheet*
 art/models/

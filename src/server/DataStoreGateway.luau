@@ -95,6 +95,8 @@ local ledger = Ledger.open({
 	allowMock = function()
 		return RunService:IsStudio()
 	end,
+	isStudio = RunService:IsStudio(),
+	placeId = game.PlaceId,
 	jobId = jobId,
 	now = os.time,
 	waitFor = function(seconds: number)
