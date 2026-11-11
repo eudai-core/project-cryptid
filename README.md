@@ -69,7 +69,7 @@ A Studio playtest can also start the test player with a set purse: `args=qa:600:
 
 Use this to reach Quiet Step. Steady Hand, Long Reach, and Quiet Step together cost $9,500, and the catch then takes 2.25 seconds.
 
-An unpublished Studio place cannot call the DataStore API. The server then uses an in-memory mock, once, and the real load, save, and release path still runs (session lock and migrations included). A live or published server never installs the mock. The Output window shows this warning a single time:
+In Studio, an unpublished place (`PlaceId` 0) uses an in-memory mock immediately, before any live DataStore call. A published Studio place that returns a 403 or a must-publish error falls back to the same mock on the first failure and retries that call on the mock. The real load, save, and release path still runs (session lock and migrations included). The warning is printed once. A live server never installs the mock, including on a 403. A published Studio place whose DataStore calls succeed uses the real store and does not warn. The Output window shows this warning a single time:
 
 ```text
 [Cryptid:DataStore] Studio has no DataStore API access. Using an in-memory mock store. This session is not saved to a live DataStore.
