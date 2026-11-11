@@ -73,7 +73,7 @@ local UITheme = {
 		Rare = "TarnishedSilver",
 		Epic = "Blood",
 		Legendary = "GoldBright",
-		Mythic = "Rift",
+		Mythic = "GoldBright",
 	}),
 	fonts = table.freeze({
 		display = table.freeze({
@@ -126,6 +126,12 @@ local UITheme = {
 		strokeTransparency = 0.4,
 		plaqueStrokePx = 2,
 		plaqueTopPx = 24,
+		plaqueInsetPx = 16,
+		promptLift = 5.2,
+		promptPlate = table.freeze({
+			w = 260,
+			h = 48,
+		}),
 		plaqueGapPx = 8,
 		goalBanner = table.freeze({
 			topPx = 0,

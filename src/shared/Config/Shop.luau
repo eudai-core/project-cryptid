@@ -59,7 +59,7 @@ local Shop = {
 		table.freeze({
 			index = 4,
 			name = "Pedlar's Curio",
-			odds = odds(0, 0, 0, 85, 14, 1),
+			odds = odds(0, 0, 70, 30, 0, 0),
 		}),
 	}),
 	HEADER = "The Pale Pedlar",
@@ -76,6 +76,7 @@ local Shop = {
 	UNMARKED = "The Pedlar ignores the unmarked.",
 	MOVED_ON = "The Pedlar has moved on.",
 	PROMPT = "Browse the Pedlar's cages",
+	OPEN_TOKEN = "PedlarOpenToken",
 }
 
 return table.freeze(Shop)

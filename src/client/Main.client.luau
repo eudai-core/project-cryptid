@@ -290,11 +290,10 @@ if RunService:IsStudio() then
 		task.defer(openWhenReady)
 	end
 end
-local pedlar = PedlarShop.mount(gui, player, remotes :: Folder, Names, isReduced)
+PedlarShop.mount(gui, player, remotes :: Folder, Names, isReduced)
 TownDress.start()
 TownQuality.start()
 Interactions.start(player, remotes :: Folder, Names, beginCatch, {
-	onPedlar = pedlar.open,
 	onShrine = skill.open,
 })
 GuideArrow.start(player)

@@ -21,6 +21,7 @@ require("./return.spec")
 require("./monetisation.spec")
 require("./rate_limit.spec")
 require("./analytics.spec")
+require("./pedlar_prompt.spec")
 
 local Check = require("./check")
 Check.finish()

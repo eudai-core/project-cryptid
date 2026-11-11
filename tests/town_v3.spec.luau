@@ -930,6 +930,18 @@ Check.test("hollowmere is the mythic plaza and neon stays on flames portals rune
 	Check.eq(shutters, 4)
 	local pedlar = named(root, "PalePedlar")
 	Check.truthy(pedlar)
+	local PedlarBrowse = loadModule("src/shared/Logic/PedlarBrowse.luau")
+	local prompt = PedlarBrowse.findPrompt(root)
+	Check.truthy(prompt, "pedlar prompt")
+	Check.eq(prompt.ClassName, "ProximityPrompt")
+	Check.eq(prompt.Name, Town.PEDLAR_PROMPT_NAME)
+	Check.eq(prompt:GetAttribute("Kind"), Town.PEDLAR_PROMPT_NAME)
+	Check.eq(prompt.ActionText, "Browse the Pedlar's cages")
+	Check.eq(prompt.HoldDuration, 0)
+	Check.eq(prompt.RequiresLineOfSight, false)
+	Check.eq(prompt.ClickablePrompt, true)
+	Check.eq(prompt.KeyboardKeyCode.Name, "E")
+	Check.eq(prompt.GamepadKeyCode.Name, "ButtonX")
 	for _, inst in descendants(pedlar) do
 		Check.eq(materialName(inst) == "Neon", false, "pedlar " .. tostring(inst.Name))
 	end

@@ -9,6 +9,7 @@ local ThemeBind = require(script.Parent:WaitForChild("ThemeBind"))
 local UiFactory = require(script.Parent:WaitForChild("UiFactory"))
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Income = require(Shared:WaitForChild("Logic"):WaitForChild("Income")) :: any
+local PedlarBrowse = require(Shared:WaitForChild("Logic"):WaitForChild("PedlarBrowse")) :: any
 local NumberFormat = require(Shared:WaitForChild("Logic"):WaitForChild("NumberFormat")) :: any
 local Shop = require(Shared:WaitForChild("Config"):WaitForChild("Shop")) :: any
 local ShopLedger = require(Shared:WaitForChild("Logic"):WaitForChild("ShopLedger")) :: any
@@ -337,14 +338,12 @@ function PedlarShop.mount(parent: Instance, player: Player, remotes: Folder, nam
 		end
 	end
 
-	local function openShop()
-		local step = player:GetAttribute("OnboardingStep")
-		if type(step) ~= "number" or step < Shop.GATE_STEP then
-			return
-		end
+	local seenOpen = 0
+
+	local function showFromServer()
 		showCards()
 		layout()
-		root.Visible = true
+		PedlarBrowse.reveal(root)
 		root.GroupTransparency = 1
 		Motion.play(root, "panelOpen", isReduced(), { GroupTransparency = 0 })
 	end
@@ -479,6 +478,15 @@ function PedlarShop.mount(parent: Instance, player: Player, remotes: Folder, nam
 		player:GetAttributeChangedSignal("OnboardingStep"):Connect(refresh)
 	end
 
+	player:GetAttributeChangedSignal(Shop.OPEN_TOKEN):Connect(function()
+		local token = player:GetAttribute(Shop.OPEN_TOKEN)
+		if type(token) ~= "number" or token <= seenOpen then
+			return
+		end
+		seenOpen = token
+		showFromServer()
+	end)
+
 	for _, model in CollectionService:GetTagged("PedlarStall") do
 		attachUnmarked(model)
 	end
@@ -496,10 +504,6 @@ function PedlarShop.mount(parent: Instance, player: Player, remotes: Folder, nam
 		end
 	end)
 	layout()
-
-	return {
-		open = openShop,
-	}
 end
 
 return PedlarShop

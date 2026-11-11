@@ -499,7 +499,7 @@ local function buildStall(parent: Folder, spec: any, index: number)
 	model.PrimaryPart = root
 	local floor = part(
 		model,
-		"Floor",
+		Town.PEDLAR_HOST,
 		Vector3.new(Town.STALL_WIDTH, 0.4, Town.STALL_DEPTH),
 		CFrame.new(0, 0.2, 0),
 		UITheme.materials.wood,
@@ -579,7 +579,7 @@ local function buildStall(parent: Folder, spec: any, index: number)
 		motes.Name = "StockGlow"
 		game:GetService("CollectionService"):AddTag(lantern, "PedlarLantern")
 		game:GetService("CollectionService"):AddTag(model, "PedlarStall")
-		plate(floor, "Pedlar", Shop.PROMPT)
+		plate(floor, Town.PEDLAR_PROMPT_NAME, Shop.PROMPT)
 	end
 	model.Parent = parent
 	placeModel(model, districtCf(index, true))

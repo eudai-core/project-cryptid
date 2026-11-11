@@ -30,7 +30,7 @@ local SPEC_ODDS = {
 	{ 100, 0, 0, 0, 0, 0 },
 	{ 0, 75, 25, 0, 0, 0 },
 	{ 0, 0, 80, 20, 0, 0 },
-	{ 0, 0, 0, 85, 14, 1 },
+	{ 0, 0, 70, 30, 0, 0 },
 }
 local SPEC_PRICE = {
 	Common = 180,
@@ -135,7 +135,7 @@ Check.test("QA2 only the pedlar and the shrine are live", function()
 	Check.eq(Town.SHUTTERED, "Shuttered until the next moon")
 	Check.eq(Town.PROMPT_DISTANCE, 10)
 	local builder = fs.readFile("src/server/TownBuilder.luau")
-	Check.eq(count(builder, 'plate(floor, "Pedlar", Shop.PROMPT)'), 1)
+	Check.eq(count(builder, "plate(floor, Town.PEDLAR_PROMPT_NAME, Shop.PROMPT)"), 1)
 	Check.eq(count(builder, 'plate(plinth, "SkillShrine", Town.SHRINE_PROMPT)'), 1)
 	Check.contains(builder, "Town.SHUTTERED")
 end)
@@ -468,7 +468,7 @@ Check.test("QA14 the shrine prompt is the spec 04 hook", function()
 	Check.contains(session, "ShopStock.refusal")
 end)
 
-Check.test("species pools fall back when a rarity is empty and placeholders are marked", function()
+Check.test("species pools use roster names and an empty rarity falls back", function()
 	local seen = {}
 	for _, id in ShopPools.Common do
 		seen[id] = true
@@ -479,15 +479,17 @@ Check.test("species pools fall back when a rarity is empty and placeholders are 
 	Check.eq(seen.hodag, true)
 	Check.eq(seen.mothman_hatchling, true)
 	for _, rarity in Shop.RARITY_ORDER do
-		if rarity ~= "Common" then
-			local pool = ShopPools[rarity]
+		local pool = ShopPools[rarity]
+		if rarity == "Legendary" or rarity == "Mythic" then
+			Check.eq(#pool, 0, rarity)
+		elseif rarity ~= "Common" then
 			Check.truthy(#pool > 0, rarity)
 			for _, id in pool do
 				local species = Species.get(id)
 				Check.truthy(species, id)
-				Check.eq(species.rarity, rarity)
-				Check.eq(species.baseIncome, Shop.RARITIES[rarity].baseIncome)
-				Check.truthy(string.find(species.displayName, "Placeholder", 1, true))
+				Check.eq(species.rarity, rarity, id)
+				Check.eq(species.baseIncome, Shop.RARITIES[rarity].baseIncome, id)
+				Check.eq(string.find(species.displayName, "Placeholder", 1, true), nil, id)
 			end
 		end
 	end
@@ -519,6 +521,40 @@ Check.test("species pools fall back when a rarity is empty and placeholders are 
 	Check.truthy(#rolled.warnings > 0)
 	for _, offer in rolled.offers do
 		Check.truthy(Species.get(offer.speciesId))
+	end
+end)
+
+Check.test("no shop or species display name says Placeholder", function()
+	local paths = {
+		"src/shared/Config/Species.luau",
+		"src/shared/Config/Shop.luau",
+		"src/shared/Config/ShopPools.luau",
+	}
+	for _, path in paths do
+		local text = fs.readFile(path)
+		Check.eq(string.find(text, "Placeholder", 1, true), nil, path)
+	end
+	Check.eq(Species.get("uncommon_01").displayName, "Jackalope")
+	Check.eq(Species.get("uncommon_01").rarity, "Uncommon")
+	Check.eq(Species.get("uncommon_02").displayName, "Dover Demon")
+	Check.eq(Species.get("loveland_frogman").displayName, "Loveland Frogman")
+	Check.eq(Species.get("loveland_frogman").rarity, "Uncommon")
+	Check.eq(Species.get("rare_01").displayName, "Beast of Bray Road")
+	Check.eq(Species.get("rare_01").rarity, "Rare")
+	Check.eq(Species.get("epic_01").displayName, "Jersey Devil")
+	Check.eq(Species.get("epic_02").displayName, "Loch Ness Serpent")
+	Check.eq(Species.get("hodag").displayName, "Hodag")
+	Check.eq(Species.get(Species.WILD_ID).rarity, "Common")
+	for _, id in Species.ids() do
+		local species = Species.get(id)
+		Check.eq(string.find(species.displayName, "Placeholder", 1, true), nil, id)
+	end
+	for _, rarity in Shop.RARITY_ORDER do
+		for _, id in ShopPools[rarity] do
+			local species = Species.get(id)
+			Check.eq(species.rarity, rarity, id)
+			Check.eq(string.find(species.displayName, "Placeholder", 1, true), nil, id)
+		end
 	end
 end)
 
