@@ -209,7 +209,7 @@ Same bump as [spec 17](17-pedlar-supplies.md). This branch is `Save.DATA_VERSION
 
 Spec 16 rule numbers: §7.2, §7.9, §8.1, §8.2, §8.5, §8.9. Targets are `UITheme.shape.touchPx` (44).
 
-**Dossier, which is the Stat Card (§8.2).** `art/concepts/stat-card.jpg` is frame mood only. It is not this layout. A new Dossier concept is still to be drawn when this screen is scheduled. The panel is dark `Ash`, not parchment.
+**Dossier, which is the Stat Card (§8.2).** `art/concepts/stat-card.jpg` is frame mood only. It is not this layout. The layout mock is coming from the Art Director. The panel is dark `Ash`, not parchment.
 
 The first screen, including on a phone, shows the rarity word, a **NEW** seal on the first of that species, the three aptitudes, and the trait name. The seal is a Blood `#7A0F12` circle with Bone text, at the top right. The chip carries the rarity word, so colour is not the only signal. Aptitude bars share one fill, `GoldBright` on a `Soot` track, at least 8 px tall. Labels are 14 px Bone, values are 14 px Oswald, for example "Courage 7/10 · +7% income". Instinct and Attunement use the same fill. Words tell them apart, not extra hues. If Instinct's expedition effect is not live yet, that line is BoneDim and reads **"Expeditions are not open yet."** The trait line is text only. It does not use a rarity chip. The `mutation` word, when one exists, is Normal, Spectral, Gilded, Shadow, or Moonlit.
 
@@ -281,7 +281,7 @@ The first code PR is the one QA can buy from. Later PRs add the systems that are
 
 ## Open questions for Eudai and Grok Bot
 
-None for a director. `Lure.ENCOUNTER_INTERVAL_SECONDS` is still filled in by the wild-spawner PR before that lure is sold. A drawn Dossier layout does not exist yet. `stat-card.jpg` is mood only.
+None for a director. `Lure.ENCOUNTER_INTERVAL_SECONDS` lands with the wild-spawner PR. The UV Lamp's track and variant capture land with the build PR. The Dossier layout mock is coming from the Art Director. `stat-card.jpg` stays mood only.
 
 ## Analytics v1.2
 
