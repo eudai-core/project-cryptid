@@ -107,6 +107,8 @@ Design authority for gameplay numbers is specs 01–13, plus the change notes th
 | Feel and wow answers | [`specs/14-feel-and-wow.md`](specs/14-feel-and-wow.md) — proposals, not an implementation approval |
 | Creative brief v3 | [`specs/15-creative-brief-v3.md`](specs/15-creative-brief-v3.md) — approved direction for look, feel, and hunt. World look wins where style guide v0.2, v0.8, and specs 01 and 03 conflict (director ruling 1). Covers the Stat Card (ruling 21). Clock-face colour is Update 1. |
 | UI psychology | [`specs/16-ui-psychology.md`](specs/16-ui-psychology.md) — draft v1, 11 Nov 2026. Ten UI rules in §8. Does not change gameplay numbers, prices, or economy formulae. |
+| Pedlar supplies shop | [`specs/17-pedlar-supplies.md`](specs/17-pedlar-supplies.md) — draft v1, 11 Nov 2026. Design note. The stall stops selling cryptids and becomes a cash supplies shop. Prices are proposals. No `src/` change in that note. |
+| Tools, capture twists, aptitudes | [`specs/18-tools-capture-aptitudes.md`](specs/18-tools-capture-aptitudes.md) — draft v1, 11 Nov 2026. Design note. Deterministic L1–L5 and the Veil Lamp, one twist per launch species, Courage / Instinct / Attunement. Read with spec 17. |
 | Cash-as-paid-currency audit | [`specs/compliance-audit-cash-random.md`](specs/compliance-audit-cash-random.md) |
 | Store icon and thumbnails | [`specs/store-art-brief.md`](specs/store-art-brief.md) |
 | Competitor snapshots (4 Nov 2026) | [`specs/research/gamepasses-snapshot-2026-11-04.json`](specs/research/gamepasses-snapshot-2026-11-04.json), [`specs/research/devproducts-snapshot-2026-11-04.json`](specs/research/devproducts-snapshot-2026-11-04.json) |
@@ -231,9 +233,15 @@ The Project Director ruled on the conflicts the pull request #19 report left ope
 21. **Spec 15 and spec 14. Resolved.** Spec 15 is approved. It covers the Stat Card. The clock-face colour change is Update 1 (ruling 2). Spec 14 stays a recommendation except where spec 15 adopts the Stat Card.
 22. **Fake players. Resolved.** No fake players. Named bystanders and the identical crowd on `v3-town.jpg`, `v2-town-portals.jpg`, and `hollow-clock-bloodmoon.jpg` are mood only. They are not NPCs, shops, or a player count.
 
+### Later ruling, recorded with specs 17 and 18
+
+Not part of the 1–22 count. It does not close item 5.
+
+The Pale Pedlar stops selling cryptids. Cryptids come from hunting, earn-only crates, and expedition eggs. The stall is a cash supplies shop. Tools are deterministic and never change odds. Every price and timing in those two notes is a proposal for the Growth Strategist. The notes do not change `src/`, Robux prices, or species ids. See [`specs/17-pedlar-supplies.md`](specs/17-pedlar-supplies.md) and [`specs/18-tools-capture-aptitudes.md`](specs/18-tools-capture-aptitudes.md).
+
 ## Conflicts and unresolved decisions
 
-Closed by the director rulings above, in the pull request #19 report's numbering. Item 5 (Server Luck and Robux prices) is the only one still open, flagged pending Eudai. Do not treat a sentence in an older file as the winner when a ruling above names the winner.
+Closed by the director rulings above, in the pull request #19 report's numbering. Item 5 (Server Luck and Robux prices) is the only one still open, flagged pending Eudai. Specs 17 and 18 do not close it. Do not treat a sentence in an older file as the winner when a ruling above names the winner.
 
 ## Missing references
 
