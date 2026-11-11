@@ -57,7 +57,7 @@ UI and feel follow the player-psychology brief in [`specs/16-ui-psychology.md`](
 
 Bounds, from Roblox policy and specs 09 and 15: no paid random items, no fake urgency, no fake players, and no countdown pressure on kids. Server Luck and the Robux prices stay open (director ruling 5, pending Eudai) and are not decided here.
 
-A UI pull request, including visual pass #17, names the spec 16 rule numbers it applies. Those are the ten rules in spec 16 §8.
+A UI pull request, including visual pass #17, names the spec 16 rule numbers it applies. Those are the ten rules in spec 16 §8. The P0 UI pass (44 px targets, the upper-left Menu, rarity chips, the Pedlar Details button, and card portraits) applies §8 rules 2, 4, 5, and 7. It does not change prices or odds.
 
 ## Where each agent reads
 

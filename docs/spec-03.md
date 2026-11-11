@@ -29,7 +29,7 @@ A few slow Ash wisps sit on the town wall (not in the plaza) and just outside ea
 
 There is no skybox and no ambient bed. Asset ids for the moon, wind, bell, and crows are not chosen yet.
 
-The bottom-left HUD is unchanged. Return to Lair, then Steady gaze. The slot to the right of both stays empty for the later Rites button.
+The lair controls sit in the upper-left Menu: Return to Lair, Calm motion, and Rites. They are not along the bottom edge.
 
 ## The Pale Pedlar
 

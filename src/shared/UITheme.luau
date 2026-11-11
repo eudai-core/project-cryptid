@@ -33,6 +33,7 @@ local palette = table.freeze({
 	Rift = "7FA34A",
 	RiftDim = "4F6B34",
 	Moss = "5E7A4A",
+	MossText = "8FAE78",
 	TarnishedSilver = "8C9AA3",
 	LightAmbient = "322848",
 	LightOutdoor = "51426E",
@@ -64,6 +65,33 @@ local world = table.freeze({
 	MoonGlow = "F4E8FF",
 })
 
+local TOUCH_PX = 44
+local GAP_PX = 8
+local BANNER_PAD = 8
+local BANNER_TITLE_DESKTOP = 22
+local BANNER_TITLE_MOBILE = 18
+local BANNER_BODY_DESKTOP = 18
+local BANNER_BODY_MOBILE = 16
+
+local function bannerHeight(titlePx: number, bodyPx: number): number
+	local titleRow = math.max(titlePx * 2, TOUCH_PX)
+	return BANNER_PAD + titleRow + GAP_PX + (bodyPx + 2) + GAP_PX + TOUCH_PX + BANNER_PAD
+end
+
+local PEDLAR_PREVIEW = 64
+local PEDLAR_NAME = 16
+local PEDLAR_PRICE = 18
+local PEDLAR_INCOME = 14
+local PEDLAR_CHIP = 22
+local PEDLAR_CARD_H = GAP_PX * 2
+	+ PEDLAR_PREVIEW
+	+ PEDLAR_NAME * 2
+	+ PEDLAR_CHIP
+	+ PEDLAR_PRICE
+	+ PEDLAR_INCOME
+	+ TOUCH_PX
+	+ GAP_PX * 5
+
 local UITheme = {
 	palette = palette,
 	world = world,
@@ -74,6 +102,20 @@ local UITheme = {
 		Epic = "Blood",
 		Legendary = "GoldBright",
 		Mythic = "GoldBright",
+	}),
+	rarityChip = table.freeze({
+		Common = table.freeze({ text = "BoneDim", fill = "Soot" }),
+		Uncommon = table.freeze({ text = "MossText", fill = "Soot" }),
+		Rare = table.freeze({ text = "TarnishedSilver", fill = "Soot" }),
+		Epic = table.freeze({ text = "Bone", fill = "Blood" }),
+		Legendary = table.freeze({ text = "GoldBright", fill = "Soot" }),
+		Mythic = table.freeze({ text = "GoldBright", fill = "Soot" }),
+	}),
+	copy = table.freeze({
+		menu = "Menu",
+		calmOff = "Calm motion: Off",
+		calmOn = "Calm motion: On",
+		calmReason = "Holds banners, cash, and numbers still.",
 	}),
 	fonts = table.freeze({
 		display = table.freeze({
@@ -135,12 +177,15 @@ local UITheme = {
 		plaqueGapPx = 8,
 		goalBanner = table.freeze({
 			topPx = 0,
-			pad = 8,
-			buttonH = 28,
-			titleDesktop = 22,
-			titleMobile = 18,
-			desktop = table.freeze({ w = 460, h = 112 }),
-			mobile = table.freeze({ w = 320, h = 100 }),
+			pad = BANNER_PAD,
+			buttonH = TOUCH_PX,
+			skipW = 136,
+			actionMobile = 180,
+			actionDesktop = 200,
+			titleDesktop = BANNER_TITLE_DESKTOP,
+			titleMobile = BANNER_TITLE_MOBILE,
+			desktop = table.freeze({ w = 460, h = bannerHeight(BANNER_TITLE_DESKTOP, BANNER_BODY_DESKTOP) }),
+			mobile = table.freeze({ w = 320, h = bannerHeight(BANNER_TITLE_MOBILE, BANNER_BODY_MOBILE) }),
 		}),
 		tease = table.freeze({
 			pip = 16,
@@ -155,7 +200,26 @@ local UITheme = {
 		relicsEscape = 3001,
 		escapePriority = 3000,
 		busyPoll = 0.05,
-		touchPx = 44,
+		touchPx = TOUCH_PX,
+		pedlar = table.freeze({
+			detailsW = 120,
+			leaveW = 96,
+			bindW = 200,
+			previewPx = PEDLAR_PREVIEW,
+			previewFit = 1.6,
+			previewLift = 0.4,
+			namePx = PEDLAR_NAME,
+			pricePx = PEDLAR_PRICE,
+			incomePx = PEDLAR_INCOME,
+			chipH = PEDLAR_CHIP,
+			cardH = PEDLAR_CARD_H,
+		}),
+		hudMenu = table.freeze({
+			buttonW = 88,
+			sheetW = 240,
+			reasonLines = 2,
+		}),
+		chipW = 160,
 		haulPanel = table.freeze({
 			desktop = table.freeze({ w = 560, h = 360 }),
 			mobileH = 360,
@@ -189,7 +253,7 @@ local UITheme = {
 			cardH = 112,
 			buttonW = 140,
 			padW = 220,
-			padH = 64,
+			padH = 96,
 		}),
 		mobileWidthBreakpoint = 700,
 		overlayTransparency = 0.15,
@@ -326,6 +390,14 @@ function UITheme.textIsSafe(value: string): boolean
 		end
 	end
 	return true
+end
+
+function UITheme.chipFor(rarity: string): { text: string, fill: string }
+	local chip = UITheme.rarityChip[rarity]
+	if chip == nil then
+		return UITheme.rarityChip.Common
+	end
+	return chip
 end
 
 function UITheme.color(token: string): Color3
