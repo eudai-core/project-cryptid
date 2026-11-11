@@ -106,6 +106,7 @@ local VISUAL_FILES = {
 	"src/server/TownKits/Longship.luau",
 	"src/server/TownKits/WeepingWell.luau",
 	"src/server/TownKits/ApothecaryTree.luau",
+	"src/server/TownKits/TarotTent.luau",
 }
 
 local function makeInstance(className: string): any
@@ -1563,6 +1564,138 @@ Check.test("apothecary tree kit keeps the shop sign and replaces the blockout", 
 	Check.eq(lights, shop:GetAttribute("KitAfterLights"))
 	Check.eq(particles <= TownLook.VFX_MAX_PARTICLES, true, tostring(particles))
 	Check.eq(kitParts > 0, true)
+	local builder = fs.readFile("src/server/TownBuilder.luau")
+	local _, hooks = string.gsub(builder, "TownKits.applyAll", "")
+	Check.eq(hooks, 1)
+end)
+
+Check.test("tarot tent kit keeps the shop sign and replaces the blockout", function()
+	local root = townRoot()
+	local shop = nil
+	for _, inst in descendants(root) do
+		if inst.Name == "VeilAndFate" and inst.ClassName == "Model" then
+			shop = inst
+		end
+	end
+	Check.truthy(shop, "VeilAndFate")
+	Check.eq(shop:GetAttribute("TownKit"), "TarotTent")
+	Check.eq(shop:GetAttribute("KitQuality"), 10)
+	Check.eq(shop:GetAttribute("KitDetail"), true)
+	Check.eq(shop:GetAttribute("KitBeforeParts"), 18)
+	Check.eq(shop:GetAttribute("KitAfterParts"), 93)
+	Check.eq(shop:GetAttribute("KitBeforeLights"), 0)
+	Check.eq(shop:GetAttribute("KitAfterLights"), 6)
+	Check.eq(shop:GetAttribute("KitBeforeEmitters"), 2)
+	Check.eq(shop:GetAttribute("KitAfterEmitters"), 4)
+	Check.eq(shop.PrimaryPart.Name, "Root")
+	local signText = nil
+	local door = nil
+	local prompts = 0
+	local pole = 0
+	local oldRoof = 0
+	local drape = 0
+	local sigil = 0
+	local centre = 0
+	local finial = 0
+	local lights = 0
+	local highlights = 0
+	local mesh = 0
+	local humanoids = 0
+	local emitters = 0
+	local particles = 0
+	local kitParts = 0
+	local life = 0
+	for _, inst in descendants(shop) do
+		if inst.Name == "SignText" then
+			signText = inst.Text
+		elseif inst.Name == "DoorAnchor" then
+			door = inst
+		elseif inst.Name == "Pole" then
+			pole += 1
+		elseif inst.Name == "Roof" then
+			oldRoof += 1
+		elseif inst.Name == "Drape" then
+			drape += 1
+		elseif inst.Name == "EyeSigil" then
+			sigil += 1
+		elseif inst.Name == "CentrePole" then
+			centre += 1
+		elseif inst.Name == "Finial" then
+			finial += 1
+		end
+		if inst.ClassName == "ProximityPrompt" then
+			prompts += 1
+		elseif inst.ClassName == "PointLight" or inst.ClassName == "SpotLight" or inst.ClassName == "SurfaceLight" then
+			lights += 1
+			Check.eq(inst.Shadows, false, inst.Name)
+		elseif inst.ClassName == "Highlight" then
+			highlights += 1
+		elseif inst.ClassName == "MeshPart" then
+			mesh += 1
+		elseif inst.ClassName == "Humanoid" then
+			humanoids += 1
+		elseif inst.ClassName == "ParticleEmitter" then
+			emitters += 1
+			local span = inst.Lifetime
+			particles += inst.Rate * span.Max
+			if inst:GetAttribute("TownEffect") == "TarotLife" then
+				life += 1
+				Check.eq(inst:GetAttribute("TownFlame"), "extra")
+			end
+		end
+		if inst:GetAttribute("TownKitPart") == true then
+			kitParts += 1
+			Check.eq(inst.Anchored, true, inst.Name)
+			if inst:GetAttribute("TownDecor") == true then
+				Check.eq(inst.CanCollide, false, inst.Name)
+				Check.eq(inst.CanTouch, false, inst.Name)
+				Check.eq(inst.CanQuery, false, inst.Name)
+			end
+		end
+	end
+	print(
+		string.format(
+			"tarot beforeParts=%s afterParts=%s beforeLights=%s afterLights=%s beforeEmitters=%s afterEmitters=%s emitters=%d particles=%.2f lights=%d kitParts=%d highlights=%d life=%d",
+			tostring(shop:GetAttribute("KitBeforeParts")),
+			tostring(shop:GetAttribute("KitAfterParts")),
+			tostring(shop:GetAttribute("KitBeforeLights")),
+			tostring(shop:GetAttribute("KitAfterLights")),
+			tostring(shop:GetAttribute("KitBeforeEmitters")),
+			tostring(shop:GetAttribute("KitAfterEmitters")),
+			emitters,
+			particles,
+			lights,
+			kitParts,
+			highlights,
+			life
+		)
+	)
+	Check.eq(signText, "Veil & Fate")
+	Check.truthy(door, "DoorAnchor")
+	Check.eq(door:GetAttribute("TownAnchor"), "Door")
+	Check.eq(prompts, 0)
+	Check.eq(pole, 0)
+	Check.eq(oldRoof, 0)
+	Check.eq(drape, 0)
+	Check.eq(sigil, 0)
+	Check.eq(centre, 1)
+	Check.eq(finial, 1)
+	Check.eq(highlights, 0)
+	Check.eq(mesh, 0)
+	Check.eq(humanoids, 0)
+	Check.eq(life, 2)
+	Check.eq(lights, 6)
+	Check.eq(emitters, 4)
+	Check.eq(particles <= TownLook.VFX_MAX_PARTICLES, true, tostring(particles))
+	Check.eq(kitParts, 87)
+	local registry = fs.readFile("src/server/TownKits/init.luau")
+	Check.eq(string.find(registry, 'script:WaitForChild("TarotTent")', 1, true) ~= nil, true)
+	Check.eq(string.find(registry, 'script:WaitForChild("Longship")', 1, true) ~= nil, true)
+	Check.eq(string.find(registry, 'script.Parent:WaitForChild("TarotTent")', 1, true), nil)
+	Check.eq(string.find(registry, 'script.Parent:WaitForChild("Longship")', 1, true), nil)
+	local tent = fs.readFile("src/server/TownKits/TarotTent.luau")
+	Check.eq(string.find(tent, 'script.Parent:WaitForChild("Kit")', 1, true) ~= nil, true)
+	Check.eq(string.find(tent, "ServerScriptService", 1, true), nil)
 	local builder = fs.readFile("src/server/TownBuilder.luau")
 	local _, hooks = string.gsub(builder, "TownKits.applyAll", "")
 	Check.eq(hooks, 1)
