@@ -81,20 +81,20 @@ The four names in `Shop.SLOTS` are cryptid offers, not these items. Implementati
 
 ## Expeditions: the yield is on the card before Send
 
-Research row 2 asked for expeditions whose haul is known when you send them. Its route lengths (30 min / 2 h / 8 h) and its yields (15 / 45 / 120 minutes of the whole lair) are **[A]** and are not used. The routes keep spec 14 §3's lengths. Cash is that one cryptid's income for 15, 45, and 150 minutes (ruling, 11 Nov). The Board is shuttered in `Town.luau` (`ExpeditionBoard`). This is January, not launch (spec 15 §9, spec 14 §3).
+Research row 2 asked for expeditions whose haul is known when you send them. The routes are 30 minutes, 2 hours, and 8 hours. They pay 15, 45, and 150 minutes of pre-2x income, Courage excluded. The Board is shuttered in `Town.luau` (`ExpeditionBoard`). This is January, not launch (spec 15 §9).
 
 | Route | Duration constant | Cash constant | Cash shown |
 |---|---|---|---|
-| Lantern Wood | `LANTERN_WOOD_DURATION_MINUTES` = 10 | `LANTERN_WOOD_CASH_MINUTES` = 15 | That cryptid's pre-2x income for 15 minutes |
-| Hollow Marsh | `HOLLOW_MARSH_DURATION_MINUTES` = 60 | `HOLLOW_MARSH_CASH_MINUTES` = 45 | That cryptid's pre-2x income for 45 minutes |
-| Bell Quarry | `BELL_QUARRY_DURATION_MINUTES` = 240 | `BELL_QUARRY_CASH_MINUTES` = 150 | That cryptid's pre-2x income for 150 minutes |
+| Lantern Wood | `LANTERN_WOOD_DURATION_MINUTES` = 30 | `LANTERN_WOOD_CASH_MINUTES` = 15 | 15 min of pre-2x income, Courage excluded |
+| Hollow Marsh | `HOLLOW_MARSH_DURATION_MINUTES` = 120 | `HOLLOW_MARSH_CASH_MINUTES` = 45 | 45 min of pre-2x income, Courage excluded |
+| Bell Quarry | `BELL_QUARRY_DURATION_MINUTES` = 480 | `BELL_QUARRY_CASH_MINUTES` = 150 | 150 min of pre-2x income, Courage excluded |
 
 One free slot (spec 14 §3). The chosen cryptid leaves its pad. The card states that income trade-off before Send. Server time advances while you are offline (spec 14). Skill `h7` Expedition Lore (−10% time) is sealed in `SkillConfig` and does not apply until it is unsealed. Aptitude time stays inside the 5% cap in [spec 18](18-tools-capture-aptitudes.md) and does nothing until expeditions exist.
 
 **Before Send, the card shows the whole manifest.** Return delivers that card once. A disconnect does not reroll it (spec 14).
 
 - **Cryptid or egg.** A free egg is allowed only when the card already shows its species, Courage, Instinct, Attunement, and trait (spec 14). There is no second reveal on the way home. A cash egg ticket is not sold.
-- **Cash.** The sent cryptid's own pre-2x income per second, times 60, times that route's cash-minute constant. Pre-2x means before the 2x Cash pass (spec 06). The rate is `Income.contribution` (base × altar × skill) times `(1 + courageBonus)` from [spec 18](18-tools-capture-aptitudes.md). It is not the whole lair, and it is not Tithe. The code PR puts the six numbers in one config module. They are not literals in the send script. Worked check, Hodag base 5, altar I (`BoneAltar.multiplier(1)` = 1.25), Courage 0, no skill: 6.25/s. Lantern Wood is `6.25 × 60 × LANTERN_WOOD_CASH_MINUTES` = **$5,625**. Hollow Marsh is **$16,875**. Bell Quarry is **$56,250**.
+- **Cash.** Minutes of the player's pre-2x income, Courage excluded, the same rate cash bundles use. The constants are above. `Expedition.CASH_CAP_MINUTES` is **300** per UTC day. The card shows `Expedition cash today 150/300` with the real numbers. Cash past the cap is not granted. This cash is **not Tithe** and not a leaderboard point (spec 11 §2.3). Instant Return only delivers a send that already exists. It never creates a send, never adds a roll, and never pays past the cap. A paid extra slot does not add a roll either.
 - **Relic.** Rolled when the card is built, not when the party returns (audit row 9, spec 12 §6.2). Details shows the table before the roll: Fog Lantern 50%, Cracked Bell 20%, Wisp Jar 20%, Blood Chalice 7%, Rift Shard 2%, Black Sun Coin 1% (100%). The card then names the relic that was rolled. Cap 5 of each (spec 12 §6.2).
 - **No tarot token** (spec 09 v3). No Essence.
 
@@ -132,7 +132,7 @@ No pumpkins, wreaths, or holiday names. Robux cosmetics in spec 09 (VIP Lair 299
 
 Cash only. No Robux button, no product id, no edit to `Monetisation.luau` or to spec 09's Robux figures. Server Luck and those Robux prices stay open (director ruling 5).
 
-Tools do not use a restock clock. The Lanternwright does not show `Shop.RESTOCK_PREFIX` or `ShopStock.formatCountdown`. L2 through L5 and the UV Lamp stay on the counter. Buying one does not remove the others. The Pedlar's lures, cages, and cosmetics are a standing list too. `Shop.ROTATION_SECONDS` (300) is not a countdown on either stall once cryptid cages are gone. Buying still does not reroll. No "last chance", "only N left", or "deal of the day" (spec 16 §7.3 and §7.4).
+If a list cannot change, its countdown is hidden. There is no idle "Restocks in" timer. `Shop.ROTATION_SECONDS` stays in config for a list that really rotates. Buying still does not reroll. No "last chance", "only N left", or "deal of the day" (spec 16 §7.3 and §7.4). The launch stalls do not rotate, so they show no clock.
 
 **Cash and the policy gate.** Cash is paid currency because it is sold in Robux bundles (audit ruling, spec 09 §8). `PolicyGate.allows` reads `ArePaidRandomItemsRestricted` and fails closed: it returns true only when that field is explicitly false. `MonetisationService.paidRandomAllowed` calls it. Nothing in the Pedlar calls it today. This stall does not need the gate, because it sells no random item. A future random cash row would have to call it and hide the row when it returns false. That row is not in this catalogue.
 
@@ -145,7 +145,7 @@ No paid random item ships from this stall. Until Update 1 the counter shows the 
 | Research row | What it priced | This note |
 |---|---|---|
 | 2 | A third expedition slot | **PENDING EUDAI.** One free slot only. The figure is not recorded here. |
-| 13 | A lantern or UV beam skin | **PENDING EUDAI.** Not a Pedlar row. A later Robux tab, separate from this stall. The figure is not recorded here. |
+| 13 | A lantern or UV beam skin | **PENDING EUDAI.** Robux **Cosmetics** tab only. Not cash. No stat and no odds change. No figure in config. Not sold before approval. |
 
 Moon Pass, Bound Rites, and Instant Expedition Return stay in spec 09. Ruling 5 leaves those Robux prices open. This note does not copy them into a new field.
 
@@ -200,7 +200,7 @@ The first code PR is specified in [spec 18](18-tools-capture-aptitudes.md). It i
 5. Touch targets are 44 px on a phone width (`UITheme.shape.mobileWidthBreakpoint` 700).
 6. No Marketplace prompt, and no new product id.
 7. Tutorial Hodag still completes with the free lantern (spec 01). The charge twist does not run on that spawn (spec 18).
-8. The counter has no luck row, no restock skip, no crate, and no egg ticket. An expedition card, when that system exists, lists species, aptitudes, cash, and relic before Send, and a second send with the same id does not reroll.
+8. The counter has no luck row, no restock skip, no crate, and no egg ticket. An expedition card lists species, aptitudes, cash, and relic before Send. A second send with the same id does not reroll. The cash is absent from Tithe. A day already at 300 minutes grants no more expedition cash. Instant Return does not create a send. A stall that cannot rotate has no countdown. There is no "Not on the counter" row at launch.
 
 ## Rulings applied (11 Nov)
 
@@ -211,7 +211,8 @@ The first code PR is specified in [spec 18](18-tools-capture-aptitudes.md). It i
 - A Pedlar-sourced cryptid migrates to 5/5/5. The version bump is in the code PR, chained after #15.
 - Lures that change rarity or mutation odds stay off the stall. A lure may raise the encounter rate, or attract a named species, as a fixed effect shown before purchase.
 - A free expedition egg is allowed only when its contents are already on the send card.
-- Only a wild catch rolls aptitudes. A Rift belt cryptid, and anything bought, is 5/5/5 and Marshwise, shown before purchase.
+- A cash offer and a Rift belt offer roll aptitudes when the offer is created. Details shows them before purchase. Only a Robux grant stays 5/5/5 and Marshwise.
+- Expedition cash is not Tithe. `Expedition.CASH_CAP_MINUTES` is 300. Instant Return does not add a send.
 - The first code PR sells Pedlar cages, lures, and cosmetics, and Lanternwright L2 and the UV Lamp.
 - Reed Bait and the Spirit Compass do not change rarity odds.
 - Studio tests move time with `qa:N:clock+<sec>`.

@@ -219,14 +219,14 @@ On an expedition return: **10%** chance of a relic [A]. If one drops: Fog Lanter
 
 - During the hour: the Witching Hour roll table (§3.1), 3:00 rolls, a 4:00 gap and a **guaranteed Blood Moon whose OMEN starts at :30**. If an event is busy at :30, it starts after that RETURN ends. Model: **~4.6 events per Witching Hour**.
 - Shown on the Expedition Board's 7-day calendar (spec 09 §9.4) and in the HUD in the player's **local time** (client `os.date`): "*Witching Hour · 7:00 pm*". **No push notifications** in this build.
-- **Calendar events (spec 09 §9.4) run on this director:** **Rift Tide** (Sat 18:00–20:00 UTC) uses the Witching Hour table, with a guaranteed **Rift Storm at 18:30** and a Blood Moon at 19:30. **Blood Moon Night** (first Friday, 19:00–21:00 UTC) has a guaranteed Blood Moon at 19:30 and 20:30. Calendar days replace that day's 19:00 Witching Hour.
+- **Calendar events (spec 09 §9.4) run on this director:** **Hollow Convergence** (Sat 18:00–20:00 UTC) uses the Witching Hour table, with a guaranteed **Rift Storm at 18:30** and a Blood Moon at 19:30. It does **not** apply a ×1.5 rarity multiplier. **Blood Moon Night** (first Friday, 19:00–21:00 UTC) has a guaranteed Blood Moon at 19:30 and 20:30. Calendar days replace that day's 19:00 Witching Hour.
 - **Assumption:** UTC slots, so UK players see the hour move by 1 h at the clock change. That's acceptable and shown honestly in local time.
 
 ### 7.2 Positive-only hooks
 - **Bestiary "Omens" page** (LAUNCH: Fog Night entry only): each event type is listed with its tier, times witnessed and a silhouette until first seen. Witnessing all 6 gives the title **"Omen-Reader"** (Update 1).
 - **Spec 06 has no daily quests** (it has the Nightly Offering ladder, which stays fixed and non-random). So there's no daily-quest hook at launch. If a quest list ships later, the templates are: "Witness a world event", "Catch a cryptid during Fog Night", "Help a Hollow Rite during an event".
 - **Omen Watch (Update 1, weekly, positive only) [A]:** witness **3 events** in a UTC week (Mon 00:00 reset) for a fixed chest of **30 min of income**. Nothing to lose, no streak and no reminders, the same rules as Moon Vigil (spec 09 §9.4).
-- **Moon Rite / Moon Vigil** (spec 09) are unchanged. Events don't double them, apart from Rift Tide as spec 09 already says.
+- **Moon Vigil** is the one weekly ladder in spec 09 §9.4 and spec 18. Hollow Convergence does not double it.
 - **Never:** "you missed it" copy, fake countdowns, FOMO pop-ups, or a shop link inside any event UI.
 
 ### 7.3 First Night (LAUNCH, stretch: one rule in the director)

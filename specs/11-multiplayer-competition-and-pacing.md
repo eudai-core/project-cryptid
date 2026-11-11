@@ -77,7 +77,7 @@
 | With l3 | ×1.30 | ×1.60 | ×1.825 | ×1.994 | ×2.120 | ×2.215 | ×2.286 | ×2.340 | ×2.380 | ×2.410 |
 
 ### 2.3 Rule to stop "pay = rank"
-**Tithe** (spec 07) now also **excludes income from Relic pads 9–10** (the +2 Pads pass). It already excludes 2x Cash, Blood Moon, bundles and daily rewards. So both the Tithe board and the rebirth gate count **only play a free player could match**.
+**Tithe** (spec 07) now also **excludes income from Relic pads 9–10** (the +2 Pads pass) and **excludes expedition cash** (spec 17). It already excludes 2x Cash, Blood Moon, bundles and daily rewards. So both the Tithe board and the rebirth gate count **only play a free player could match**.
 
 ### 2.4 Sim output (MODEL OUTPUT, 200 seeds each; `python3 specs/tools/pacing_sim.py`, saved in `tools/pacing_sim_output.txt`)
 
