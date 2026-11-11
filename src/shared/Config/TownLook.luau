@@ -128,6 +128,10 @@ local TownLook = {
 	SKY_ATMOSPHERE_GLARE = 0,
 	SKY_GRADE_SATURATION = 0.02,
 	SKY_GRADE_TINT = "E4DCE8",
+	-- Low cover over the muted violet night. Not a storm, and not a voxel map.
+	CLOUD_COVER = 0.5,
+	CLOUD_DENSITY = 0.4,
+	CLOUD_COLOR = "604A6E",
 }
 
 function TownLook.bloomEnabled(level: number, authored: boolean): boolean

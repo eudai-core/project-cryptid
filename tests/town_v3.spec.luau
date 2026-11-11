@@ -734,6 +734,23 @@ Check.test("v3 night is purple mist with budgeted bloom and a low-quality fallba
 	Check.eq(skyProps.SunAngularSize, TownLook.SKY_SUN_ANGULAR_SIZE)
 	Check.eq(skyProps.MoonAngularSize, TownLook.SKY_MOON_ANGULAR_SIZE)
 	Check.eq(skyProps.CelestialBodiesShown, TownLook.SKY_CELESTIAL_BODIES_SHOWN)
+	Check.eq(TownLook.CLOUD_COLOR, TownLook.SKY_ATMOSPHERE_COLOR)
+	Check.eq(TownLook.CLOUD_COVER >= 0.4 and TownLook.CLOUD_COVER <= 0.6, true, tostring(TownLook.CLOUD_COVER))
+	Check.eq(TownLook.CLOUD_DENSITY > 0 and TownLook.CLOUD_DENSITY < 1, true, tostring(TownLook.CLOUD_DENSITY))
+	local terrainNode = project.tree.Workspace.Terrain
+	Check.eq(terrainNode["$className"], "Terrain")
+	Check.eq(terrainNode["$properties"], nil)
+	local cloudsNode = terrainNode.Clouds
+	Check.eq(cloudsNode["$className"], "Clouds")
+	local cloudProps = cloudsNode["$properties"]
+	Check.eq(cloudProps.Cover, TownLook.CLOUD_COVER)
+	Check.eq(cloudProps.Density, TownLook.CLOUD_DENSITY)
+	local function unitChannel(hex: string, fromIndex: number): number
+		return (tonumber(string.sub(hex, fromIndex, fromIndex + 1), 16) or 0) / 255
+	end
+	Check.near(cloudProps.Color[1], unitChannel(TownLook.CLOUD_COLOR, 1), 0.000001, "cloud red")
+	Check.near(cloudProps.Color[2], unitChannel(TownLook.CLOUD_COLOR, 3), 0.000001, "cloud green")
+	Check.near(cloudProps.Color[3], unitChannel(TownLook.CLOUD_COLOR, 5), 0.000001, "cloud blue")
 	for _, assetId in TownLook.SKYBOX_FACE do
 		Check.eq(string.sub(assetId, 1, 11), "rbxasset://", assetId)
 		Check.eq(string.find(assetId, "rbxassetid://", 1, true), nil, assetId)
@@ -747,6 +764,12 @@ Check.test("v3 night is purple mist with budgeted bloom and a low-quality fallba
 	Check.contains(lightingSource, "ColorCorrectionEffect")
 	Check.contains(lightingSource, "TownLook.SKY_ATMOSPHERE_DENSITY")
 	Check.contains(lightingSource, "TownLook.SKYBOX_FACE")
+	Check.contains(lightingSource, "TownLook.CLOUD_COVER")
+	Check.contains(lightingSource, "TownLook.CLOUD_DENSITY")
+	Check.contains(lightingSource, "TownLook.CLOUD_COLOR")
+	Check.eq(string.find(lightingSource, "FillBlock", 1, true), nil)
+	Check.eq(string.find(lightingSource, "WriteVoxels", 1, true), nil)
+	Check.eq(string.find(lightingSource, 'Instance.new("Terrain")', 1, true), nil)
 	Check.eq(string.find(lightingSource, ".Technology", 1, true), nil)
 	Check.eq(string.find(lightingSource, "rbxassetid://", 1, true), nil)
 	local quality = fs.readFile("src/client/TownQuality.luau")
@@ -758,6 +781,10 @@ Check.test("v3 night is purple mist with budgeted bloom and a low-quality fallba
 	Check.contains(quality, 'FindFirstChildOfClass("Sky")')
 
 	local LightingSetup = loadModule("src/server/LightingSetup.luau")
+	local rig = installRoblox()
+	local terrainHost = rig.Instance.new("Terrain")
+	terrainHost.Name = "Terrain"
+	terrainHost.Parent = rig.workspace
 	LightingSetup.apply()
 	local lighting = installRoblox().game:GetService("Lighting")
 	Check.eq(lighting.Technology, nil)
@@ -806,6 +833,14 @@ Check.test("v3 night is purple mist with budgeted bloom and a low-quality fallba
 	Check.eq(sky.SunAngularSize, 0)
 	Check.eq(sky.MoonAngularSize, TownLook.SKY_MOON_ANGULAR_SIZE)
 	Check.eq(sky.CelestialBodiesShown, true)
+	local workspace = installRoblox().workspace
+	local terrain = workspace:FindFirstChild("Terrain")
+	Check.eq(terrain.ClassName, "Terrain")
+	local clouds = terrain:FindFirstChild("Clouds")
+	Check.eq(clouds.ClassName, "Clouds")
+	Check.eq(clouds.Cover, TownLook.CLOUD_COVER)
+	Check.eq(clouds.Density, TownLook.CLOUD_DENSITY)
+	Check.eq(clouds.Color.Hex, TownLook.CLOUD_COLOR)
 end)
 
 Check.test("town part and light counts stay inside the sanity guard", function()
