@@ -4,6 +4,8 @@ local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local ArtAssets = require(Shared:WaitForChild("ArtAssets")) :: any
+local CryptidArt = require(Shared:WaitForChild("Config"):WaitForChild("CryptidArt")) :: any
 local Lair = require(Shared:WaitForChild("Config"):WaitForChild("Lair")) :: any
 local RiftGlow = require(script.Parent:WaitForChild("RiftGlow"))
 local Lanterns = require(Shared:WaitForChild("Config"):WaitForChild("Lanterns")) :: any
@@ -11,11 +13,22 @@ local PlotRing = require(Shared:WaitForChild("Logic"):WaitForChild("PlotRing")) 
 local Plots = require(Shared:WaitForChild("Config"):WaitForChild("Plots")) :: any
 local Town = require(Shared:WaitForChild("Config"):WaitForChild("Town")) :: any
 local UITheme = require(Shared:WaitForChild("UITheme")) :: any
+local LairVisual = require(script.Parent:WaitForChild("LairVisual"))
 local Wisp = require(script.Parent:WaitForChild("Wisp"))
 
 local TownBuilder = require(script.Parent:WaitForChild("TownBuilder"))
 
 local PlotBuilder = {}
+
+local missingArt: { [string]: boolean } = {}
+
+local function noteMissing(name: string)
+	if missingArt[name] then
+		return
+	end
+	missingArt[name] = true
+	warn("Missing lair art: " .. name)
+end
 
 local function material(name: string): Enum.Material
 	return Enum.Material[name]
@@ -43,6 +56,14 @@ local function makePart(
 	piece.CanTouch = collide
 	piece.CastShadow = true
 	piece.Parent = parent
+	return piece
+end
+
+local function invisibleAnchor(parent: Instance, name: string, size: Vector3, cf: CFrame): Part
+	local piece = makePart(parent, name, size, cf, UITheme.materials.altar, "Ash", false)
+	piece.Transparency = 1
+	piece.CastShadow = false
+	piece.CanQuery = false
 	return piece
 end
 
@@ -396,56 +417,34 @@ function PlotBuilder.buildPlot(parent: Folder, index: number): any
 		false
 	)
 
-	local altarStand = origin * CFrame.new(Plots.ALTAR_X, 0, Plots.ALTAR_Z)
-	local altar = makePart(
+	local altarBase = origin * CFrame.new(Plots.ALTAR_X, 0, Plots.ALTAR_Z)
+	local altar = invisibleAnchor(
 		model,
 		"Altar",
 		Vector3.new(Plots.ALTAR_SIZE.x, Plots.ALTAR_SIZE.y, Plots.ALTAR_SIZE.z),
-		altarStand * CFrame.new(0, floorTop + Plots.ALTAR_SIZE.y / 2, 0),
-		UITheme.materials.altar,
-		"Altar",
-		true
+		altarBase * CFrame.new(0, floorTop + Plots.ALTAR_SIZE.y / 2, 0)
 	)
-	makePart(
-		model,
-		"AltarLip",
-		Vector3.new(Plots.ALTAR_SIZE.x + Plots.ALTAR_LIP, Plots.ALTAR_LIP, Plots.ALTAR_SIZE.z + Plots.ALTAR_LIP),
-		altarStand * CFrame.new(0, floorTop + Plots.ALTAR_SIZE.y + Plots.ALTAR_LIP / 2, 0),
-		UITheme.materials.padRing,
-		"Gold",
-		false
-	)
-	local tiers = Instance.new("Folder")
-	tiers.Name = "AltarTiers"
-	tiers.Parent = model
 	local altarPrompt = prompt(altar, "UpgradeAltar")
+	local altarModel = ArtAssets.clone(CryptidArt.folders.lair, CryptidArt.models.altar)
+	local altarTiers = {}
+	if altarModel ~= nil then
+		altarTiers = LairVisual.prepareAltar(altarModel, LairVisual.faceGate(altarBase * CFrame.new(0, floorTop, 0)))
+		altarModel.Parent = model
+		LairVisual.applyAltar(altarModel, altarTiers, 0)
+	else
+		noteMissing(CryptidArt.models.altar)
+	end
 
 	local pads = {}
 	for padIndex = 1, Plots.PAD_COUNT do
 		local localPad = PlotRing.padLocal(padIndex)
 		local stand = origin * CFrame.new(localPad.x, 0, localPad.z)
-		local ring = makePart(
-			model,
-			"PadRing" .. tostring(padIndex),
-			Vector3.new(
-				Plots.PAD_RING_THICKNESS,
-				Lair.PAD_DIAMETER + Plots.PAD_RING_MARGIN,
-				Lair.PAD_DIAMETER + Plots.PAD_RING_MARGIN
-			),
-			stand * CFrame.new(0, floorTop + Plots.PAD_RING_LIFT, 0) * CFrame.Angles(0, 0, math.rad(90)),
-			UITheme.materials.padRing,
-			"Gold",
-			false
-		)
-		ring.Shape = Enum.PartType.Cylinder
-		local center = makePart(
+		local faced = LairVisual.faceGate(stand * CFrame.new(0, floorTop, 0))
+		local center = invisibleAnchor(
 			model,
 			"Pad" .. tostring(padIndex),
 			Vector3.new(Plots.PAD_CENTER_THICKNESS, Lair.PAD_DIAMETER, Lair.PAD_DIAMETER),
-			stand * CFrame.new(0, floorTop + Plots.PAD_CENTER_LIFT, 0) * CFrame.Angles(0, 0, math.rad(90)),
-			UITheme.materials.padCenter,
-			"Floor",
-			false
+			stand * CFrame.new(0, floorTop + Plots.PAD_CENTER_LIFT, 0) * CFrame.Angles(0, 0, math.rad(90))
 		)
 		center.Shape = Enum.PartType.Cylinder
 		center:SetAttribute("OwnerUserId", 0)
@@ -454,12 +453,28 @@ function PlotBuilder.buildPlot(parent: Folder, index: number): any
 		center:SetAttribute("Sealed", PlotRing.isSealedPad(padIndex))
 		CollectionService:AddTag(center, "CryptidPad")
 		local padPrompt = prompt(center, "Pad")
+		local visual = ArtAssets.clone(CryptidArt.folders.lair, CryptidArt.models.pad)
+		local states = nil
+		local mount = nil
+		if visual ~= nil then
+			visual.Name = "PadArt" .. tostring(padIndex)
+			states, mount = LairVisual.preparePad(visual, faced)
+			visual.Parent = model
+			local initial = if PlotRing.isSealedPad(padIndex) then CryptidArt.states.sealed else CryptidArt.states.empty
+			LairVisual.applyPad(visual, states, initial, false)
+			visual:SetAttribute("beingStolen", false)
+			visual:SetAttribute("Sealed", PlotRing.isSealedPad(padIndex))
+		else
+			noteMissing(CryptidArt.models.pad)
+		end
 		table.insert(pads, {
 			index = padIndex,
-			stand = stand,
-			ring = ring,
+			stand = faced,
 			center = center,
 			prompt = padPrompt,
+			visual = visual,
+			states = states,
+			mount = mount,
 		})
 	end
 
@@ -482,18 +497,19 @@ function PlotBuilder.buildPlot(parent: Folder, index: number): any
 		riftPrompt:SetAttribute("Slot", slot.slot)
 		table.insert(rift, {
 			slot = slot.slot,
-			stand = stand * CFrame.new(0, 0.2, 0),
+			stand = LairVisual.faceGate(stand * CFrame.new(0, Plots.ROAD_THICKNESS, 0)),
 			part = marker,
 			prompt = riftPrompt,
 		})
 	end
 
-	local wildStand = origin * CFrame.new(wildPoint.x, 0, wildPoint.z)
+	local wildBase = origin * CFrame.new(wildPoint.x, 0, wildPoint.z)
+	local wildStand = LairVisual.faceGate(wildBase * CFrame.new(0, Plots.ROAD_THICKNESS, 0))
 	local wildPad = makePart(
 		model,
 		"WildSpawn",
 		Vector3.new(0.3, Lair.WILD_CLEARING_RADIUS * 2, Lair.WILD_CLEARING_RADIUS * 2),
-		wildStand * CFrame.new(0, floorTop + 0.2, 0) * CFrame.Angles(0, 0, math.rad(90)),
+		wildBase * CFrame.new(0, floorTop + 0.2, 0) * CFrame.Angles(0, 0, math.rad(90)),
 		UITheme.materials.padCenter,
 		"Ash",
 		false
@@ -609,9 +625,9 @@ function PlotBuilder.buildPlot(parent: Folder, index: number): any
 		pads = pads,
 		rift = rift,
 		altar = altar,
-		altarStand = altarStand,
+		altarModel = altarModel,
+		altarTiers = altarTiers,
 		altarPrompt = altarPrompt,
-		tiers = tiers,
 		wildPad = wildPad,
 		wildStand = wildStand,
 		wildPrompt = wildPrompt,

@@ -26,6 +26,9 @@ end)
 local Shop = import("../Config/Shop", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Shop")
 end)
+local SkillConfig = import("../Config/SkillConfig", function()
+	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("SkillConfig")
+end)
 local Species = import("../Config/Species", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Species")
 end)
@@ -291,6 +294,55 @@ local function parseShop(raw: any, version: number): any?
 	}
 end
 
+local function parseSkills(raw: any): { string }?
+	if type(raw) ~= "table" or raw.skills == nil then
+		return {}
+	end
+	if type(raw.skills) ~= "table" then
+		return nil
+	end
+	local list = {}
+	local seen: { [string]: boolean } = {}
+	local function take(id: any): boolean
+		if type(id) ~= "string" then
+			return false
+		end
+		if #id < 1 or #id > SkillConfig.ID_MAX or string.match(id, "^[%w]+$") == nil or SkillConfig.get(id) == nil then
+			warn("[Cryptid:Skill] ignored unknown rite")
+			return true
+		end
+		if id == SkillConfig.ROOT or seen[id] == true then
+			return true
+		end
+		seen[id] = true
+		table.insert(list, id)
+		return true
+	end
+	local count = #raw.skills
+	if count > SkillConfig.SAVE_MAX then
+		return nil
+	end
+	if count > 0 then
+		for index = 1, count do
+			if not take(raw.skills[index]) then
+				return nil
+			end
+		end
+		return list
+	end
+	local extras = 0
+	for _, value in raw.skills do
+		extras += 1
+		if extras > SkillConfig.SAVE_MAX then
+			return nil
+		end
+		if not take(value) then
+			return nil
+		end
+	end
+	return list
+end
+
 local function parseBind(raw: any, version: number): boolean?
 	if version < 4 then
 		return false
@@ -409,7 +461,7 @@ local function wholeNumber(value: any, minimum: number, maximum: number): number
 end
 
 local function parseOffline(raw: any, version: number): any?
-	if version < 5 then
+	if version < 6 then
 		return freshOffline()
 	end
 	if type(raw.offline) ~= "table" then
@@ -446,7 +498,7 @@ local function parseOffline(raw: any, version: number): any?
 end
 
 local function parseDaily(raw: any, version: number): any?
-	if version < 5 then
+	if version < 6 then
 		return {
 			step = 1,
 			lastClaimDay = -1,
@@ -469,7 +521,7 @@ local function parseDaily(raw: any, version: number): any?
 	}
 end
 
-local function migrateToV5(profile: any, raw: any, version: number, now: number): boolean
+local function migrateToV6(profile: any, raw: any, version: number, now: number): boolean
 	local offline = parseOffline(raw, version)
 	if offline == nil then
 		return false
@@ -484,7 +536,7 @@ local function migrateToV5(profile: any, raw: any, version: number, now: number)
 	local sfx = Return.SFX_DEFAULT
 	local music = Return.MUSIC_DEFAULT
 	local quality = Return.EFFECTS_DEFAULT
-	if version >= 5 then
+	if version >= 6 then
 		local parsedSeen = wholeNumber(raw.lastSeenUnix, 0, 1e12)
 		local parsedBowl = nonNegative(raw.bowl)
 		local parsedTithe = nonNegative(raw.tithe)
@@ -522,6 +574,39 @@ local function migrateToV5(profile: any, raw: any, version: number, now: number)
 	return true
 end
 
+local function migrateToV5(profile: any, raw: any, _version: number, _now: number): boolean
+	local skills = parseSkills(raw)
+	if skills == nil then
+		return false
+	end
+	profile.skills = skills
+	return true
+end
+
+local function migrateToV7(profile: any, _raw: any, version: number, _now: number): boolean
+	if version >= 7 then
+		return true
+	end
+	if profile.onboarding.step >= 8 then
+		return true
+	end
+	if profile.onboarding.step > 1 and profile.onboarding.playSeconds < Onboarding.GOAL_ONE_SECONDS then
+		profile.onboarding.playSeconds = Onboarding.GOAL_ONE_SECONDS
+	end
+	profile.onboarding.step = 1
+	OnboardingGoals.advance(profile)
+	return true
+end
+
+local function migrateToV8(profile: any, raw: any, version: number, _now: number): boolean
+	if version < 8 then
+		MonetisationProfile.applyDefaults(profile)
+		RelicsPip.armExisting(profile)
+		return true
+	end
+	return MonetisationProfile.parse(profile, raw)
+end
+
 local function parseAnalytics(raw: any): { lastReturnDay: number, funnelStep: number }
 	local day = 0
 	local step = 0
@@ -551,33 +636,8 @@ local function parseAnalytics(raw: any): { lastReturnDay: number, funnelStep: nu
 	}
 end
 
-local function migrateToV7(profile: any, raw: any, version: number, _now: number): boolean
-	local ok = true
-	if version < 7 then
-		MonetisationProfile.applyDefaults(profile)
-		RelicsPip.armExisting(profile)
-	else
-		ok = MonetisationProfile.parse(profile, raw)
-	end
-	if ok ~= true then
-		return false
-	end
+local function migrateToV9(profile: any, raw: any, _version: number, _now: number): boolean
 	profile.analytics = parseAnalytics(raw)
-	return true
-end
-
-local function migrateToV6(profile: any, _raw: any, version: number, _now: number): boolean
-	if version >= 6 then
-		return true
-	end
-	if profile.onboarding.step >= 8 then
-		return true
-	end
-	if profile.onboarding.step > 1 and profile.onboarding.playSeconds < Onboarding.GOAL_ONE_SECONDS then
-		profile.onboarding.playSeconds = Onboarding.GOAL_ONE_SECONDS
-	end
-	profile.onboarding.step = 1
-	OnboardingGoals.advance(profile)
 	return true
 end
 
@@ -603,6 +663,8 @@ local MIGRATION_STEPS: { { to: number, apply: (any, any, number, number) -> bool
 	{ to = 5, apply = migrateToV5 },
 	{ to = 6, apply = migrateToV6 },
 	{ to = 7, apply = migrateToV7 },
+	{ to = 8, apply = migrateToV8 },
+	{ to = 9, apply = migrateToV9 },
 }
 
 function Schema.migrationTargets(): { number }
@@ -699,6 +761,7 @@ function Schema.newProfile(now: number, starterInstanceId: string): any
 		base = {
 			defences = {},
 		},
+		skills = {},
 		analytics = {
 			lastReturnDay = 0,
 			funnelStep = 0,

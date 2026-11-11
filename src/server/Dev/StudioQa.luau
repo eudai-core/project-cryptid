@@ -1,65 +1,63 @@
 --!strict
 
--- Studio-only clock and lastSeen tweaks for spec 06 QA.
--- Armed only when the playtest args start with `qa:` and RunService:IsStudio()
--- is true. A published server ignores the args. There is no remote for this.
-
-local RunService = game:GetService("RunService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local Shared = ReplicatedStorage:WaitForChild("Shared")
-local Monetisation = require(Shared:WaitForChild("Config"):WaitForChild("Monetisation"))
-local QaArgs = require(Shared:WaitForChild("Logic"):WaitForChild("QaArgs"))
-local Return = require(Shared:WaitForChild("Config"):WaitForChild("Return"))
+-- Save-debug suffixes on a bot playtest arg `qa:<seconds>[:suffix]`.
+-- Callers pass isStudio. A live server always gets the inert plan.
+-- Offline and offering suffixes are applied by StudioQaHooks.
 
 local StudioQa = {}
 
-local parsed: any = nil
-local startedAt = 0
+local HOOKS = {
+	["loadfail"] = true,
+	["foreignlock"] = true,
+	["foreignlock:stale"] = true,
+}
 
-local function tokens(): any
-	if parsed ~= nil then
-		return parsed
+function StudioQa.parse(args: any): string?
+	if type(args) ~= "string" then
+		return nil
 	end
-	parsed = QaArgs.empty()
-	startedAt = os.clock()
-	if not RunService:IsStudio() then
-		return parsed
+	local suffix = string.match(args, "^qa:%d+:(.+)$")
+	if suffix == nil or HOOKS[suffix] ~= true then
+		return nil
 	end
-	local StudioTestService = game:GetService("StudioTestService") :: any
-	local ok, args = pcall(function()
-		return StudioTestService:GetTestArgs()
-	end)
-	if ok then
-		parsed = QaArgs.parse(args)
-	end
-	return parsed
+	return suffix
 end
 
-function StudioQa.rewindLastSeen(profile: any)
-	if not RunService:IsStudio() or type(profile) ~= "table" then
-		return
+function StudioQa.active(isStudio: boolean, args: any): string?
+	if isStudio ~= true then
+		return nil
 	end
-	local shift = tokens().offlineSeconds
-	if type(shift) ~= "number" or shift <= 0 then
-		return
+	return StudioQa.parse(args)
+end
+
+function StudioQa.plan(isStudio: boolean, args: any): string
+	local hook = StudioQa.active(isStudio, args)
+	if hook == "loadfail" then
+		return "kick"
 	end
-	local seen = profile.lastSeenUnix
-	if type(seen) ~= "number" then
-		seen = 0
+	if hook == "foreignlock" then
+		return "seed-fresh"
 	end
-	local rewound = seen - shift
-	if rewound < 0 then
-		rewound = 0
+	if hook == "foreignlock:stale" then
+		return "seed-stale"
 	end
-	profile.lastSeenUnix = rewound
+	return "load"
 end
 
 function StudioQa.armRelics(profile: any)
-	if not RunService:IsStudio() or type(profile) ~= "table" or type(profile.onboarding) ~= "table" then
+	-- selene: allow(global_usage)
+	if _G.LUNE == true or type(profile) ~= "table" or type(profile.onboarding) ~= "table" then
 		return
 	end
-	if tokens().relics ~= true then
+	if not game:GetService("RunService"):IsStudio() then
+		return
+	end
+	local ReplicatedStorage = game:GetService("ReplicatedStorage")
+	local Shared = ReplicatedStorage:WaitForChild("Shared")
+	local Monetisation = require(Shared:WaitForChild("Config"):WaitForChild("Monetisation"))
+	local QaArgs = require(Shared:WaitForChild("Logic"):WaitForChild("QaArgs"))
+	local StudioQaHooks = require(script.Parent:WaitForChild("StudioQaHooks"))
+	if QaArgs.parse(StudioQaHooks.args()).relics ~= true then
 		return
 	end
 	if profile.onboarding.step < Monetisation.GATE_STEP then
@@ -71,27 +69,18 @@ function StudioQa.armRelics(profile: any)
 end
 
 function StudioQa.analytics(): boolean
-	if not RunService:IsStudio() then
+	-- selene: allow(global_usage)
+	if _G.LUNE == true then
 		return false
 	end
-	return tokens().analytics == true
-end
-
-function StudioQa.unixNow(): number
-	local now = os.time()
-	if not RunService:IsStudio() then
-		return now
+	if not game:GetService("RunService"):IsStudio() then
+		return false
 	end
-	local spec = tokens()
-	local days = spec.utcDays
-	if type(days) ~= "number" then
-		days = 0
-	end
-	local jump = spec.utcJumpSeconds
-	if type(jump) == "number" and jump > 0 and os.clock() - startedAt >= jump then
-		days += 1
-	end
-	return now + days * Return.DAY_SECONDS
+	local ReplicatedStorage = game:GetService("ReplicatedStorage")
+	local Shared = ReplicatedStorage:WaitForChild("Shared")
+	local QaArgs = require(Shared:WaitForChild("Logic"):WaitForChild("QaArgs"))
+	local StudioQaHooks = require(script.Parent:WaitForChild("StudioQaHooks"))
+	return QaArgs.parse(StudioQaHooks.args()).analytics == true
 end
 
 return StudioQa

@@ -53,7 +53,7 @@ function SessionDocument.buildWrite(
 	now: number,
 	ttl: number,
 	createProfile: any,
-	settle: ((any, number) -> ())?
+	settle: ((any, number) -> number?)?
 ): (any?, string)
 	local function finish(profile: any, status: string): (any?, string)
 		local seenUnix = nil

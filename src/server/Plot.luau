@@ -4,12 +4,12 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
-local CryptidModel = require(script.Parent:WaitForChild("CryptidModel"))
+local CryptidArt = require(Shared:WaitForChild("Config"):WaitForChild("CryptidArt")) :: any
+local CryptidModels = require(Shared:WaitForChild("CryptidModels")) :: any
+local LairVisual = require(script.Parent:WaitForChild("LairVisual"))
 local PlotBuilder = require(script.Parent:WaitForChild("PlotBuilder"))
 local PlotSignals = require(script.Parent:WaitForChild("PlotSignals"))
-local AltarTier = require(Shared:WaitForChild("Logic"):WaitForChild("AltarTier")) :: any
 local BoneAltar = require(Shared:WaitForChild("Config"):WaitForChild("BoneAltar")) :: any
-local Economy = require(Shared:WaitForChild("Config"):WaitForChild("Economy")) :: any
 local Monetisation = require(Shared:WaitForChild("Config"):WaitForChild("Monetisation")) :: any
 local Onboarding = require(Shared:WaitForChild("Config"):WaitForChild("Onboarding")) :: any
 local NumberFormat = require(Shared:WaitForChild("Logic"):WaitForChild("NumberFormat")) :: any
@@ -20,9 +20,9 @@ local PlotRing = require(Shared:WaitForChild("Logic"):WaitForChild("PlotRing")) 
 local Plots = require(Shared:WaitForChild("Config"):WaitForChild("Plots")) :: any
 local ProfileQuery = require(Shared:WaitForChild("Logic"):WaitForChild("ProfileQuery")) :: any
 local Species = require(Shared:WaitForChild("Config"):WaitForChild("Species")) :: any
+local SkillEffects = require(script.Parent:WaitForChild("SkillEffects")) :: any
 local StealGuard = require(Shared:WaitForChild("Logic"):WaitForChild("StealGuard")) :: any
 local Transactions = require(Shared:WaitForChild("Logic"):WaitForChild("Transactions")) :: any
-local UITheme = require(Shared:WaitForChild("UITheme")) :: any
 
 local plots: { any } = {}
 local byPlayer: { [Player]: any } = {}
@@ -132,11 +132,29 @@ local function destroyNamed(host: Instance, name: string)
 	end
 end
 
+local function padRestState(pad: any): string
+	if PlotRing.isSealedPad(pad.index) then
+		return CryptidArt.states.sealed
+	end
+	return CryptidArt.states.empty
+end
+
+local function showPad(pad: any, state: string, affordable: boolean)
+	LairVisual.applyPad(pad.visual, pad.states, state, affordable)
+	local sealed = state == CryptidArt.states.sealed
+	pad.center:SetAttribute("Sealed", sealed)
+	if pad.visual ~= nil then
+		pad.visual:SetAttribute("Sealed", sealed)
+		pad.visual:SetAttribute("beingStolen", false)
+	end
+end
+
 local function clearCreatures(plot: any)
 	for _, pad in plot.pads do
 		destroyNamed(pad.center, "Creature")
 		pad.center:SetAttribute("beingStolen", false)
 		pad.prompt:SetAttribute("Available", false)
+		showPad(pad, padRestState(pad), false)
 	end
 	for _, rift in plot.rift do
 		destroyNamed(rift.part, "Creature")
@@ -145,7 +163,7 @@ local function clearCreatures(plot: any)
 	destroyNamed(plot.wildPad, "Creature")
 	plot.wildPrompt:SetAttribute("Available", false)
 	plot.altarPrompt:SetAttribute("Available", false)
-	plot.tiers:ClearAllChildren()
+	LairVisual.applyAltar(plot.altarModel, plot.altarTiers, 0)
 end
 
 local function outsideGate(plot: any): CFrame
@@ -364,6 +382,13 @@ function Plot.hold(player: Player)
 	end)
 end
 
+local function creatureMount(pad: any): CFrame
+	if pad.mount ~= nil and pad.mount:IsA("BasePart") then
+		return pad.mount.CFrame
+	end
+	return pad.stand
+end
+
 local function replaceCreature(host: Instance, speciesId: string?, cf: CFrame)
 	local existing = host:FindFirstChild("Creature")
 	if speciesId == nil then
@@ -372,38 +397,17 @@ local function replaceCreature(host: Instance, speciesId: string?, cf: CFrame)
 		end
 		return
 	end
-	if existing ~= nil and existing:GetAttribute("SpeciesId") == speciesId then
+	if existing ~= nil and existing:GetAttribute(CryptidArt.attr.speciesId) == speciesId then
 		return
 	end
 	if existing ~= nil then
 		existing:Destroy()
 	end
-	local model = CryptidModel.build(speciesId)
+	local model = CryptidModels.get(speciesId)
 	model.Name = "Creature"
+	model:SetAttribute(CryptidArt.attr.speciesId, speciesId)
 	model.Parent = host
-	model:PivotTo(cf)
-end
-
-local function rebuildTiers(plot: any, level: number)
-	plot.tiers:ClearAllChildren()
-	for step = 1, level do
-		local width, height, depth = AltarTier.size(step)
-		local piece = Instance.new("Part")
-		piece.Name = "AltarTier" .. tostring(step)
-		piece.Anchored = true
-		piece.CanCollide = false
-		piece.CanTouch = false
-		piece.Size = Vector3.new(width, height, depth)
-		piece.CFrame = plot.altarStand
-			* CFrame.new(
-				0,
-				Plots.FLOOR_THICKNESS + Plots.ALTAR_SIZE.y + Plots.ALTAR_LIP + step * Plots.ALTAR_TIER_HEIGHT,
-				0
-			)
-		piece.Material = Enum.Material[UITheme.materials.altar]
-		piece.Color = UITheme.color("Bone")
-		piece.Parent = plot.tiers
-	end
+	CryptidModels.pivotTo(model, cf)
 end
 
 local function guidePart(plot: any, guide: string): BasePart?
@@ -434,17 +438,16 @@ function Plot.sync(plot: any, profile: any, guideValue: ObjectValue)
 	plot.profile = profile
 	plot.protected = StealGuard.isProtected(profile)
 	publish(plot)
-	rebuildTiers(plot, profile.upgrades.boneAltar)
+	LairVisual.applyAltar(plot.altarModel, plot.altarTiers, profile.upgrades.boneAltar)
 
 	for _, pad in plot.pads do
 		pad.center:SetAttribute("beingStolen", false)
 		pad.center:SetAttribute("RelicPad", Monetisation.isRelicPad(pad.index))
+		local mount = creatureMount(pad)
 		if PlotRing.isSealedPad(pad.index) or Monetisation.relicLocked(profile, pad.index) then
-			pad.center:SetAttribute("Sealed", true)
-			replaceCreature(pad.center, nil, pad.stand)
+			replaceCreature(pad.center, nil, mount)
 			pad.prompt:SetAttribute("Available", false)
-			pad.prompt.ActionText = ""
-			pad.ring.Color = UITheme.color("BoneDim")
+			showPad(pad, CryptidArt.states.sealed, false)
 			continue
 		end
 		pad.center:SetAttribute("Sealed", false)
@@ -456,15 +459,13 @@ function Plot.sync(plot: any, profile: any, guideValue: ObjectValue)
 				speciesId = record.speciesId
 			end
 		end
-		replaceCreature(pad.center, speciesId, pad.stand)
+		replaceCreature(pad.center, speciesId, mount)
 		local lockedPad = pad.index > profile.padsUnlocked
 		local nextPad = pad.index == profile.padsUnlocked + 1
-		local cost = Economy.padCost(pad.index, BoneAltar.rebirths(profile))
-		if lockedPad and nextPad and type(cost) == "number" and profile.cash + 1e-9 >= cost then
-			pad.ring.Color = UITheme.color("Blood")
-		else
-			pad.ring.Color = UITheme.color("Gold")
-		end
+		local cost = SkillEffects.padCost(profile, pad.index)
+		local occupied = speciesId ~= nil
+		local canAfford = lockedPad and nextPad and type(cost) == "number" and profile.cash + 1e-9 >= cost
+		showPad(pad, CryptidArt.padState(false, occupied, lockedPad), canAfford)
 		pad.prompt:SetAttribute("Pad", pad.index)
 		if lockedPad and nextPad and type(cost) == "number" then
 			pad.prompt:SetAttribute("Kind", "UnlockPad")
@@ -513,6 +514,7 @@ function Plot.sync(plot: any, profile: any, guideValue: ObjectValue)
 	local showWild = profile.onboarding.step == Onboarding.CATCH_STEP and not ProfileQuery.hasSource(profile, "wild")
 	replaceCreature(plot.wildPad, if showWild then Species.WILD_ID else nil, plot.wildStand)
 	plot.wildPrompt:SetAttribute("Available", showWild)
+	plot.wildPrompt.MaxActivationDistance = SkillEffects.catchRange(profile)
 	plot.wildPrompt.ActionText = "Catch"
 	local wildSpecies = Species.get(Species.WILD_ID)
 	plot.wildPrompt.ObjectText = wildSpecies.displayName

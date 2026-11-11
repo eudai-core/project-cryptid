@@ -432,7 +432,7 @@ Check.test("settings stay inside their ranges and the v5 migration is idempotent
 	local migrated = Schema.migrate(legacy, 12_345)
 	Check.truthy(migrated)
 	Check.eq(migrated.dataVersion, Save.DATA_VERSION)
-	Check.eq(Save.DATA_VERSION, 7)
+	Check.eq(Save.DATA_VERSION, 9)
 	Check.eq(migrated.lastSeenUnix, 12_345)
 	Check.eq(migrated.daily.step, 1)
 	Check.eq(migrated.daily.lastClaimDay, -1)
@@ -469,7 +469,7 @@ Check.test("settings stay inside their ranges and the v5 migration is idempotent
 		profile = legacy,
 	}, "job", 8_000, 90, fresh())
 	Check.eq(status, "loaded")
-	Check.eq(document.profile.dataVersion, 7)
+	Check.eq(document.profile.dataVersion, Save.DATA_VERSION)
 	Check.eq(document.profile.lastSeenUnix, 8_000)
 	Check.eq(document.profile.daily.lastClaimDay, -1)
 end)

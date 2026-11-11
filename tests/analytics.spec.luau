@@ -891,7 +891,7 @@ Check.test("qa analytics is a Studio suffix and the server never adds a remote",
 	Check.eq(string.find(remotes, "Analytics", 1, true), nil)
 	Check.eq(string.find(remotes, "Odds", 1, true), nil)
 	local gateway = fs.readFile("src/server/DataStoreGateway.luau")
-	local rewindAt = string.find(gateway, "StudioQa.rewindLastSeen", 1, true)
+	local rewindAt = string.find(gateway, "StudioQaHooks.rewindLastSeen", 1, true)
 	local foldAt = string.find(gateway, "Offline.fold", 1, true)
 	Check.truthy(rewindAt)
 	Check.truthy(foldAt)

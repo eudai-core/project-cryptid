@@ -11,6 +11,9 @@ end
 local Economy = import("../Config/Economy", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Economy")
 end)
+local SkillConfig = import("../Config/SkillConfig", function()
+	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("SkillConfig")
+end)
 local Shop = import("../Config/Shop", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Shop")
 end)
@@ -72,6 +75,19 @@ function RemoteArgs.rotationId(value: any): number?
 		return nil
 	end
 	if value < 0 or value > 1e12 then
+		return nil
+	end
+	return value
+end
+
+function RemoteArgs.skillId(value: any): string?
+	if type(value) ~= "string" or #value < 1 or #value > SkillConfig.ID_MAX then
+		return nil
+	end
+	if string.match(value, "^[%w]+$") == nil then
+		return nil
+	end
+	if SkillConfig.get(value) == nil then
 		return nil
 	end
 	return value
