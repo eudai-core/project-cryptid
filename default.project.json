@@ -17,6 +17,21 @@
       "$className": "Lighting",
       "$properties": {
         "Technology": "ShadowMap"
+      },
+      "HollowmereSky": {
+        "$className": "Sky",
+        "$properties": {
+          "CelestialBodiesShown": true,
+          "MoonAngularSize": 11,
+          "SkyboxBk": "rbxasset://textures/sky/sky512_bk.tex",
+          "SkyboxDn": "rbxasset://textures/sky/sky512_dn.tex",
+          "SkyboxFt": "rbxasset://textures/sky/sky512_ft.tex",
+          "SkyboxLf": "rbxasset://textures/sky/sky512_lf.tex",
+          "SkyboxRt": "rbxasset://textures/sky/sky512_rt.tex",
+          "SkyboxUp": "rbxasset://textures/sky/sky512_up.tex",
+          "StarCount": 3000,
+          "SunAngularSize": 0
+        }
       }
     },
     "Players": {
