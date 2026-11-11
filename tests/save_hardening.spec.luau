@@ -834,6 +834,29 @@ Check.test("migrations run in order from every older dataVersion and are idempot
 	Check.eq(Schema.migrate(future), nil)
 end)
 
+Check.test("a save one version newer is refused and the ledger kick is logged", function()
+	local store = MockDataStore.new()
+	local future = Schema.newProfile(20, "starter")
+	future.dataVersion = Save.DATA_VERSION + 1
+	future.cash = 77
+	store:SetAsync(key(81), {
+		lockJobId = "",
+		lockExpiresAt = 0,
+		profile = future,
+	})
+	local ledger = open(store, "job-future", function()
+		return 20
+	end)
+	local loaded = ledger.load(81, Schema.newProfile(20, "decoy"))
+	Check.eq(loaded.ok, false)
+	Check.eq(loaded.message, Save.KICK_LOAD_FAILED)
+	Check.eq(store:GetAsync(key(81)).profile.dataVersion, Save.DATA_VERSION + 1)
+	Check.eq(store:GetAsync(key(81)).profile.cash, 77)
+	local session = fs.readFile("src/server/PlayerSession.luau")
+	Check.contains(session, 'print("[diag] ledger open " .. reason)')
+	Check.contains(session, "local reason = loaded.message or Save.KICK_LOAD_FAILED")
+end)
+
 Check.test("the test place project matches default.project.json plus the place id", function()
 	local function treeOf(source: string): string
 		local at = string.find(source, '"tree"', 1, true)

@@ -1,10 +1,15 @@
 --!strict
+print(
+	"[diag] client start "
+		.. tostring(
+			if game:GetService("Players").LocalPlayer ~= nil then game:GetService("Players").LocalPlayer.Name else "nil"
+		)
+) -- TEMP diag
 
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
-print("[diag] client start " .. tostring(if Players.LocalPlayer ~= nil then Players.LocalPlayer.Name else "nil")) -- TEMP diag
 
 local CashPlaque = require(script.Parent:WaitForChild("CashPlaque"))
 local GoalBanner = require(script.Parent:WaitForChild("GoalBanner"))

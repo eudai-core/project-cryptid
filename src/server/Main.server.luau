@@ -19,6 +19,15 @@ local worldReady = false
 local starting: { [Player]: boolean } = {}
 local waiting: { Player } = {}
 
+local function watchCharacter(player: Player)
+	player.CharacterAdded:Connect(function()
+		print("[diag] CharacterAdded " .. player.Name) -- TEMP diag
+	end)
+	player.CharacterRemoving:Connect(function()
+		print("[diag] CharacterRemoving " .. player.Name) -- TEMP diag
+	end)
+end
+
 local function beginPlayer(player: Player)
 	if not worldReady then
 		table.insert(waiting, player)
@@ -29,8 +38,8 @@ local function beginPlayer(player: Player)
 	end
 	starting[player] = true
 	task.spawn(function()
-		PlayerSession.onPlayer(player)
-		if player.Parent ~= nil and player.Character == nil then
+		local opened = PlayerSession.onPlayer(player)
+		if opened == true and player.Parent ~= nil then
 			print("[diag] LoadCharacter " .. player.Name) -- TEMP diag
 			player:LoadCharacter()
 		end
@@ -39,8 +48,12 @@ end
 
 Players.PlayerAdded:Connect(function(player: Player)
 	print("[diag] PlayerAdded " .. player.Name) -- TEMP diag
+	watchCharacter(player)
 	beginPlayer(player)
 end)
+for _, player in Players:GetPlayers() do
+	watchCharacter(player)
+end
 SpawnCheck.start()
 
 LightingSetup.apply()
@@ -57,9 +70,6 @@ if town ~= nil then
 end
 print("[diag] build done " .. tostring(partCount)) -- TEMP diag
 worldReady = true
-for _, player in waiting do
-	beginPlayer(player)
-end
 
 local folder = Remotes.create()
 Pedlar.start(function()
@@ -67,6 +77,9 @@ Pedlar.start(function()
 end)
 PlayerSession.start(folder)
 
+for _, player in waiting do
+	beginPlayer(player)
+end
 for _, player in Players:GetPlayers() do
 	beginPlayer(player)
 end
