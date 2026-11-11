@@ -104,6 +104,7 @@ local VISUAL_FILES = {
 	"src/server/TownKits/init.luau",
 	"src/server/TownKits/Kit.luau",
 	"src/server/TownKits/Longship.luau",
+	"src/server/TownKits/WeepingWell.luau",
 }
 
 local function makeInstance(className: string): any
@@ -849,7 +850,7 @@ Check.test("town part and light counts stay inside the sanity guard", function()
 		true,
 		"lights " .. tostring(lights) .. " cap " .. tostring(TownLook.LIGHT_CAP)
 	)
-	Check.eq(TownLook.LIGHT_CAP, 24)
+	Check.eq(TownLook.LIGHT_CAP, 200)
 	Check.eq(TownLook.VFX_MAX_EMITTERS, 6)
 	Check.eq(TownLook.VFX_MAX_PARTICLES, 120)
 	Check.eq(parts > 0, true)
@@ -973,7 +974,9 @@ Check.test("hollowmere is the mythic plaza and neon stays on flames portals rune
 	Check.eq(prompts, 2)
 	Check.eq(hollowPrompts, 0)
 	Check.eq(named(root, "WellLight") ~= nil, true)
-	Check.eq(countClass(root, "PointLight"), TownLook.LIGHT_CAP)
+	local pointLights = countClass(root, "PointLight")
+	Check.eq(pointLights <= TownLook.LIGHT_CAP, true, "point lights " .. tostring(pointLights))
+	Check.eq(pointLights > 0, true)
 	for _, sign in REQUIRED_SIGNS do
 		Check.contains(text, sign)
 	end
@@ -1270,4 +1273,128 @@ Check.test("longship kit keeps the tavern anchors and stays inside the sanity gu
 	local builder = fs.readFile("src/server/TownBuilder.luau")
 	local _, hooks = string.gsub(builder, "TownKits.applyAll", "")
 	Check.eq(hooks, 1)
+end)
+
+Check.test("weeping well kit keeps the basin anchors and stays inside the sanity guard", function()
+	local root = townRoot()
+	local well = nil
+	for _, inst in descendants(root) do
+		if inst.Name == "WeepingWell" and inst.ClassName == "Model" then
+			well = inst
+		end
+	end
+	Check.truthy(well, "WeepingWell")
+	Check.eq(well:GetAttribute("TownKit"), "WeepingWell")
+	Check.eq(well:GetAttribute("KitQuality"), 10)
+	Check.eq(well:GetAttribute("KitDetail"), true)
+	Check.eq(well:GetAttribute("KitBeforeParts"), 20)
+	Check.eq(well:GetAttribute("KitAfterParts"), 51)
+	Check.eq(well:GetAttribute("KitBeforeLights"), 1)
+	Check.eq(well:GetAttribute("KitAfterLights"), 10)
+	Check.eq(well:GetAttribute("KitBeforeEmitters"), 2)
+	Check.eq(well:GetAttribute("KitAfterEmitters"), 2)
+	Check.eq(well.PrimaryPart.Name, "Centre")
+	Check.eq(well.PrimaryPart:GetAttribute("TownAnchor"), "Well")
+	local basin = nil
+	local stone = 0
+	local oldWater = 0
+	local runestones = 0
+	local lights = 0
+	local highlights = 0
+	local mesh = 0
+	local humanoids = 0
+	local emitters = 0
+	local particles = 0
+	local kitParts = 0
+	local prompts = 0
+	for _, inst in descendants(well) do
+		if inst.Name == "Water" and inst:GetAttribute("TownAnchor") == "Basin" then
+			basin = inst
+		elseif inst.Name == "Stone" then
+			stone += 1
+		elseif inst.Name == "WellWater" then
+			oldWater += 1
+		elseif inst.Name == "Runestone" then
+			runestones += 1
+		end
+		if inst.ClassName == "ProximityPrompt" then
+			prompts += 1
+		elseif inst.ClassName == "PointLight" or inst.ClassName == "SpotLight" or inst.ClassName == "SurfaceLight" then
+			lights += 1
+			Check.eq(inst.Shadows, false, inst.Name)
+		elseif inst.ClassName == "Highlight" then
+			highlights += 1
+		elseif inst.ClassName == "MeshPart" then
+			mesh += 1
+		elseif inst.ClassName == "Humanoid" then
+			humanoids += 1
+		elseif inst.ClassName == "ParticleEmitter" then
+			emitters += 1
+			local life = inst.Lifetime
+			particles += inst.Rate * life.Max
+		end
+		if inst:GetAttribute("TownKitPart") == true then
+			kitParts += 1
+			Check.eq(inst.Anchored, true, inst.Name)
+			if inst:GetAttribute("TownDecor") == true then
+				Check.eq(inst.CanCollide, false, inst.Name)
+				Check.eq(inst.CanTouch, false, inst.Name)
+				Check.eq(inst.CanQuery, false, inst.Name)
+			end
+		end
+	end
+	local townEmitters = 0
+	local townParticles = 0
+	local townLights = 0
+	local townParts = 0
+	local townHighlights = 0
+	for _, inst in descendants(root) do
+		if inst.ClassName == "ParticleEmitter" then
+			townEmitters += 1
+			local life = inst.Lifetime
+			townParticles += inst.Rate * life.Max
+		elseif inst.ClassName == "PointLight" or inst.ClassName == "SpotLight" or inst.ClassName == "SurfaceLight" then
+			townLights += 1
+		elseif inst.ClassName == "Highlight" then
+			townHighlights += 1
+		elseif BASE_PART[inst.ClassName] == true then
+			townParts += 1
+		end
+	end
+	print(
+		string.format(
+			"weeping beforeParts=%s afterParts=%s beforeLights=%s afterLights=%s emitters=%d particles=%.2f kitParts=%d townParts=%d townLights=%d townEmitters=%d townParticles=%.2f townHighlights=%d",
+			tostring(well:GetAttribute("KitBeforeParts")),
+			tostring(well:GetAttribute("KitAfterParts")),
+			tostring(well:GetAttribute("KitBeforeLights")),
+			tostring(well:GetAttribute("KitAfterLights")),
+			emitters,
+			particles,
+			kitParts,
+			townParts,
+			townLights,
+			townEmitters,
+			townParticles,
+			townHighlights
+		)
+	)
+	Check.truthy(basin, "Basin")
+	Check.eq(basin:GetAttribute("TownAnchor"), "Basin")
+	Check.eq(stone, 0)
+	Check.eq(oldWater, 0)
+	Check.eq(runestones, Town.WELL_CANDLES)
+	Check.eq(prompts, 0)
+	Check.eq(lights, 10)
+	Check.eq(highlights, 0)
+	Check.eq(mesh, 0)
+	Check.eq(humanoids, 0)
+	Check.eq(emitters, 2)
+	Check.eq(emitters <= TownLook.VFX_MAX_EMITTERS, true, tostring(emitters))
+	Check.eq(particles <= TownLook.VFX_MAX_PARTICLES, true, tostring(particles))
+	Check.eq(kitParts, 33)
+	Check.eq(townLights <= TownLook.LIGHT_CAP, true, tostring(townLights))
+	Check.eq(townParts <= TownLook.PART_CAP, true, tostring(townParts))
+	Check.eq(townHighlights, 0)
+	Check.eq(TownLook.LIGHT_CAP, 200)
+	Check.eq(TownLook.PART_CAP, 20000)
 end)

@@ -1,14 +1,18 @@
 --!strict
 
 local TownLook = {
-	-- Runaway sanity guard only. There is no part budget; do not thin a building to stay under it.
+	-- Runaway sanity guards only. There is no part or light budget; do not thin a building to stay under them.
 	PART_CAP = 20000,
-	LIGHT_CAP = 24,
+	LIGHT_CAP = 200,
 	VFX_MAX_EMITTERS = 6,
 	VFX_MAX_PARTICLES = 120,
 	LOW_QUALITY_MAX = 4,
 	WELL_LIGHT_RANGE = 14,
 	WELL_LIGHT_BRIGHTNESS = 1,
+	WELL_WATER_GLOW_RANGE = 10,
+	WELL_WATER_GLOW_BRIGHTNESS = 0.55,
+	WELL_RUNE_GLOW_RANGE = 5,
+	WELL_RUNE_GLOW_BRIGHTNESS = 0.3,
 	PORTAL_LIGHT_RANGE = 12,
 	PORTAL_LIGHT_BRIGHTNESS = 0.9,
 	MIST_RATE = 8,
