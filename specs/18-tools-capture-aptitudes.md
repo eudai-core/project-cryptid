@@ -89,18 +89,17 @@ On top of hold-to-bind. One twist per launch species (spec 09 §3). Ids are the 
 
 Research row 1 asked for a free weekly gathering and a calendar. Its guessed start, its guessed length, its luck ×2, and its spawn changes are **[A]** and are not used. Hollow Convergence is Saturday 18:00–20:00 UTC and adds no luck of its own.
 
-**Two effects, one window.** Hollow Convergence is Saturday 18:00–20:00 UTC. The constants are `Convergence.WEEKDAY` = Saturday, `Convergence.START_HOUR_UTC` = 18, and `Convergence.END_HOUR_UTC` = 20. It adds no luck of its own: `Convergence.LUCK_MULTIPLIER` is 1. It does not change rarity weights, spawn interval, or max alive. Rift Tide is the separate spec 09 §9.4 luck of ×1.5 on that same Saturday window. Convergence does not add a second multiplier and does not remove the ×1.5. Launch still ships Fog Night only, and Fog Night is atmosphere only (spec 12 §0, director ruling 15). Convergence is Update 1.
+**One window, no luck.** Hollow Convergence is Saturday 18:00–20:00 UTC. The constants are `Convergence.WEEKDAY` = Saturday, `Convergence.START_HOUR_UTC` = 18, and `Convergence.END_HOUR_UTC` = 20. `Convergence.LUCK_MULTIPLIER` is 1. It does not change rarity weights, spawn interval, or max alive. The spec 09 Saturday ×1.5 on this window is withdrawn. Launch still ships Fog Night only, and Fog Night is atmosphere only (spec 12 §0, director ruling 15). Convergence is Update 1.
 
 **What it does.** It does not change rarity weights, spawn interval, or max alive. The shared goal during the window, once the rite exists, is the Hollow Rite (spec 11 §4.2, Update 1): server totals Ember 25, Flame 40, Inferno 60, in a 10-minute rite. Rewards are 5, 10, and 15 minutes of each contributor's own pre-2x income. Inferno also grants the Rite Candle once per tier per week. A player needs 3 catches. AFK players get nothing. Assists count one half. Those rewards are the rite's, not a new Convergence multiplier. Spec 12's rule stands: event income stays out of Tithe.
 
-Rift Tide keeps that ×1.5. Convergence does not. Nobody can buy a start, a restock, or a longer window (spec 12: event starts other than the Blood Moon gift are not sold, and the gift does not start this hour).
+Nobody can buy a start, a restock, or a longer window (spec 12: event starts other than the Blood Moon gift are not sold, and the gift does not start this hour).
 
 **Moon Almanac.** The 7-day board spec 09 §9.4 and spec 12 §7.1 already call for. It shows the schedule in the player's local time (`os.date`). No push notification (spec 12 §7.1).
 
 | Row on the board | Time | What the player reads |
 |---|---|---|
-| Rift Tide | Saturday 18:00–20:00 UTC | Spec 09 §9.4. Free luck ×1.5. This row is not Convergence. |
-| Hollow Convergence | Saturday 18:00–20:00 UTC (`START_HOUR_UTC` 18, `END_HOUR_UTC` 20) | No luck bonus of its own. Next Saturday is listed if this one was missed. |
+| Hollow Convergence | Saturday 18:00–20:00 UTC (`START_HOUR_UTC` 18, `END_HOUR_UTC` 20) | No luck. Next Saturday is listed if this one was missed. |
 | Witching Hour | 19:00–20:00 UTC and 01:00–02:00 UTC daily | Update 1. Spec 12 §7.1. |
 | Blood Moon Night | First Friday, 19:00–21:00 UTC | Update 1. Spec 09 §9.4. |
 | Fog Night | Whenever the director rolls it | Launch. Atmosphere only (ruling 15). Odds stay the spec 12 §3 table, behind **Details**. |
@@ -133,7 +132,14 @@ At the post-rite **$17.50/s** (spec 17), the first mark is 5 × 60 × 17.50 = **
 
 **Missed day.** Tomorrow's three marks are new. Nothing resets to zero, and nothing is labelled lost. Unclaimed contract cash waits in `profile.contracts.unclaimed`. It is not deleted at midnight. It cannot grow past `Contract.UNCLAIMED_CAP_DAYS` (3) times one full day. One full day is the 5 + 10 + 15 minute grants, and at least the floors $250 + $500 + $1,000 = $1,750. The Offering ladder does not move. No "Revive Streak" (spec 06, spec 09 §8.2). A second claim of the same mark in the same UTC day pays nothing.
 
-**Weekly bonus.** Any **5** of **7** days in the UTC week (Monday 00:00, the same week spec 09 uses for the Moon Vigil). The days need not be consecutive. Missing a day does not wipe the other days, and a week under 5 pays nothing and shows no loss line. The reward is fixed and listed on the panel before the week starts. It is never a roll.
+**Moon Vigil, one ladder.** This is spec 09 §9.4, not a second weekly system. The week starts Monday 00:00 UTC. A day counts when at least one contract mark is completed. A missed day drops only that day. There is no reset and no "lost" line.
+
+| Tier | Days | Reward | Source |
+|---|---|---|---|
+| 1 | any 3 of 7 | 1 h of income + 3 Pale tokens | Spec 09 §9.4, already written. Not a new number. |
+| 2 | any 5 of 7 | 30 min of pre-2x income, floor $3,000, plus `vigil_wick` | This note. Fixed. Not random. |
+
+Tier 2 does not replace tier 1. Both can pay in the same week. The panel lists both rewards before the week starts.
 
 | Constant | Proposed value | Why this value |
 |---|---|---|
@@ -174,7 +180,7 @@ Hodag, `baseIncome` 5, altar I (`BoneAltar.multiplier(1)` = 1.25), no skill, Cou
 
 **Roll, on a wild catch only.** Each aptitude is an integer from 0 to 10, uniform, independent, weight 1. The server draws once when it creates the instance id, saves the numbers before the reveal, and a rejoin does not draw again. Details says each value is 1 in 11. The trait roll is a separate 0–99 draw against the table above.
 
-**Anything bought, and every Rift belt cryptid, is fixed.** Courage, Instinct, and Attunement are 5, 5, and 5. The trait is `marshwise` (`Aptitude.FIXED_TRAIT`). The belt card shows those four values before Buy. A cash purchase shows them before cash is spent. Nothing bought has a stat the player has not already seen. Starter and Nightly Offering use the same fixed four values, shown on the grant. An expedition writes the four values onto the send card before Send. The Pedlar does not sell cryptids.
+**Cash offers and the Rift belt roll when the offer is created.** The server draws Courage, Instinct, Attunement, and the trait at that moment and writes them on the offer. **Details** shows all four before purchase. Buying does not draw again. Nothing bought is unseen. A Robux grant stays fixed: 5 / 5 / 5 and `marshwise`. Starter and the Nightly Offering use that same fixed grant, shown on the card. An expedition writes its four values on the send card before Send. A cryptid already in a save with `source = "pedlar"` migrates to 5 / 5 / 5, because no offer-time roll was stored.
 
 The research's weighted row (0 through 10 as 3, 5, 8, 11, 14, 16, 15, 12, 8, 6, 2) is **[A]** and is not used.
 
@@ -222,9 +228,9 @@ The first screen, including on a phone, shows the rarity word, a **NEW** seal on
 The first code PR is the one QA can buy from. Later PRs add the systems that are not in the launch loop. None start ahead of #14. None take `DATA_VERSION` 10.
 
 1. **Launch stock, plus the Studio clock.** Pedlar sells Witness Cage (a scripted cage prop in the lair), Reed Bait (one named spawn at the player, rarity table not used for that spawn), and Keeper's Rim plus Veil Mantle (pad rim and lantern glass, `UITheme` tokens). Lanternwright sells L2 and the UV Lamp. L1 is not priced. No restock countdown. Prices are the N×H table in config, and a test pins R0 at $17.50/s and each N. Hold uses the 2.43 s example. Bait on and bait off leave the spec 09 rarity table unchanged. The same PR adds `qa:N:clock+<sec>`: `RunService:IsStudio()` only, no remote, a server time offset read by restock, the contract day, Saturday Convergence, the Almanac, and the weekly candle.
-2. **Schema, after #15.** Version 11. `pedlar` and `rift` become 5/5/5 and `marshwise`. Wild cryptids use the three hash vectors. A newer save is refused.
+2. **Schema, after #15.** Version 11. A saved `pedlar` cryptid becomes 5/5/5. New belt and cash offers keep the roll stored on the offer. Wild cryptids use the three hash vectors. A newer save is refused.
 3. **Wild spawner.** The 4 s and 5 s windows, `Twist.MAX_WAIT_SECONDS` = 30, and the rest of L3–L5. Compass range 80 does not change rarity odds.
-4. **Dossier, Prime, and the Courage floor.** Income order above. Belt cards show 5/5/5 and Marshwise before Buy.
+4. **Dossier, Prime, and the Courage floor.** Income order above. Belt Details shows the offer's roll before Buy. Prime does not change that income. A Robux grant is 5/5/5 and cannot be Prime.
 5. **Almanac and contracts.** Saturday 18:00–20:00 UTC. Contract marks are Lanternwright, a cryptid already on a pad, and come home. Unclaimed cash caps at 3 days.
 6. **Expeditions.** Manifest before Send, including any egg's aptitudes.
 7. **Analytics v1.2.** The seven events below. v1.1 names stay. Cap stays 15.
@@ -238,7 +244,7 @@ The first code PR is the one QA can buy from. Later PRs add the systems that are
 5. A save with `source = "pedlar"` loads the same species at 5/5/5. Cash is unchanged. A wild cryptid gets the hash, and a second load does not change it.
 6. Phone width: Bind and Details are at least 44 px. No shop card on the catch.
 7. The UV Lamp beam is `#CC3F8A`, with no Neon, and its PointLight exists only on the holder's client while the lamp is on. The variant word is one of Normal, Spectral, Gilded, Shadow, Moonlit, in that variant's own colour. With the lamp off, the same spawn is still there.
-8. The Almanac lists Hollow Convergence as Saturday 18:00–20:00 UTC with no luck of its own. Rift Tide's ×1.5 on that window is still spec 09. Copy has no "last chance". The Lanternwright tool list has no "Restocks in".
+8. The Almanac lists Hollow Convergence as Saturday 18:00–20:00 UTC with no luck. Copy has no "last chance". A stall that cannot rotate shows no countdown. Prime does not change income. Expedition cash does not move Tithe. Instant Return does not create a send. The contract panel has no "lost" line.
 9. Launch contract marks are the Lanternwright, a cryptid already on a pad, and coming home. There is no daily hold mark. Unclaimed cash stops at 3 days. Skipping a UTC day leaves the Offering step where it was.
 10. With Steady Hand and the Ember Lantern both owned, and no other catch-time skill, the server hold is 2.43 s. A client that claims 1.4 s is rejected.
 
@@ -249,7 +255,7 @@ The first code PR is the one QA can buy from. Later PRs add the systems that are
 - Chains do not grant a steal bonus.
 - Variant names on the lamp and the Dossier are Normal, Spectral, Gilded, Shadow, and Moonlit (spec 15 §6).
 - Rolls stay uniform, 1/11. Prime is a highlight when all three stats are ≥ 9. The faces ≥ 9 are 9 and 10, so the odds are (2/11)³ = 8/1331 (about 0.60%). (3/11)³ = 27/1331 would be every stat ≥ 8, and that is not this mark. A 5/5/5 grant cannot be Prime.
-- Rift Tide keeps free ×1.5 luck on Saturday 18:00–20:00 UTC. Hollow Convergence is that same window and adds no luck of its own (`Convergence.LUCK_MULTIPLIER` = 1).
+- Hollow Convergence is Saturday 18:00–20:00 UTC and has no luck. Spec 09's ×1.5 on that window is withdrawn.
 - Contracts pay 5/10/15 minute steps. Any 5 of 7 days pays 30 minutes of pre-2x income, floor $3,000, plus `vigil_wick`. The minute count and the floor are `Contract.WEEKLY_CASH_MINUTES` and `Contract.WEEKLY_CASH_FLOOR`.
 - The UV Lamp beam is `#CC3F8A`. The build PR puts `UvBeam` on `UITheme.world`, not on the A2 palette. The lamp's light is client-local and only while it is on.
 - Tool beam swatches, including L3 blue and L4 purple, are an allowed exception to spec 01 A2. The rest of the UI keeps A2.
@@ -261,7 +267,11 @@ The first code PR is the one QA can buy from. Later PRs add the systems that are
 - Pedlar-sourced cryptids migrate to 5/5/5. See spec 17 for the empty counter, the expedition constants, the single slot, and the Robux skin tab.
 - Courage is `courage × 1%`, max +10%, after the pad multiplier and before the 2x pass, then floored to whole cash. Hodag at altar I and Courage 10 is $6/s. Jersey Devil in the same case is $220/s. Tithe skips Courage and the 2x pass.
 - Attunement is bind slack and trait utility only. It does not change income or expedition time.
-- A wild catch is the only aptitude roll. Rift belt cryptids and anything bought are 5/5/5 and Marshwise, shown before purchase.
+- A cash offer and a Rift belt offer roll when the offer spawns. Details shows the roll before purchase. A Robux grant stays 5/5/5 and Marshwise, and cannot be Prime.
+- Expedition cash is excluded from Tithe. The daily cap is `Expedition.CASH_CAP_MINUTES` = 300. Instant Return does not add a send or a roll.
+- Moon Vigil is one ladder. Tier 1 is spec 09's 3-of-7 chest: 1 h of income + 3 Pale tokens. Tier 2 is 5-of-7: 30 min, floor $3,000, plus `vigil_wick`.
+- Hollow Convergence has no luck. Spec 09's Saturday ×1.5 on that window is withdrawn.
+- A stall with nothing rotating shows no countdown. Launch shows no "Not on the counter" row. Beam skins sit on a Robux Cosmetics tab, price **PENDING EUDAI**.
 - Studio time tests use `qa:N:clock+<sec>`, guarded by `RunService:IsStudio()`, with no remote.
 - The 4 s and 5 s twist windows wait for the wild-spawner PR.
 - Hollow Convergence is Saturday 18:00–20:00 UTC. `Convergence.WEEKDAY` is Saturday, `START_HOUR_UTC` is 18, and `END_HOUR_UTC` is 20.
