@@ -60,7 +60,7 @@ Until a row has a server effect, the card has no Buy button and charges nothing.
 
 ## Lures and bait
 
-A lure that changes rarity odds or mutation odds is **not sold**. Two effects are allowed, each fixed and written on the card before cash is spent. One raises the encounter rate: the next wild spawn uses `Lure.ENCOUNTER_INTERVAL_SECONDS` instead of the spec 09 interval of 45 s, and the rarity table is unchanged. The other attracts a named species when that species' published condition is already true. Neither one edits a rarity weight or a mutation weight. Wild rarity weights are not in code (the only wild spawn is the tutorial Hodag). `h5` and `h6` stay sealed. The encounter-rate row stays off the counter until the wild-spawner PR sets `Lure.ENCOUNTER_INTERVAL_SECONDS`, because a lure with no working interval is not sold.
+A lure never changes rarity odds or mutation odds. Reed Bait and the Spirit Compass are the proof: the spec 09 rarity table is byte-identical with the item on or off. Two lure effects are allowed, each fixed and written on the card before cash is spent. One sets the next spawn wait to `Lure.ENCOUNTER_INTERVAL_SECONDS` (the first PR sets that constant; the card shows 45 s, the spec 09 interval, and the new wait). The other attracts the named species on the card. `h5` and `h6` stay sealed.
 
 | Item | Effect | Duration / charges | Stack | Cash price | Hooks into | In code | Sale |
 |---|---|---|---|---|---|---|---|
@@ -183,16 +183,17 @@ The Lanternwright is the tool shop. The Pedlar does not list L2 through L5 or th
 
 ## Implementation plan
 
-Docs only here. The code splits into the small PRs below. Shop and expedition PRs are this note. Tool, Dossier, Convergence, contract, and analytics PRs are [spec 18](18-tools-capture-aptitudes.md). None of them start ahead of #14, and none of them take `DATA_VERSION` 10.
+The first code PR is specified in [spec 18](18-tools-capture-aptitudes.md). It is the launch stock: Pedlar cages, lures, and cosmetics, plus Lanternwright L2 and the UV Lamp, plus `qa:N:clock+<sec>`. This note does not schedule a separate empty-stall PR. Schema still waits on #15. Expeditions stay January. A save newer than the running `DATA_VERSION` is refused and not overwritten, which is what `Schema.migrate` does today.
 
-1. **Stop the cryptid counter.** The Pedlar lists lures, cages, and cosmetics. The Lanternwright lists L2 through L5 and the UV Lamp, with no restock countdown. L1 is not a paid row. Buy spends cash only when a server effect exists. Tests: a buy does not grant a species; neither stall shows `Shop.RESTOCK_PREFIX`.
-2. **Schema, after #15.** Version 11, chained after `migrateToV10`. `source = "pedlar"` becomes 5/5/5. Every other cryptid uses the spec 18 hash. Tests: a second migrate does not change the numbers; species id and cash stay put.
-3. **Expedition manifest (January).** One module holds the six route constants. The card shows cash from those constants before Send. A free egg is on that card only when its species and aptitudes are already written there. One free slot. No third slot and no egg ticket.
-4. **Wild spawner.** Owns Reed Bait, `Lure.ENCOUNTER_INTERVAL_SECONDS`, and the 4 s and 5 s twist windows in spec 18. Until it lands, those rows are not sold and those windows are not live.
+**Launch cards.** Pedlar: Witness Cage, Reed Bait, Keeper's Rim, Veil Mantle. Lanternwright: Ember Lantern, UV Lamp. No cryptid name, no "Bind at once" toggle, no four-column cryptid odds table. **Details** on a supply shows the fixed effect. `PedlarOddsViewed` still fires, with the item id, not a species roll. The prompt becomes "Browse the Pedlar's wares" in that same PR. The server refuses a buy unless `onboarding.step` is at least 8 and saved `onboarding.playSeconds` is at least 300.
+
+**Relic at the cap.** The expedition card rolls the spec 12 table when it is built. A relic the player already holds 5 of is skipped. If every relic is at 5, the card says no relic and still shows the cash. Cancel before Send does not keep a roll. Disconnect after Send does not roll again.
+
+**Details lines.** L2: "Hold 3.0 s → 2.7 s" or "2.7 s → 2.43 s" when `h1` is owned. Compass: "Points within 80 studs. Rarity odds unchanged." UV Lamp: "Shows the variant already rolled. Odds unchanged." Chains: "Range 12 → 16." Silver Censer: "The wait until the next landing is halved. The landing stays at least 4 s." Reed Bait: "Next spawn is the named species. Rarity odds unchanged."
 
 ## QA
 
-1. Fresh profile: the Pedlar shows lures, cages, and cosmetics, and no tool. The Lanternwright shows L2 through L5 and the UV Lamp, and no countdown. L1 is already owned and is not priced. No cryptid name is for sale.
+1. Fresh profile after the gate: the Pedlar sells Witness Cage, Reed Bait, Keeper's Rim, and Veil Mantle. The Lanternwright sells the Ember Lantern and the UV Lamp. L1 is already owned. No cryptid is for sale. There is no "Bind at once" toggle and no four-column cryptid odds table.
 2. A profile that already owns a Pedlar cryptid still owns that species after load, at Courage 5, Instinct 5, Attunement 5.
 3. Details on a Lanternwright tool says the odds are unchanged, with the before and after hold or range. A lure's Details shows the encounter interval or the named species, and the spec 09 rarity table unchanged.
 4. Neither stall shows "Restocks in". Copy has no "last chance" or "only".
@@ -210,6 +211,10 @@ Docs only here. The code splits into the small PRs below. Shop and expedition PR
 - A Pedlar-sourced cryptid migrates to 5/5/5. The version bump is in the code PR, chained after #15.
 - Lures that change rarity or mutation odds stay off the stall. A lure may raise the encounter rate, or attract a named species, as a fixed effect shown before purchase.
 - A free expedition egg is allowed only when its contents are already on the send card.
+- Only a wild catch rolls aptitudes. A Rift belt cryptid, and anything bought, is 5/5/5 and Marshwise, shown before purchase.
+- The first code PR sells Pedlar cages, lures, and cosmetics, and Lanternwright L2 and the UV Lamp.
+- Reed Bait and the Spirit Compass do not change rarity odds.
+- Studio tests move time with `qa:N:clock+<sec>`.
 - Permanent tools have no 5-minute restock clock. They are always in stock at the Lanternwright.
 - The Lanternwright sells L2 through L5 and the UV Lamp. L5 is the Silver Censer. L1 stays free. The Pedlar sells lures, cages, and cosmetics only.
 - The UV Lamp beam is `#CC3F8A`. Tool beam swatches, including L3 blue and L4 purple, are an allowed exception to spec 01 A2. The rest of the UI keeps A2.

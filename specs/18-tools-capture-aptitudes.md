@@ -23,13 +23,25 @@ Beam colours match spec 15 §5 and the concept sheet. Stack is 1. Duration is pe
 | Tool | Id | Beam | Price | Exact effect | Unlock | In code today |
 |---|---|---|---|---|---|---|
 | Rusty Lantern (L1) | `rusty_lantern` | Orange | $0 | Hold `Economy.CATCH_SECONDS` (3). Range `Economy.CATCH_DISTANCE_STUDS` (12). | Tutorial catch. Already granted by `PlayerSession` as a `Tool` named `"Lantern"`. | **Yes. Launch.** Not a cash sale. |
-| Ember Lantern (L2) | `ember_lantern` | Green | $1,575 (N = 2) | Hold ×0.9, stacked with skill `h1` by multiplying. Alone: 3.0 s → 2.7 s. With `h1`: 3.0 × 0.9 × 0.9 = 2.43 s. Floor `BIND_TIME_MIN_SECONDS` = 1.5. Range stays 12. | Shop gate. | The −10% exists only as skill `h1`. No second tool. Today's skill floor is `SkillConfig.CATCH_TIME_MIN` (2.25). **Deferred, Update 1. Not sold.** |
-| Spirit Compass (L3) | `spirit_compass` | Blue | $3,150 (N = 4) | Arrow and wisp to the nearest **already spawned** wild cryptid. Does not spawn, despawn, or reroll it. | Shop gate. | No nearest-spawn query. `h3` Keen Eye (outline, 40 studs) is sealed. **Deferred, Update 1. Not sold.** |
-| UV Lamp | `uv_lamp` | `#CC3F8A` | $4,725 (N = 6) | Information only. Shows server-placed tracks. Shows the variant already rolled, using spec 15 §6 names: Normal, Spectral, Gilded, Shadow, Moonlit. Does not roll or change weights. | Shop gate. Variant half also waits on variants (spec 15 §9, Update 1). | No tracks. No variant field is rolled. `CryptidRecord.mutation` is an empty string. **Deferred, Update 1. Not sold.** |
-| Binding Chains (L4) | `binding_chains` | Purple | $6,300 (N = 8) | Range **12 → 16** studs. While a hold is in progress, a tether keeps that cryptid from leaving the tool's range until the hold ends or fails. No steal bonus. | Shop gate. | `h2` Long Reach is +2 studs (12 → 14) on a skill. `StealGuard` is a gate, not a tool. **Deferred, Update 1. Not sold.** |
-| Silver Censer (L5) | `silver_censer` | Silver | $12,600 (N = 16) | Smoke pulls the next landing or low point forward: the wait until the next bindable phase is halved, and that phase is still at least 4 s. If two cryptids are already inside range and already in a bindable phase, the player may hold both. The server checks each hold. | Shop gate. | Not in code. `settings.bindAtOnce` auto-places a shop cryptid on an empty pad. **Deferred, Update 1. Not sold.** |
+| Ember Lantern (L2) | `ember_lantern` | Green | $1,575 (N = 2) | Hold ×0.9, stacked with skill `h1` by multiplying. Alone: 3.0 s → 2.7 s. With `h1`: 3.0 × 0.9 × 0.9 = 2.43 s. Floor `BIND_TIME_MIN_SECONDS` = 1.5. Range stays 12. | Shop gate. | The −10% exists as skill `h1`. **Sold in the first code PR.** |
+| Spirit Compass (L3) | `spirit_compass` | Blue | $3,150 (N = 4) | Arrow to the nearest wild spawn already in the world, within `Compass.RANGE_STUDS` (80), refreshed every `Compass.REFRESH_SECONDS` (1). It does not spawn, despawn, or change rarity odds. | Shop gate. | No nearest-spawn query. `h3` Keen Eye is sealed. **After the first PR.** |
+| UV Lamp | `uv_lamp` | `#CC3F8A` | $4,725 (N = 6) | Information only. Shows server-placed tracks. Shows the variant already rolled, using spec 15 §6 names: Normal, Spectral, Gilded, Shadow, Moonlit. Does not roll or change weights. | Shop gate. Variant half also waits on variants (spec 15 §9, Update 1). | Shows `mutation`, or Normal when that string is empty. Does not change odds. **Sold in the first code PR.** |
+| Binding Chains (L4) | `binding_chains` | Purple | $6,300 (N = 8) | Range **12 → 16** studs. The tether lasts for that hold only. A second player cannot tether the same cryptid. No steal bonus. | Shop gate. | `h2` Long Reach is +2 studs (12 → 14) on a skill. `StealGuard` is a gate, not a tool. **Deferred, Update 1. Not sold.** |
+| Silver Censer (L5) | `silver_censer` | Silver | $12,600 (N = 16) | The gap until the next bindable phase is halved. That phase stays at least 4 s. One input starts a hold on every cryptid already in phase and in range, up to two. | Shop gate. | Not in code. `settings.bindAtOnce` auto-places a shop cryptid on an empty pad. **Deferred, Update 1. Not sold.** |
 
-**L2 and h1.** They stack by multiplying. `h1Factor` is 0.9 when Steady Hand is owned, else 1. `l2Factor` is 0.9 when the Ember Lantern is owned, else 1. Other `catchTime` skills stay a separate factor: `h4` Quiet Step is 0.15, so that factor is 0.85 when it is owned. Hold seconds = `max(BIND_TIME_MIN_SECONDS, Economy.CATCH_SECONDS × h1Factor × l2Factor × otherFactor)`. `BIND_TIME_MIN_SECONDS` is **1.5**. The code PR names that constant. It does not leave 1.5 written in the hold function. Today's `SkillConfig.CATCH_TIME_MIN` (2.25) is the skill-only floor until that PR. Worked check with no `h4`: 3 × 0.9 × 0.9 = **2.43 s**, which is above 1.5.
+**L2 and h1.** They stack by multiplying. `h1Factor` is 0.9 when Steady Hand is owned (`SkillConfig` `h1` value 0.10), else 1. `l2Factor` is 0.9 when the Ember Lantern is owned, else 1. Other `catchTime` skills stay a separate factor: `h4` Quiet Step is 0.15, so that factor is 0.85 when it is owned. Hold seconds = `max(BIND_TIME_MIN_SECONDS, Economy.CATCH_SECONDS × h1Factor × l2Factor × otherFactor)`. `BIND_TIME_MIN_SECONDS` is **1.5**. Buying L2 while `h1` is owned is allowed. The button stays **Buy**. L2 is not a dead row.
+
+Worked hold, no `h4`, from `Economy.CATCH_SECONDS` = 3:
+
+| Case | Product | Seconds |
+|---|---|---|
+| Base | 3 | 3.0 |
+| L2 only | 3 × 0.9 | 2.7 |
+| `h1` only | 3 × 0.9 | 2.7 |
+| L2 and `h1` | 3 × 0.9 × 0.9 | 2.43 |
+| Floor | `max(1.5, 2.43)` | **2.43** |
+
+The floor changes the result only when the product is under 1.5. A client that reports less than the server hold minus `Economy.CATCH_CLIENT_BUFFER_SECONDS` (0.15) is rejected.
 
 **UV Lamp colour.** The Art Director set the beam to **#CC3F8A**. The build PR adds `UvBeam = "CC3F8A"` to `UITheme.world`, not to the A2 `palette`. The beam is a widening fan: width 0.4 to 3.0 studs, length `Economy.WILD_SPAWN_STUDS` (20), `LightEmission` 0.5, no texture, no Neon. The PointLight is the same hex, brightness 0.8, range 12, shadows off, and it exists only on the holder's client while the lamp is on, so the town stays at 24 lights and a plot stays at 8 (D39). Other players see the beam without that light. A variant reveal uses that variant's own colour, not this rose. The lamp is not L4 purple and not the Moonlit variant.
 
@@ -51,7 +63,8 @@ On top of hold-to-bind. One twist per launch species (spec 09 §3). Ids are the 
 
 **Rules**
 
-- The server owns the phase, the distance, and the clock. The client sends begin-hold and complete-hold. A complete is accepted only if the phase is bindable, the distance is within the equipped tool's range, the elapsed time meets the tool's hold, and the profile owns that tool.
+- The server owns the phase, the distance, and the clock. Facing is the character's `HumanoidRootPart` look, not the camera, sampled when the hold begins. Turning the character is the rule. Fresno freezes at 30° or less. Hidebehind accepts the hold only past 60°. The client sends begin-hold and complete-hold. A complete is accepted only if the phase is bindable, the distance is within the equipped tool's range, the elapsed time meets the tool's hold minus 0.15 s, and the profile owns that tool. The tool id comes from the profile, not from the client's Tool instance.
+- A bindable phase returns at least every `Twist.MAX_WAIT_SECONDS` (30). The spawner PR names any speed that is still missing before that species leaves the plain 3 s hold.
 - **L1 path:** every species has a recurring phase of at least **4 s** inside **12 studs**, so the 3 s hold fits with a second of slack. Tools shorten the wait or widen the phase. They do not delete this phase.
 - A late press that starts with less than 3 s left fails. The next phase still comes. No cash penalty and no cash offer on the failure (spec 16 §7.2 and §8.9).
 - The tutorial Hodag (`Onboarding.CATCH_STEP`, `Species.WILD_ID`) uses the plain 3 s hold. No charge. Spec 01's timing stays.
@@ -104,11 +117,11 @@ Research row 5 asked for three daily marks and no missed-day penalty. Spec 06 al
 
 | Mark | Check | Why it is always possible |
 |---|---|---|
-| Finish one hold | Server accepts a complete-hold | L1 and the tutorial Hodag exist today. Later species use the same hold. |
-| Place one cryptid | A pad gains an instance id from inventory | Spec 01 already places from inventory. |
+| Read the Lanternwright | The server recorded an open of that stall today | The first code PR puts the stall in the world. The tutorial Hodag is once only, so a daily hold is not a launch mark. |
+| Have a cryptid on a pad | Any unlocked pad already holds an instance id | The starter is placed at join. Picking it up and putting it back does not pay twice. |
 | Come home | The player enters their own lair threshold once | Spec 02 return. If a Fog Night is active, witnessing it satisfies this mark instead (spec 12). It is never required. |
 
-**Pay.** Minutes of pre-2x income, with the floors already in `Return.STEPS`:
+**Pay.** Each mark pays its own grant once, when the server completes it. The three grants are not a single replacement total. Minutes of the floored pre-2x rate, with the floors already in `Return.STEPS`:
 
 | Marks done today | Minutes | Floor | Source |
 |---|---|---|---|
@@ -118,7 +131,7 @@ Research row 5 asked for three daily marks and no missed-day penalty. Spec 06 al
 
 At the post-rite **$17.50/s** (spec 17), the first mark is 5 × 60 × 17.50 = **$5,250** before the floor, the same worked example as spec 06 day 1. Cash only. No Essence, no token, no reading, no crate.
 
-**Missed day.** Tomorrow's three marks are new. Nothing resets to zero, and nothing is labelled lost. Unclaimed contract cash waits. It is not deleted at midnight. The Offering ladder does not move. No "Revive Streak" (spec 06, spec 09 §8.2).
+**Missed day.** Tomorrow's three marks are new. Nothing resets to zero, and nothing is labelled lost. Unclaimed contract cash waits in `profile.contracts.unclaimed`. It is not deleted at midnight. It cannot grow past `Contract.UNCLAIMED_CAP_DAYS` (3) times one full day. One full day is the 5 + 10 + 15 minute grants, and at least the floors $250 + $500 + $1,000 = $1,750. The Offering ladder does not move. No "Revive Streak" (spec 06, spec 09 §8.2). A second claim of the same mark in the same UTC day pays nothing.
 
 **Weekly bonus.** Any **5** of **7** days in the UTC week (Monday 00:00, the same week spec 09 uses for the Moon Vigil). The days need not be consecutive. Missing a day does not wipe the other days, and a week under 5 pays nothing and shows no loss line. The reward is fixed and listed on the panel before the week starts. It is never a roll.
 
@@ -140,12 +153,14 @@ Spec 14 §1 recommended Courage, Instinct, and Attunement at 0–10, and said th
 
 **PROPOSAL formulas**
 
-- `courageBonus = courage / 10 * 0.10`. Courage 0 is +0%. Courage 10 is +10%. Instinct and Attunement add no income, so the cap cannot be exceeded by summing stats.
-- Placed income, in `Income.perSecond` only: the current product (`baseIncome × altar × skill/wild factor`) **× (1 + courageBonus)**, then `Money.round`.
-- `Income.tithePerSecond` does **not** multiply by `(1 + courageBonus)`. Cash-bundle quotes stay on the pre-2x rate and also ignore this factor.
+- Courage adds `courage × 1%` placed income, and the bonus stops at +10%. Courage 0 is +0%. Courage 10 is +10%. Instinct does not add income. Attunement does not add income, and it does not change expedition time.
+- Order for one placed cryptid: `baseIncome × altar × (1 + skill) × (1 + wild bonus if the source is wild) × (1 + courage × 0.01)`, then **round down to a whole number of cash per second**. Sum those whole numbers. A rebirth multiplier, while `rebirths` is 0 on this branch, applies to that sum. The 2x Cash pass multiplies the sum after that floor. It is not inside the floor.
+- `Income.tithePerSecond` skips the courage factor and the 2x pass. Offline haul, daily minute grants, contract pay, and the cash-bundle quote use the floored per-second rate and skip the 2x pass. The plaque and `pads` snapshot show the floored per-cryptid rate before 2x.
+
+Hodag, `baseIncome` 5, altar I (`BoneAltar.multiplier(1)` = 1.25), no skill, Courage 10: `5 × 1.25 = 6.25`, `× 1.10 = 6.875`, floor = **$6/s**. Courage 0 floors 6.25 to **$6/s** as well. Jersey Devil, `baseIncome` 160, same altar, Courage 10: `160 × 1.25 = 200`, `× 1.10 = 220`, floor = **$220/s**. Courage 0 floors to **$200/s**. Tithe for that Hodag stays the pre-courage product, $6.25/s after `Money.round`, with no 2x.
 - Instinct drives expedition speed and route fit. Speed is `duration × (1 − Aptitude.EXPEDITION_SPEED_CAP × instinct / 10)` with `EXPEDITION_SPEED_CAP` = 0.05. Instinct 10 is −5% time. Route fit uses the species' spec 15 §10 place: Woods (Fresno Nightcrawler, Hidebehind, Jackalope, Beast of Bray Road), Marsh (Loveland Frogman, Flatwoods Monster, Loch Ness Serpent), Quarry (Dover Demon, Snallygaster, Jersey Devil). On that route the full speed applies. On the other routes it is half, and the half still sits inside the 5% cap. Mothman Hatchling and Hodag are "any" in spec 15, so the full speed applies on every route, still capped at 5%. Instinct does not change catch time or income.
 - Attunement drives bind and trait utility. It does not change income or expedition time. Bind utility lengthens the bindable phase by `attunement / 10 × Aptitude.BIND_PHASE_BONUS_AT_10_SECONDS`, and that constant is 1, so Attunement 10 adds 1 s of slack. It does not shorten the hold and it does not move `BIND_TIME_MIN_SECONDS`. Trait utility scales the trait's existing information effect by `attunement / 10`. A trait still reveals nothing the player has not already earned, and it still adds no income.
-- Expeditions are not in code (January, spec 15 §9). The 4 s and 5 s twist windows, and the Attunement phase bonus on those windows, wait for the wild-spawner PR. Courage's income effect is live when the field ships. The Dossier still shows Instinct and Attunement before those systems exist.
+- Expeditions are not in code (January, spec 15 §9). Instinct's speed waits for them. The 4 s and 5 s twist windows, and Attunement's bind slack on those windows, wait for the wild-spawner PR. Courage's income effect is live when the field ships. The Dossier still shows all three stats before those systems exist.
 
 **One trait** per cryptid, independent of species rarity. Rates sum to 100%. No income, no catch chance, no Tithe, no rarity.
 
@@ -157,7 +172,9 @@ Spec 14 §1 recommended Courage, Instinct, and Attunement at 0–10, and said th
 | `runesight` | Occult | 4% | Shows one fixed lore line on the Stat Card. |
 | `living_omen` | Singular | 1% | An idle and a pad sigil. Cosmetic. |
 
-**Roll, on a free-source obtain** (wild, starter, rift belt, offering, earned reading, expedition). Each aptitude is an integer from 0 through 10, uniform, independent. Each value has weight 1. Details shows **1/11**, not a rounded percent that fails to sum. The trait roll is a separate 0–99 draw against the table above. Show that table in the same Details view (spec 01 B8, spec 16 §8.2). The roll is earned, not sold. We still show it.
+**Roll, on a wild catch only.** Each aptitude is an integer from 0 to 10, uniform, independent, weight 1. The server draws once when it creates the instance id, saves the numbers before the reveal, and a rejoin does not draw again. Details says each value is 1 in 11. The trait roll is a separate 0–99 draw against the table above.
+
+**Anything bought, and every Rift belt cryptid, is fixed.** Courage, Instinct, and Attunement are 5, 5, and 5. The trait is `marshwise` (`Aptitude.FIXED_TRAIT`). The belt card shows those four values before Buy. A cash purchase shows them before cash is spent. Nothing bought has a stat the player has not already seen. Starter and Nightly Offering use the same fixed four values, shown on the grant. An expedition writes the four values onto the send card before Send. The Pedlar does not sell cryptids.
 
 The research's weighted row (0 through 10 as 3, 5, 8, 11, 14, 16, 15, 12, 8, 6, 2) is **[A]** and is not used.
 
@@ -172,7 +189,9 @@ The research's weighted row (0 through 10 as 3, 5, 8, 11, 14, 16, 15, 12, 8, 6, 
 - `attunement = hash("attunement", id) % 11`
 - `traitRoll = hash("trait", id) % 100`, then 0–59 `marshwise`, 60–84 `keen_listener`, 85–94 `pathfinder`, 95–98 `runesight`, 99 `living_omen`
 
-Fill a number only when it is absent, except a cryptid with `source = "pedlar"`. That record is written to Courage 5, Instinct 5, Attunement 5 (`Aptitude.PAID_GRANT`), even when the fields were absent, and it is not hashed. If its `traits` array is empty, write `marshwise`, the same disclosed trait as a paid grant. If `traits` is already non-empty, leave it. Every other cryptid uses the hash above. Do not change `speciesId`, `source`, `mutation`, `acquiredAt`, or cash. Running the migration twice is a no-op the second time. The `dataVersion` bump that carries this step is in the code PR, chained after #15's version 10. This note does not edit `Save.luau`.
+The hash reads UTF-8 bytes of the salt immediately followed by the instance id. There is no separator. Instance ids are server GUIDs. Vectors (`trait` is `% 100`, the others `% 11`): `cryptid-a` → 6, 5, 8, 90; `cryptid-b` → 5, 8, 5, 71; `cryptid-c` → 4, 7, 6, 52. The `% 11` of a 32-bit word is not a perfect 1/11. Details describes the wild roll, not this hash.
+
+Fill a number only when it is absent, except `source` of `pedlar` or `rift`. Those records are written to 5 / 5 / 5 and are not hashed. If `traits` is empty, write `marshwise`. If `traits` is already non-empty, leave it. A wild cryptid uses the hash. A value outside 0–10, or an unknown trait id, is repaired to that same rule. Do not change `speciesId`, `source`, `mutation`, `acquiredAt`, or cash. A save newer than `Save.DATA_VERSION` is refused and not overwritten. Running the migration twice is a no-op the second time. The version bump is in the code PR, chained after #15's version 10. This note does not edit `Save.luau`.
 
 ## Data
 
@@ -192,7 +211,7 @@ The first screen, including on a phone, shows the rarity word, a **NEW** seal on
 
 **Mythic** is not the same chip as Legendary. Both use GoldBright, and the build PR gives Mythic a distinct frame: Ash fill, a 2 px GoldBright stroke (Legendary stays 1 px), a ◆ before the word, and a 1 px Rift `#7FA34A` underline. A Bone sweep on reveal lasts 0.5 s and is skipped when Calm motion is on. That change is `UITheme.rarityChip` in the Dossier PR, not in this docs pass.
 
-**Details** says "Each value from 0 to 10 is equally likely (1 in 11)." Then the trait table at 60 / 25 / 10 / 4 / 1, and Prime at 8/1331. A paid grant reads **"Fixed by the Bound Rite: 5 / 5 / 5"** here and on the Relics card before purchase (spec 16 §8.4). Bind / Place and Details are at least 44 px and at least 8 px apart. Text is at least 14 px. Rows that open nothing are not drawn as buttons. No Robux, no View Item, no offer card, no reroll. Compare, Keep, and Bond stay off this card. Hodag at Courage 10, before the altar, is $5/s × 1.10 = **$5.50/s**. Tithe uses $5/s.
+**Details** says "Each value from 0 to 10 is equally likely (1 in 11)." Then the trait table at 60 / 25 / 10 / 4 / 1, and Prime at 8/1331. A paid grant reads **"Fixed by the Bound Rite: 5 / 5 / 5"** here and on the Relics card before purchase (spec 16 §8.4). Bind / Place and Details are at least 44 px and at least 8 px apart. Text is at least 14 px. Rows that open nothing are not drawn as buttons. No Robux, no View Item, no offer card, no reroll. Compare, Keep, and Bond stay off this card. Hodag at altar I and Courage 10 floors to **$6/s**, not $5.50. Tithe for that Hodag stays $6.25/s.
 
 **Tool HUD.** The tool name, the beam colour, the hold in seconds, and the range in studs. 44 px. The name is always there, not only a swatch. Beam swatches for L3 blue, L4 purple, and the other concept beams, including UV `#CC3F8A`, are an allowed exception to spec 01 A2. The rest of the UI keeps A2. Swatches live in the `ViewportFrame` or as a dot no wider than 16 px. No timer that is not a real phase. During the hold, the beam and the rune follow §8.1 and stop at the true tier.
 
@@ -200,16 +219,15 @@ The first screen, including on a phone, shows the rarity word, a **NEW** seal on
 
 ## Implementation plan
 
-Small code PRs. Shop, schema, and expedition manifest are [spec 17](17-pedlar-supplies.md). The rest are here. None start ahead of #14. None take `DATA_VERSION` 10.
+The first code PR is the one QA can buy from. Later PRs add the systems that are not in the launch loop. None start ahead of #14. None take `DATA_VERSION` 10.
 
-1. **Tool config.** Six rows, ids, prices, and `BIND_TIME_MIN_SECONDS` = 1.5. L2–L5 and the UV Lamp stay `forSale = false` until the effect PR. No odds field on a supply.
-2. **Hold, tether, lamp (Update 1).** Hold is `CATCH_SECONDS × h1Factor × l2Factor × otherFactor`, then the 1.5 s floor. Chains change range and tether only. The UV Lamp reads tracks and the spec 15 variant name. Odds tables match with the lamp on and off.
-3. **Wild spawner.** Owns the 4 s and 5 s twist windows, Reed Bait, and `Lure.ENCOUNTER_INTERVAL_SECONDS`. Each species still has a bindable phase of at least 4 s inside 12 studs on L1. The tutorial Hodag does not charge. Those windows are not live before this PR.
-4. **Dossier and Prime.** Courage changes `Income.perSecond` only, cap +10%. Prime is a highlight when all three stats are ≥ 9. `tithePerSecond` ignores Courage. A `source = "pedlar"` migrate writes 5/5/5. A paid grant writes 5/5/5 and `marshwise` and has no reroll.
-5. **Lanternwright counter.** L2 through L5 and the UV Lamp, no restock countdown, L1 not priced. The Pedlar does not list them. No new town mesh in this PR.
-6. **Almanac.** Hollow Convergence is Saturday 18:00–20:00 UTC. Its luck constant is 1. Rift Tide's ×1.5 on that window stays spec 09 and is not a second Convergence bonus.
-7. **Contracts.** Daily 5/10/15 minute steps. The weekly bonus is `Contract.WEEKLY_CASH_MINUTES` = 30 and `Contract.WEEKLY_CASH_FLOOR` = 3000, plus `vigil_wick`. A missed day does not move `daily.step`.
-8. **Analytics v1.2.** The Systems Architect adds the seven names in the catalogue below. v1.1 is not edited in place. `Analytics.MAX_CUSTOM_NAMES` is 15 and v1.1 already uses 8, so these seven fill the cap. The server module is the only sender. Each event has at most three fields (`Analytics.MAX_FIELDS`). Field values are `Token - value` strings. No DisplayName, no username, and no user id in a field.
+1. **Launch stock, plus the Studio clock.** Pedlar sells Witness Cage (a scripted cage prop in the lair), Reed Bait (one named spawn at the player, rarity table not used for that spawn), and Keeper's Rim plus Veil Mantle (pad rim and lantern glass, `UITheme` tokens). Lanternwright sells L2 and the UV Lamp. L1 is not priced. No restock countdown. Prices are the N×H table in config, and a test pins R0 at $17.50/s and each N. Hold uses the 2.43 s example. Bait on and bait off leave the spec 09 rarity table unchanged. The same PR adds `qa:N:clock+<sec>`: `RunService:IsStudio()` only, no remote, a server time offset read by restock, the contract day, Saturday Convergence, the Almanac, and the weekly candle.
+2. **Schema, after #15.** Version 11. `pedlar` and `rift` become 5/5/5 and `marshwise`. Wild cryptids use the three hash vectors. A newer save is refused.
+3. **Wild spawner.** The 4 s and 5 s windows, `Twist.MAX_WAIT_SECONDS` = 30, and the rest of L3–L5. Compass range 80 does not change rarity odds.
+4. **Dossier, Prime, and the Courage floor.** Income order above. Belt cards show 5/5/5 and Marshwise before Buy.
+5. **Almanac and contracts.** Saturday 18:00–20:00 UTC. Contract marks are Lanternwright, a cryptid already on a pad, and come home. Unclaimed cash caps at 3 days.
+6. **Expeditions.** Manifest before Send, including any egg's aptitudes.
+7. **Analytics v1.2.** The seven events below. v1.1 names stay. Cap stays 15.
 
 ## QA
 
@@ -221,7 +239,7 @@ Small code PRs. Shop, schema, and expedition manifest are [spec 17](17-pedlar-su
 6. Phone width: Bind and Details are at least 44 px. No shop card on the catch.
 7. The UV Lamp beam is `#CC3F8A`, with no Neon, and its PointLight exists only on the holder's client while the lamp is on. The variant word is one of Normal, Spectral, Gilded, Shadow, Moonlit, in that variant's own colour. With the lamp off, the same spawn is still there.
 8. The Almanac lists Hollow Convergence as Saturday 18:00–20:00 UTC with no luck of its own. Rift Tide's ×1.5 on that window is still spec 09. Copy has no "last chance". The Lanternwright tool list has no "Restocks in".
-9. Three contract marks can be finished with a hold, a place, and a return home. Skipping a UTC day leaves the Offering step where it was. Five days in a Monday–Sunday week grant the named cash minutes, the named floor, and `vigil_wick`, and a fourth day does not.
+9. Launch contract marks are the Lanternwright, a cryptid already on a pad, and coming home. There is no daily hold mark. Unclaimed cash stops at 3 days. Skipping a UTC day leaves the Offering step where it was.
 10. With Steady Hand and the Ember Lantern both owned, and no other catch-time skill, the server hold is 2.43 s. A client that claims 1.4 s is rejected.
 
 ## Rulings applied (11 Nov)
@@ -241,7 +259,10 @@ Small code PRs. Shop, schema, and expedition manifest are [spec 17](17-pedlar-su
 - The Dossier's first screen shows aptitudes, the trait, the NEW seal, and the rarity word. Prime is a Bone ◇ and the word Prime, never a frame colour. Odds stay 8/1331 (about 0.60%).
 - v1.2 analytics is a catalogue the Systems Architect owns. The Analytics Lead role is retired. The seven events are specified below.
 - Pedlar-sourced cryptids migrate to 5/5/5. See spec 17 for the empty counter, the expedition constants, the single slot, and the Robux skin tab.
-- Courage carries the placed-income bonus, capped at +10%. Instinct drives expedition speed and route fit, capped at 5% time. Attunement drives bind slack and trait utility, and it does not change income.
+- Courage is `courage × 1%`, max +10%, after the pad multiplier and before the 2x pass, then floored to whole cash. Hodag at altar I and Courage 10 is $6/s. Jersey Devil in the same case is $220/s. Tithe skips Courage and the 2x pass.
+- Attunement is bind slack and trait utility only. It does not change income or expedition time.
+- A wild catch is the only aptitude roll. Rift belt cryptids and anything bought are 5/5/5 and Marshwise, shown before purchase.
+- Studio time tests use `qa:N:clock+<sec>`, guarded by `RunService:IsStudio()`, with no remote.
 - The 4 s and 5 s twist windows wait for the wild-spawner PR.
 - Hollow Convergence is Saturday 18:00–20:00 UTC. `Convergence.WEEKDAY` is Saturday, `START_HOUR_UTC` is 18, and `END_HOUR_UTC` is 20.
 - The weekly bonus is 30 minutes of pre-2x income, floor $3,000 (`Contract.WEEKLY_CASH_MINUTES`, `Contract.WEEKLY_CASH_FLOOR`).
