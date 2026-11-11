@@ -22,37 +22,38 @@ end)
 local QaFresh = {}
 
 function QaFresh.mark(): string
-	return "_qafresh_"
+	return "_qf_"
 end
 
 function QaFresh.realKey(userId: number): string
 	return Save.KEY_PREFIX .. tostring(userId)
 end
 
-function QaFresh.token(jobId: any, now: any): string
-	if type(jobId) == "string" and jobId ~= "" then
-		return jobId
+function QaFresh.token(material: any): string
+	if type(material) ~= "string" or material == "" then
+		return ""
 	end
-	local stamp = now
-	if type(stamp) ~= "number" or stamp ~= stamp or stamp < 0 or stamp == math.huge then
-		stamp = 0
+	local stripped = string.gsub(material, "[^%x]", "")
+	if #stripped < 12 then
+		return ""
 	end
-	return tostring(math.floor(stamp))
+	return string.lower(string.sub(stripped, 1, 12))
 end
 
 function QaFresh.profileKey(userId: number, freshToken: string?): string
 	local base = QaFresh.realKey(userId)
-	if type(freshToken) ~= "string" or freshToken == "" then
-		return base
+	local token = QaFresh.token(freshToken)
+	if #token ~= 12 then
+		token = "000000000000"
 	end
-	return base .. QaFresh.mark() .. freshToken
+	return base .. QaFresh.mark() .. token
 end
 
-function QaFresh.sessionKey(userId: number, isStudio: boolean, args: any, jobId: any, now: any): string
+function QaFresh.sessionKey(userId: number, isStudio: boolean, args: any, guid: any, _now: any): string
 	if QaArgs.wantsFresh(isStudio, args) ~= true then
 		return QaFresh.realKey(userId)
 	end
-	return QaFresh.profileKey(userId, QaFresh.token(jobId, now))
+	return QaFresh.profileKey(userId, if type(guid) == "string" then guid else "")
 end
 
 return QaFresh

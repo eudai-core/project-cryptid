@@ -155,13 +155,14 @@ Check.test("qa fresh loads a different key at the opening rite and is a no-op ou
 
 	local userId = 9
 	local real = QaFresh.realKey(userId)
+	local guid = "aaaabbbb-cccc-4ddd-8eee-ffff00001111"
 	Check.eq(QaFresh.sessionKey(userId, false, "qa:600:fresh", "job-a", 10), real)
 	Check.eq(QaFresh.sessionKey(userId, true, "qa:600", "job-a", 10), real)
 	Check.eq(QaFresh.sessionKey(userId, true, "play", "job-a", 10), real)
-	local freshKey = QaFresh.sessionKey(userId, true, "qa:600:fresh", "studio-job", 50)
-	Check.eq(freshKey, real .. "_qafresh_studio-job")
+	local freshKey = QaFresh.sessionKey(userId, true, "qa:600:fresh", guid, 50)
+	Check.eq(freshKey, real .. "_qf_aaaabbbbcccc")
 	Check.eq(freshKey ~= real, true)
-	Check.eq(QaFresh.sessionKey(userId, true, "qa:600:fresh", "", 50), real .. "_qafresh_50")
+	Check.eq(QaFresh.sessionKey(userId, true, "qa:600:fresh", "", 50), real .. "_qf_000000000000")
 
 	local store = MockDataStore.new()
 	local kept = Schema.newProfile(1, "starter")
@@ -193,7 +194,7 @@ Check.test("qa fresh loads a different key at the opening rite and is a no-op ou
 		waitFor = function() end,
 		warn = function() end,
 		profileKey = function(id: number)
-			return QaFresh.sessionKey(id, true, "qa:600:fresh", "studio-job", 50)
+			return QaFresh.sessionKey(id, true, "qa:600:fresh", guid, 50)
 		end,
 	})
 	local blank = Schema.newProfile(50, "starter")
@@ -218,7 +219,7 @@ Check.test("qa fresh loads a different key at the opening rite and is a no-op ou
 	Check.eq(store:GetAsync(freshKey).lockJobId, "studio-job")
 
 	local gateway = fs.readFile("src/server/DataStoreGateway.luau")
-	local keyAt = string.find(gateway, "profileKey = function", 1, true)
+	local keyAt = string.find(gateway, "local function profileKey", 1, true)
 	Check.truthy(keyAt)
 	local guardAt = string.find(gateway, "if not RunService:IsStudio() then", keyAt :: number, true)
 	local argsAt = string.find(gateway, "StudioQaHooks.args()", keyAt :: number, true)
@@ -231,4 +232,40 @@ Check.test("qa fresh loads a different key at the opening rite and is a no-op ou
 	Check.eq(string.find(freshSource, "RemoteEvent", 1, true), nil)
 	Check.eq(string.find(freshSource, "GetTestArgs", 1, true), nil)
 	Check.eq(string.find(freshSource, "FireServer", 1, true), nil)
+end)
+
+Check.test("a fresh key for a 16-digit user id stays within the datastore limit", function()
+	local DataStoreGateway = require("../src/server/DataStoreGateway")
+	local userId = 1000000000000000
+	Check.eq(#tostring(userId), 16)
+	local real = QaFresh.realKey(userId)
+	local fresh = QaFresh.sessionKey(userId, true, "qa:600:fresh", "deadbeef-cafe-4dad-8bad-0123456789ab", 1)
+	Check.eq(fresh, "player_1000000000000000_qf_deadbeefcafe")
+	Check.eq(#fresh <= Save.MAX_KEY_LENGTH, true)
+	Check.eq(fresh ~= real, true)
+	Check.eq(Save.MAX_KEY_LENGTH, 50)
+	Check.eq(DataStoreGateway.refuseLongKey(string.rep("k", 51)), "KeyNameLimit")
+	Check.eq(DataStoreGateway.refuseLongKey(string.rep("k", 50)), nil)
+	Check.eq(DataStoreGateway.refuseLongKey(fresh), nil)
+
+	local gateway = fs.readFile("src/server/DataStoreGateway.luau")
+	local loadAt = string.find(gateway, "function DataStoreGateway.load", 1, true)
+	local saveAt = string.find(gateway, "function DataStoreGateway.save", 1, true)
+	local renewAt = string.find(gateway, "function DataStoreGateway.renew", 1, true)
+	local releaseAt = string.find(gateway, "function DataStoreGateway.release", 1, true)
+	Check.truthy(loadAt)
+	Check.truthy(saveAt)
+	Check.truthy(renewAt)
+	Check.truthy(releaseAt)
+	local function beforeStore(fnAt: number, call: string)
+		local refuseAt = string.find(gateway, "refuseLongKey", fnAt, true)
+		local storeAt = string.find(gateway, call, fnAt, true)
+		Check.truthy(refuseAt)
+		Check.truthy(storeAt)
+		Check.eq((refuseAt :: number) < (storeAt :: number), true)
+	end
+	beforeStore(loadAt :: number, "ledger.load")
+	beforeStore(saveAt :: number, "ledger.save")
+	beforeStore(renewAt :: number, "ledger.renew")
+	beforeStore(releaseAt :: number, "ledger.release")
 end)

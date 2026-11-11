@@ -4,6 +4,7 @@ local Save = {
 	DATA_VERSION = 7,
 	STORE_NAME = "ProjectCryptid_Player_v1",
 	KEY_PREFIX = "player_",
+	MAX_KEY_LENGTH = 50,
 	MAX_ATTEMPTS = 3,
 	BACKOFF_BASE_SECONDS = 1,
 	BACKOFF_JITTER_RATIO = 0.2,
