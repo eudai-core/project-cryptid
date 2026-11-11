@@ -6,6 +6,7 @@ local Motion = require(script.Parent:WaitForChild("Motion"))
 local UiFactory = require(script.Parent:WaitForChild("UiFactory"))
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local NumberFormat = require(Shared:WaitForChild("Logic"):WaitForChild("NumberFormat")) :: any
+local OfferingCopy = require(Shared:WaitForChild("Logic"):WaitForChild("OfferingCopy")) :: any
 local UITheme = require(Shared:WaitForChild("UITheme")) :: any
 
 local CashPlaque = {}
@@ -33,6 +34,11 @@ function CashPlaque.mount(parent: Instance, isReduced: () -> boolean)
 	income.Name = "Income"
 	income.Text = "+$0/s"
 
+	local bowl = UiFactory.label(frame, "body", UITheme.text.minSize, "BoneDim")
+	bowl.Name = "Bowl"
+	bowl.Text = ""
+	bowl.Visible = false
+
 	local floats = Instance.new("Frame")
 	floats.Name = "Floats"
 	floats.BackgroundTransparency = 1
@@ -43,6 +49,8 @@ function CashPlaque.mount(parent: Instance, isReduced: () -> boolean)
 
 	local shown = 0
 	local lastFloated = -1
+	local mobileLayout = false
+	local bowlAmount = 0
 	local value = Instance.new("NumberValue")
 	value.Value = 0
 	value.Parent = frame
@@ -92,9 +100,12 @@ function CashPlaque.mount(parent: Instance, isReduced: () -> boolean)
 
 	local api = {}
 
-	function api.layout(mobile: boolean)
+	function api.layout(mobile: boolean): number
+		mobileLayout = mobile
 		local size = if mobile then UITheme.shape.plaqueSize.mobile else UITheme.shape.plaqueSize.desktop
-		frame.Size = UDim2.fromOffset(size.w, size.h)
+		local extra = if bowlAmount > 0 then UITheme.shape.plaqueBowlPx else 0
+		local height = size.h + extra
+		frame.Size = UDim2.fromOffset(size.w, height)
 		frame.Position = UDim2.new(0.5, 0, 0, UITheme.shape.plaqueTopPx)
 		local numberSize = if mobile then UITheme.fonts.number.plaqueMobile else UITheme.fonts.number.plaqueDesktop
 		local incomeSize = if mobile then UITheme.fonts.income.mobile else UITheme.fonts.income.desktop
@@ -105,13 +116,28 @@ function CashPlaque.mount(parent: Instance, isReduced: () -> boolean)
 		cash.Size = UDim2.new(1, -56, 0, numberSize + 2)
 		income.Position = UDim2.fromOffset(44, pad + numberSize)
 		income.Size = UDim2.new(1, -56, 0, incomeSize + 2)
+		bowl.Position = UDim2.fromOffset(44, pad + numberSize + incomeSize + 2)
+		bowl.Size = UDim2.new(1, -56, 0, UITheme.text.minSize + 2)
+		bowl.Visible = bowlAmount > 0
+		if bowlAmount > 0 then
+			bowl.Text = OfferingCopy.bowlLine(bowlAmount)
+		end
 		local ThemeBind = require(script.Parent:WaitForChild("ThemeBind"))
 		ThemeBind.apply(sigil, "sigil", numberSize)
 		ThemeBind.apply(cash, "number", numberSize)
 		ThemeBind.apply(income, "income", incomeSize)
+		ThemeBind.apply(bowl, "body", UITheme.text.minSize)
+		return height
 	end
 
-	function api.apply(cashValue: number, incomeValue: number, credit: number, revision: number, step: number)
+	function api.apply(
+		cashValue: number,
+		incomeValue: number,
+		credit: number,
+		revision: number,
+		step: number,
+		bowlValue: number?
+	)
 		income.Text = NumberFormat.formatRate(incomeValue)
 		pulseOn = step == 1
 		local previous = shown
@@ -132,6 +158,14 @@ function CashPlaque.mount(parent: Instance, isReduced: () -> boolean)
 		if credit > 0 and revision ~= lastFloated then
 			spawnFloat(credit)
 			lastFloated = revision
+		end
+		local nextBowl = bowlValue
+		if type(nextBowl) ~= "number" or nextBowl ~= nextBowl or nextBowl < 0 then
+			nextBowl = 0
+		end
+		if nextBowl ~= bowlAmount then
+			bowlAmount = nextBowl
+			api.layout(mobileLayout)
 		end
 	end
 

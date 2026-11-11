@@ -348,14 +348,47 @@ Check.test("QA15 reduced motion keeps a colour fade and drops the burst", functi
 	Check.contains(client, "SkillRules.ignitePlan")
 end)
 
+Check.test("the rites circle text stays inside the fonts we draw", function()
+	Check.eq(UITheme.textIsSafe(UITheme.sigil), true)
+	Check.eq(UITheme.sigil, "+")
+	local labels = {
+		SkillConfig.TITLE,
+		SkillConfig.OPEN_LABEL,
+		SkillConfig.CLOSE_LABEL,
+		SkillConfig.BUY_LABEL,
+		SkillConfig.BOUND_LABEL,
+		SkillConfig.SEALED_LINE,
+		SkillConfig.HUNTER_LABEL,
+		SkillConfig.LAIR_LABEL,
+		SkillConfig.NEED_MORE,
+		SkillConfig.REQUIRES,
+		SkillConfig.OR_JOIN,
+	}
+	for _, label in labels do
+		Check.eq(UITheme.textIsSafe(label), true, label)
+	end
+	for _, id in SkillConfig.ORDER do
+		local node = SkillConfig.get(id)
+		Check.eq(UITheme.textIsSafe(node.name), true, node.name)
+		Check.eq(UITheme.textIsSafe(node.effect.text), true, node.effect.text)
+		Check.eq(UITheme.textIsSafe(node.branchLine), true, id)
+	end
+	local tree = fs.readFile("src/client/SkillTree.luau")
+	Check.eq(string.find(tree, "UITheme.sigil", 1, true) ~= nil, true)
+	Check.eq(string.find(tree, utf8.char(10038), 1, true), nil)
+	Check.eq(string.find(tree, 'lock.Name = "Lock"', 1, true) ~= nil, true)
+	Check.eq(string.find(tree, "lock.Text", 1, true), nil)
+	Check.eq(string.find(tree, 'shackle.Name = "Shackle"', 1, true) ~= nil, true)
+end)
+
 Check.test("QA16 owned rites survive a mock rejoin", function()
-	Check.eq(Save.DATA_VERSION, 5)
+	Check.eq(Save.DATA_VERSION, 6)
 	local legacy = Schema.newProfile(10, "starter")
 	legacy.dataVersion = 4
 	legacy.skills = nil
 	local filled = Schema.migrate(legacy)
 	Check.truthy(filled)
-	Check.eq(filled.dataVersion, 5)
+	Check.eq(filled.dataVersion, Save.DATA_VERSION)
 	Check.eq(#filled.skills, 0)
 
 	local messy = Schema.newProfile(10, "starter")

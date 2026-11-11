@@ -29,12 +29,19 @@ end)
 local Money = import("./Money", function()
 	return script.Parent:WaitForChild("Money")
 end)
+local Return = import("../Config/Return", function()
+	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Return")
+end)
+local Settings = import("./Settings", function()
+	return script.Parent:WaitForChild("Settings")
+end)
 
 local SOURCES = {
 	starter = true,
 	rift = true,
 	wild = true,
 	pedlar = true,
+	offering = true,
 }
 
 local Schema = {}
@@ -411,7 +418,150 @@ local function migrateToV4(profile: any, raw: any, version: number): boolean
 	return true
 end
 
-local function migrateToV5(profile: any, raw: any, _version: number): boolean
+local function freshOffline(): any
+	return {
+		rate = 0,
+		rateNoPass = 0,
+		pending = 0,
+		pendingTithe = 0,
+		awaySeconds = 0,
+		capped = false,
+		notice = 0,
+	}
+end
+
+local function nonNegative(value: any): number?
+	if not Money.isFinite(value) or value < 0 then
+		return nil
+	end
+	return value
+end
+
+local function wholeNumber(value: any, minimum: number, maximum: number): number?
+	if type(value) ~= "number" or value ~= math.floor(value) then
+		return nil
+	end
+	if value < minimum or value > maximum then
+		return nil
+	end
+	return value
+end
+
+local function parseOffline(raw: any, version: number): any?
+	if version < 6 then
+		return freshOffline()
+	end
+	if type(raw.offline) ~= "table" then
+		return nil
+	end
+	local rate = nonNegative(raw.offline.rate)
+	local rateNoPass = nonNegative(raw.offline.rateNoPass)
+	local pending = nonNegative(raw.offline.pending)
+	local pendingTithe = nonNegative(raw.offline.pendingTithe)
+	local awaySeconds = wholeNumber(raw.offline.awaySeconds, 0, 1e12)
+	local notice = nonNegative(raw.offline.notice)
+	if
+		rate == nil
+		or rateNoPass == nil
+		or pending == nil
+		or pendingTithe == nil
+		or awaySeconds == nil
+		or notice == nil
+	then
+		return nil
+	end
+	if type(raw.offline.capped) ~= "boolean" then
+		return nil
+	end
+	return {
+		rate = rate,
+		rateNoPass = rateNoPass,
+		pending = pending,
+		pendingTithe = pendingTithe,
+		awaySeconds = awaySeconds,
+		capped = raw.offline.capped,
+		notice = notice,
+	}
+end
+
+local function parseDaily(raw: any, version: number): any?
+	if version < 6 then
+		return {
+			step = 1,
+			lastClaimDay = -1,
+			totalClaims = 0,
+		}
+	end
+	if type(raw.daily) ~= "table" then
+		return nil
+	end
+	local step = wholeNumber(raw.daily.step, 1, Return.LADDER_STEPS)
+	local lastClaimDay = wholeNumber(raw.daily.lastClaimDay, -1, 1e12)
+	local totalClaims = wholeNumber(raw.daily.totalClaims, 0, 1e12)
+	if step == nil or lastClaimDay == nil or totalClaims == nil then
+		return nil
+	end
+	return {
+		step = step,
+		lastClaimDay = lastClaimDay,
+		totalClaims = totalClaims,
+	}
+end
+
+local function migrateToV6(profile: any, raw: any, version: number, now: number): boolean
+	local offline = parseOffline(raw, version)
+	if offline == nil then
+		return false
+	end
+	local daily = parseDaily(raw, version)
+	if daily == nil then
+		return false
+	end
+	local seen = now
+	local bowl = 0
+	local tithe = 0
+	local sfx = Return.SFX_DEFAULT
+	local music = Return.MUSIC_DEFAULT
+	local quality = Return.EFFECTS_DEFAULT
+	if version >= 6 then
+		local parsedSeen = wholeNumber(raw.lastSeenUnix, 0, 1e12)
+		local parsedBowl = nonNegative(raw.bowl)
+		local parsedTithe = nonNegative(raw.tithe)
+		if type(raw.settings) ~= "table" then
+			return false
+		end
+		local parsedSfx = Settings.volume(raw.settings.sfx)
+		local parsedMusic = Settings.volume(raw.settings.music)
+		local parsedQuality = Settings.quality(raw.settings.effectsQuality)
+		if
+			parsedSeen == nil
+			or parsedBowl == nil
+			or parsedTithe == nil
+			or parsedSfx == nil
+			or parsedMusic == nil
+			or parsedQuality == nil
+		then
+			return false
+		end
+		seen = parsedSeen
+		bowl = parsedBowl
+		tithe = parsedTithe
+		sfx = parsedSfx
+		music = parsedMusic
+		quality = parsedQuality
+	end
+	profile.lastSeenUnix = seen
+	profile.offline = offline
+	profile.bowl = bowl
+	profile.tithe = tithe
+	profile.daily = daily
+	profile.settings.sfx = sfx
+	profile.settings.music = music
+	profile.settings.effectsQuality = quality
+	return true
+end
+
+local function migrateToV5(profile: any, raw: any, _version: number, _now: number): boolean
 	local skills = parseSkills(raw)
 	if skills == nil then
 		return false
@@ -420,11 +570,27 @@ local function migrateToV5(profile: any, raw: any, _version: number): boolean
 	return true
 end
 
-local MIGRATION_STEPS: { { to: number, apply: (any, any, number) -> boolean } } = {
-	{ to = 2, apply = migrateToV2 },
-	{ to = 3, apply = migrateToV3 },
-	{ to = 4, apply = migrateToV4 },
+local MIGRATION_STEPS: { { to: number, apply: (any, any, number, number) -> boolean } } = {
+	{
+		to = 2,
+		apply = function(profile, raw, version, _now)
+			return migrateToV2(profile, raw, version)
+		end,
+	},
+	{
+		to = 3,
+		apply = function(profile, raw, version, _now)
+			return migrateToV3(profile, raw, version)
+		end,
+	},
+	{
+		to = 4,
+		apply = function(profile, raw, version, _now)
+			return migrateToV4(profile, raw, version)
+		end,
+	},
 	{ to = 5, apply = migrateToV5 },
+	{ to = 6, apply = migrateToV6 },
 }
 
 function Schema.migrationTargets(): { number }
@@ -435,7 +601,7 @@ function Schema.migrationTargets(): { number }
 	return targets
 end
 
-function Schema.migrate(raw: any): any?
+function Schema.migrate(raw: any, now: number?): any?
 	if type(raw) ~= "table" then
 		return nil
 	end
@@ -450,8 +616,12 @@ function Schema.migrate(raw: any): any?
 	if profile == nil then
 		return nil
 	end
+	local clock = 0
+	if type(now) == "number" and Money.isFinite(now) and now >= 0 then
+		clock = math.floor(now)
+	end
 	for _, step in MIGRATION_STEPS do
-		if step.apply(profile, raw, version) ~= true then
+		if step.apply(profile, raw, version, clock) ~= true then
 			return nil
 		end
 	end
@@ -489,9 +659,29 @@ function Schema.newProfile(now: number, starterInstanceId: string): any
 			playSeconds = 0,
 		},
 		firstJoinUnix = now,
+		lastSeenUnix = if Money.isFinite(now) and now >= 0 then math.floor(now) else 0,
+		tithe = 0,
+		bowl = 0,
+		offline = {
+			rate = 0,
+			rateNoPass = 0,
+			pending = 0,
+			pendingTithe = 0,
+			awaySeconds = 0,
+			capped = false,
+			notice = 0,
+		},
+		daily = {
+			step = 1,
+			lastClaimDay = -1,
+			totalClaims = 0,
+		},
 		settings = {
 			reducedMotion = false,
 			bindAtOnce = false,
+			sfx = Return.SFX_DEFAULT,
+			music = Return.MUSIC_DEFAULT,
+			effectsQuality = Return.EFFECTS_DEFAULT,
 		},
 		shop = freshShop(),
 		base = {

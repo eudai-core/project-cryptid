@@ -13,6 +13,9 @@ local Remotes = {
 	RETURN_TO_LAIR = "RequestReturnToLair",
 	PEDLAR_BUY = "RequestPedlarBuy",
 	BIND_AT_ONCE = "RequestSetBindAtOnce",
+	CLAIM_HAUL = "RequestClaimHaul",
+	CLAIM_DAILY = "RequestClaimDaily",
+	SET_SETTINGS = "RequestSetSettings",
 	BUY_SKILL = "RequestBuySkill",
 }
 

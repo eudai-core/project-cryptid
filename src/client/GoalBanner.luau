@@ -53,6 +53,14 @@ function GoalBanner.mount(parent: Instance, isReduced: () -> boolean, onAction: 
 	local seenStep = 0
 	local currentGoal: any = nil
 	local entered = false
+	local busyUntil = 0
+
+	local function hold(seconds: number)
+		local untilAt = os.clock() + seconds
+		if untilAt > busyUntil then
+			busyUntil = untilAt
+		end
+	end
 
 	local function place(animated: boolean)
 		local plan = UITheme.resolveMotion("goalIn", isReduced())
@@ -60,6 +68,7 @@ function GoalBanner.mount(parent: Instance, isReduced: () -> boolean, onAction: 
 		if animated and plan.allowOffset and plan.duration > 0 then
 			frame.Position = UDim2.new(target.X.Scale, target.X.Offset, target.Y.Scale, target.Y.Offset - offset)
 			Motion.play(frame, "goalIn", false, { Position = target })
+			hold(plan.duration)
 		else
 			frame.Position = target
 		end
@@ -97,6 +106,10 @@ function GoalBanner.mount(parent: Instance, isReduced: () -> boolean, onAction: 
 		ThemeBind.apply(skip, "body", UITheme.text.minSize)
 	end
 
+	function api.isBusy(): boolean
+		return os.clock() < busyUntil
+	end
+
 	function api.apply(goal: any)
 		if type(goal) ~= "table" then
 			return
@@ -130,6 +143,7 @@ function GoalBanner.mount(parent: Instance, isReduced: () -> boolean, onAction: 
 		if step > seenStep and seenStep > 0 and stroke ~= nil then
 			local plan = UITheme.resolveMotion("goalComplete", isReduced())
 			stroke.Color = UITheme.color("GoldBright")
+			hold(plan.duration)
 			if plan.duration > 0 then
 				task.delay(plan.duration, function()
 					if stroke.Parent ~= nil then

@@ -3,9 +3,12 @@
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local CashPlaque = require(script.Parent:WaitForChild("CashPlaque"))
 local GoalBanner = require(script.Parent:WaitForChild("GoalBanner"))
+local HaulPanel = require(script.Parent:WaitForChild("HaulPanel"))
+local OfferingPanel = require(script.Parent:WaitForChild("OfferingPanel"))
 local GuideArrow = require(script.Parent:WaitForChild("GuideArrow"))
 local HomeBeam = require(script.Parent:WaitForChild("HomeBeam"))
 local Interactions = require(script.Parent:WaitForChild("Interactions"))
@@ -25,6 +28,7 @@ local HudSlots = require(Shared:WaitForChild("Logic"):WaitForChild("HudSlots")) 
 local GameInfo = require(Shared:WaitForChild("GameInfo")) :: any
 local Plots = require(Shared:WaitForChild("Config"):WaitForChild("Plots")) :: any
 local Names = require(Shared:WaitForChild("Config"):WaitForChild("Remotes")) :: any
+local QaArgs = require(Shared:WaitForChild("Logic"):WaitForChild("QaArgs")) :: any
 local UITheme = require(Shared:WaitForChild("UITheme")) :: any
 
 print(GameInfo.name .. " client started")
@@ -123,6 +127,17 @@ local function readNumber(name: string): number
 	return value
 end
 
+local layout: () -> ()
+
+local haul = HaulPanel.mount(gui, isReduced, function()
+	fire(Names.CLAIM_HAUL)
+end)
+local offering = OfferingPanel.mount(gui, isReduced, function()
+	fire(Names.CLAIM_DAILY)
+end, function()
+	return banner.isBusy()
+end)
+
 local function applyAttributes()
 	reduced = player:GetAttribute("ReducedMotion") == true
 	paintSteady()
@@ -131,8 +146,10 @@ local function applyAttributes()
 		readNumber("IncomePerSecond"),
 		0,
 		readNumber("StateRevision"),
-		readNumber("OnboardingStep")
+		readNumber("OnboardingStep"),
+		readNumber("Bowl")
 	)
+	layout()
 end
 
 local function applySnapshot(text: string)
@@ -160,16 +177,27 @@ local function applySnapshot(text: string)
 	if type(revision) ~= "number" then
 		revision = 0
 	end
-	plaque.apply(readNumber("Cash"), readNumber("IncomePerSecond"), credit, revision, readNumber("OnboardingStep"))
+	plaque.apply(
+		readNumber("Cash"),
+		readNumber("IncomePerSecond"),
+		credit,
+		revision,
+		readNumber("OnboardingStep"),
+		if type(decoded.bowl) == "number" then decoded.bowl else readNumber("Bowl")
+	)
+	haul.apply(decoded.haul)
+	offering.apply(decoded.daily, haul.isOpen())
 	WorldBoards.refresh(decoded)
+	layout()
 end
 
-local function layout()
+layout = function()
 	local viewport = camera.ViewportSize
 	local mobile = viewport.X < UITheme.shape.mobileWidthBreakpoint
-	local plaqueSize = if mobile then UITheme.shape.plaqueSize.mobile else UITheme.shape.plaqueSize.desktop
-	plaque.layout(mobile)
-	banner.layout(mobile, plaqueSize.h)
+	local plaqueHeight = plaque.layout(mobile)
+	banner.layout(mobile, plaqueHeight)
+	haul.layout(mobile)
+	offering.layout(mobile)
 end
 
 camera:GetPropertyChangedSignal("ViewportSize"):Connect(layout)
@@ -231,6 +259,22 @@ end
 
 local skill = SkillTree.mount(gui, player, isReduced)
 skillTree = skill
+if RunService:IsStudio() then
+	local StudioTestService = game:GetService("StudioTestService") :: any
+	local ok, studioArgs = pcall(function()
+		return StudioTestService:GetTestArgs()
+	end)
+	if ok and QaArgs.openTree(true, studioArgs) then
+		local function openWhenReady()
+			skill.open()
+		end
+		player:GetAttributeChangedSignal("OnboardingStep"):Connect(openWhenReady)
+		player.CharacterAdded:Connect(function()
+			task.defer(openWhenReady)
+		end)
+		task.defer(openWhenReady)
+	end
+end
 local pedlar = PedlarShop.mount(gui, player, remotes :: Folder, Names, isReduced)
 TownDress.start()
 Interactions.start(player, remotes :: Folder, Names, beginCatch, {

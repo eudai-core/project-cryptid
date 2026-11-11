@@ -668,14 +668,17 @@ end)
 
 Check.test("migrations run in order from every older dataVersion and are idempotent", function()
 	local targets = Schema.migrationTargets()
-	Check.eq(#targets, 4)
+	Check.eq(#targets, 5)
 	Check.eq(targets[1], 2)
 	Check.eq(targets[2], 3)
 	Check.eq(targets[3], 4)
 	Check.eq(targets[4], 5)
+	Check.eq(targets[5], 6)
 	Check.eq(targets[1] < targets[2], true)
 	Check.eq(targets[2] < targets[3], true)
 	Check.eq(targets[3] < targets[4], true)
+	Check.eq(targets[4] < targets[5], true)
+	Check.eq(Save.DATA_VERSION, 6)
 
 	local fromV1 = legacy(1)
 	local once = Schema.migrate(fromV1)
@@ -714,18 +717,51 @@ Check.test("migrations run in order from every older dataVersion and are idempot
 	Check.eq(fromV4.shop.lastRotationId, 9)
 	Check.eq(fromV4.settings.bindAtOnce, true)
 	Check.eq(fromV4.base.defences[2], "ward_candle")
+	Check.eq(fromV4.daily.step, 1)
+	Check.eq(fromV4.daily.lastClaimDay, -1)
+	Check.eq(fromV4.bowl, 0)
+	Check.eq(fromV4.lastSeenUnix, 0)
+	Check.eq(fromV4.settings.sfx, 1)
+	Check.eq(fromV4.settings.music, 1)
+	Check.eq(fromV4.settings.effectsQuality, "High")
+	Check.eq(fromV4.settings.reducedMotion, false)
 	Check.eq(#fromV4.skills, 0)
 	Check.eq(same(fromV4, Schema.migrate(fromV4)), true)
 
+	local skillsOnly = Schema.newProfile(20, "starter")
+	skillsOnly.dataVersion = 5
+	skillsOnly.skills = { "h1" }
+	skillsOnly.lastSeenUnix = nil
+	skillsOnly.offline = nil
+	skillsOnly.daily = nil
+	skillsOnly.bowl = nil
+	skillsOnly.tithe = nil
+	skillsOnly.settings.sfx = nil
+	skillsOnly.settings.music = nil
+	skillsOnly.settings.effectsQuality = nil
+	local fromV5 = Schema.migrate(skillsOnly, 4242)
+	Check.eq(fromV5.dataVersion, 6)
+	Check.eq(fromV5.skills[1], "h1")
+	Check.eq(fromV5.daily.step, 1)
+	Check.eq(fromV5.daily.lastClaimDay, -1)
+	Check.eq(fromV5.bowl, 0)
+	Check.eq(fromV5.lastSeenUnix, 4242)
+	Check.eq(fromV5.settings.sfx, 1)
+	Check.eq(same(fromV5, Schema.migrate(fromV5, 99999)), true)
+	Check.eq(Schema.migrate(fromV5, 99999).lastSeenUnix, 4242)
+
 	local current = Schema.newProfile(20, "starter")
 	current.skills = { "h1" }
-	local fromV5 = Schema.migrate(current)
-	Check.eq(fromV5.dataVersion, Save.DATA_VERSION)
-	Check.eq(fromV5.skills[1], "h1")
-	Check.eq(same(fromV5, Schema.migrate(fromV5)), true)
+	current.settings.sfx = 0.5
+	local fromV6 = Schema.migrate(current, 1)
+	Check.eq(fromV6.dataVersion, 6)
+	Check.eq(fromV6.skills[1], "h1")
+	Check.eq(fromV6.settings.sfx, 0.5)
+	Check.eq(fromV6.lastSeenUnix, 20)
+	Check.eq(same(fromV6, Schema.migrate(fromV6)), true)
 
 	local future = Schema.newProfile(20, "starter")
-	future.dataVersion = Save.DATA_VERSION + 1
+	future.dataVersion = 7
 	Check.eq(Schema.migrate(future), nil)
 end)
 
