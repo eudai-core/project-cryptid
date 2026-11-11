@@ -2,7 +2,7 @@
 
 This file is the map. It links to the design documents and the concept images. It does not copy them. Read it before any other project document.
 
-Main at the time of this index: `86202dd943f90b1e76a6b5c1950a2736abca0ccb` (merge of pull request #13). Feature rows and evidence live in [`docs/FEATURE_STATUS.md`](docs/FEATURE_STATUS.md). Pictures and budgets live in [`docs/VISUAL_REFERENCES.md`](docs/VISUAL_REFERENCES.md).
+Main at the time of this index: `c576b0813643eefff1b22511fb20890fec456421` (merge of pull request #18). Feature rows and evidence live in [`docs/FEATURE_STATUS.md`](docs/FEATURE_STATUS.md). Pictures and budgets live in [`docs/VISUAL_REFERENCES.md`](docs/VISUAL_REFERENCES.md). The 11 Nov director rulings are below.
 
 ## Precedence
 
@@ -10,7 +10,7 @@ When two sources disagree, use this order. Do not collapse them into one story, 
 
 1. **Approved decisions and specs.** Specs under [`specs/`](specs/), style-guide decisions D1–D49 in [`art/style-guide-v0.8.md`](art/style-guide-v0.8.md), and directions marked approved (including [`specs/15-creative-brief-v3.md`](specs/15-creative-brief-v3.md) and [`art/ART-DIRECTION-V2.md`](art/ART-DIRECTION-V2.md)).
 2. **Verified implementation and tests.** Code and Lune tests on `main`, at the SHA above, plus any later SHA a QA report names.
-3. **Approved issues and acceptance criteria.** Open issue [#17](https://github.com/eudai-core/project-cryptid/issues/17) and the acceptance text on open pull requests [#14](https://github.com/eudai-core/project-cryptid/pull/14), [#15](https://github.com/eudai-core/project-cryptid/pull/15), [#16](https://github.com/eudai-core/project-cryptid/pull/16), and [#18](https://github.com/eudai-core/project-cryptid/pull/18).
+3. **Approved issues and acceptance criteria.** Open issue [#17](https://github.com/eudai-core/project-cryptid/issues/17) and the acceptance text on open pull requests [#14](https://github.com/eudai-core/project-cryptid/pull/14), [#15](https://github.com/eudai-core/project-cryptid/pull/15), and [#16](https://github.com/eudai-core/project-cryptid/pull/16). Pull request #18 is merged.
 4. **Historical or exploratory notes.** [`docs/spec-01.md`](docs/spec-01.md), [`docs/spec-02.md`](docs/spec-02.md), [`docs/spec-03.md`](docs/spec-03.md), [`art/style-guide.md`](art/style-guide.md) (v0.2), [`specs/14-feel-and-wow.md`](specs/14-feel-and-wow.md) where it labels itself a recommendation, concept images that contradict an approved spec, and the art-box paths cited inside handoff notes.
 
 A merged pull request is not verification. There is no `qa/*-report.md` in this repository. Nothing has been published, so nothing is Released.
@@ -19,7 +19,7 @@ A merged pull request is not verification. There is no `qa/*-report.md` in this 
 
 Project Cryptid is a Roblox cryptid-collecting tycoon. The player keeps a candle-lit lair, hunts strange creatures, and builds income from what they bind.
 
-Two approved looks are both on record. [`specs/01-theme-and-first-3-min.md`](specs/01-theme-and-first-3-min.md) and style guide v0.8 describe a grim, readable, candle-lit ritual ledger: Void, dried-blood crimson, tarnished gold, bone white, and a rare sickly green. [`specs/15-creative-brief-v3.md`](specs/15-creative-brief-v3.md) (approved direction, 5 Nov 2026) describes a haunted mythological town: "every hunt is a glowing duel", spooky-cute, with a purple night and coloured magic flames. Spec 15 says it supersedes conflicting look rules in style guide v0.8 and specs 01 and 03. Gameplay numbers in specs 01–13 still stand unless spec 15 changes them. The conflict is listed below and is not resolved here.
+The world look is spec 15 (director ruling 1, 11 Nov). [`specs/15-creative-brief-v3.md`](specs/15-creative-brief-v3.md) (approved direction, 5 Nov 2026) is a haunted mythological town: "every hunt is a glowing duel", with a purple night, coloured magic flames, and Neon on flames, portals, runes, signs, and eyes, within the budgets in [`docs/VISUAL_REFERENCES.md`](docs/VISUAL_REFERENCES.md). Spec 01 A2 palette tokens still apply to UI. Style guide v0.2, style guide v0.8, and the world-look rules in specs 01 and 03 are superseded where they conflict with that. Gameplay numbers in specs 01–13 still stand unless spec 15 changes them.
 
 ## Core loop
 
@@ -49,6 +49,15 @@ These are the decisions the specs record as approved. Implementation status is i
 - World events: Fog Night is the only launch event (D49, spec 12). Blood Moon, Rift Storm, Eclipse, The Tolling, and Witch-Lights are Update 1.
 - Compliance ruling: in-game cash is paid currency because it is sold in Robux bundles ([`specs/compliance-audit-cash-random.md`](specs/compliance-audit-cash-random.md)).
 - Creative brief v3 for look, feel, and the hunt ([`specs/15-creative-brief-v3.md`](specs/15-creative-brief-v3.md)), including coloured flames and the mythic town. Seasons stay cosmetic ([`specs/13-seasons.md`](specs/13-seasons.md)).
+- UI psychology for visual pass #17 and later UI pull requests ([`specs/16-ui-psychology.md`](specs/16-ui-psychology.md)). Those pull requests name the spec 16 rule numbers they apply.
+
+## Psychology rationale
+
+UI and feel follow the player-psychology brief in [`specs/16-ui-psychology.md`](specs/16-ui-psychology.md): variable earned rewards, near-miss tension in the bind, juicy collect pops, escalating rarity reveals, clear progress bars and goals, gentle loss aversion, social proof via rare catch announcements, value framing, the item shown before purchase, and impulse-friendly shop placement. The files under [`specs/research/`](specs/research/) are the 4 Nov competitor price snapshots. The research citations for this brief are the URLs inside spec 16.
+
+Bounds, from Roblox policy and specs 09 and 15: no paid random items, no fake urgency, no fake players, and no countdown pressure on kids. Server Luck and the Robux prices stay open (director ruling 5, pending Eudai) and are not decided here.
+
+A UI pull request, including visual pass #17, names the spec 16 rule numbers it applies. Those are the ten rules in spec 16 §8.
 
 ## Where each agent reads
 
@@ -56,34 +65,35 @@ These are the decisions the specs record as approved. Implementation status is i
 |---|---|
 | Every agent | This file, then [`AGENTS.md`](AGENTS.md) (field notes, then Project rules). |
 | Project Director | Grok. Final coordinator. Sets order, merges, and is the person who may authorise a change to an approved decision. |
-| Systems Architect | The spec for the feature, then the files named in [Implemented behaviour](#implemented-behaviour). |
-| Art Director | [`art/style-guide-v0.8.md`](art/style-guide-v0.8.md), [`art/ART-DIRECTION-V2.md`](art/ART-DIRECTION-V2.md), [`docs/VISUAL_REFERENCES.md`](docs/VISUAL_REFERENCES.md), [`specs/store-art-brief.md`](specs/store-art-brief.md). |
+| Systems Architect | Scripting and systems: finish #14, #15 rebirth, #16 tools, saves, and economy. Then the spec for that feature, and the files named in [Implemented behaviour](#implemented-behaviour). After #14 merges, do not edit `TownBuilder` or other town visual files without the World Builder. |
+| World Builder | Owns #17 (17a sky + cobbles, 17b building shapes, 17c life + VFX) and all town, visual, lighting, and VFX files. Starts after #14 merges. [`specs/15-creative-brief-v3.md`](specs/15-creative-brief-v3.md), [`specs/16-ui-psychology.md`](specs/16-ui-psychology.md) (name the §8 rule numbers), [`docs/VISUAL_REFERENCES.md`](docs/VISUAL_REFERENCES.md), [`art/style-guide-v0.8.md`](art/style-guide-v0.8.md) (world-look lines that conflict with spec 15 are superseded; see the ruling). |
+| Art Director | [`art/style-guide-v0.8.md`](art/style-guide-v0.8.md) (world-look lines that conflict with spec 15 are superseded; see the ruling), [`art/ART-DIRECTION-V2.md`](art/ART-DIRECTION-V2.md), [`specs/15-creative-brief-v3.md`](specs/15-creative-brief-v3.md), [`specs/16-ui-psychology.md`](specs/16-ui-psychology.md), [`docs/VISUAL_REFERENCES.md`](docs/VISUAL_REFERENCES.md), [`specs/store-art-brief.md`](specs/store-art-brief.md). |
 | Growth Strategist | [`specs/`](specs/) 01–13 and the compliance audit. |
 | Integration Engineer | [`art/vfx/audio-licences.md`](art/vfx/audio-licences.md), [`docs/published-place-checklist.md`](docs/published-place-checklist.md), `scripts/stamp-build.sh`. |
 | QA | [`docs/FEATURE_STATUS.md`](docs/FEATURE_STATUS.md) and the acceptance tables inside each spec. A PASS is a `qa/*-report.md` that says PASS. There are none yet. |
-| Gemini | Not joining development yet. Issue #17 still names Gemini as the owner of visual pass 1. That assignment is unresolved. |
+| Gemini | Not joining development. Visual pass #17 is owned by the Cryptid World Builder (director ruling 19). Do not start that pass on Gemini's behalf. It starts after #14 merges. |
 
 `docs/studio-ops-guide` is not in the repository. Agents follow §11 of that guide when it is present. Until then, the standards in [`AGENTS.md`](AGENTS.md) apply: server-authoritative gameplay, `UITheme`, no magic numbers, versioned DataStore migrations.
 
 ## Current priorities
 
-Build in this order. Do not start a later item by skipping an earlier one.
+Build in this order. Do not start a later item by skipping an earlier one. Visual pass #17 is the exception: it starts after #14 merges, and it is not blocked on #15 or #16.
 
 1. **#14** town v3 — [pull request #14](https://github.com/eudai-core/project-cryptid/pull/14), branch `cursor/town-v3`, head `8522745e95e2886bc25df7816e2529b9f9eca219`. Open. Not on main.
-2. **#18** preview-kick fix — [pull request #18](https://github.com/eudai-core/project-cryptid/pull/18), branch `cursor/studio-mock-store`, head `9f166b0608b1d7dcc9a69e3358e3743307efdc96`. Open. An unpublished Studio place (`PlaceId == 0`) should use the mock DataStore instead of kicking.
-3. **#15** rebirth tiers 1–7 and the Tithe ledger — [pull request #15](https://github.com/eudai-core/project-cryptid/pull/15), branch `cursor/rebirth-r1-r7`, head `57ed2beb843b63046c5008a9db8479f422d3edc8`. Open.
+2. **#18** preview-kick fix — [pull request #18](https://github.com/eudai-core/project-cryptid/pull/18) merged on main at `c576b08`. In Studio, PlaceId 0, or a 403 / must-publish error, uses the mock DataStore and warns once. Do not reopen it.
+3. **#15** rebirth tiers 1–7 and the Tithe ledger — [pull request #15](https://github.com/eudai-core/project-cryptid/pull/15), branch `cursor/rebirth-r1-r7`, head `57ed2beb843b63046c5008a9db8479f422d3edc8`. Open. Director ruling 10: this pull request must enforce 7 tiers.
 4. **#16** `rbx_check` — [pull request #16](https://github.com/eudai-core/project-cryptid/pull/16), branch `cursor/rbx-check`, head `8dfcbc8bd2ba7bf5f1d2f9a3119ab18e7ab5db35`. Open. Not on main.
-5. **#17** visual pass 1 — [issue #17](https://github.com/eudai-core/project-cryptid/issues/17). Open. No pull request. Lighting, atmosphere, and VFX code only.
+5. **#17** visual pass 1 — [issue #17](https://github.com/eudai-core/project-cryptid/issues/17). Open. No pull request. Owner: Cryptid World Builder. Starts after #14 merges, split into 17a sky + cobbles, 17b building shapes, and 17c life + VFX. Town geometry within the cap (364 parts / 24 lights, under 31 Highlights); no map expansion. Built-in rbxasset skyboxes only. 0 new lights. 0 standing town Highlights (only a pooled rare-cryptid aura). No gameplay, economy, DataStore, remotes, or monetisation files. Name the spec 16 rule numbers the pass applies. Lighting may be tuned from main's current values (director ruling 8); it does not start from D43 or D44.
 
 ## Intended behaviour
 
-Design authority for gameplay numbers is specs 01–13, plus the change notes those files already contain. Look authority is split; see [Conflicts](#conflicts-and-unresolved-decisions).
+Design authority for gameplay numbers is specs 01–13, plus the change notes those files already contain. World look is spec 15 where the older guides conflict; see [Director rulings (11 Nov)](#director-rulings-11-nov).
 
 | Topic | Spec |
 |---|---|
-| Theme, palette, first three minutes | [`specs/01-theme-and-first-3-min.md`](specs/01-theme-and-first-3-min.md) (draft v2.2) |
+| Theme, palette, first three minutes | [`specs/01-theme-and-first-3-min.md`](specs/01-theme-and-first-3-min.md) (draft v2.2). A2 palette tokens still apply to UI. World-look rules that ban a purple night or limit Neon to two cryptids' eyes are superseded where they conflict with spec 15 (director ruling 1). The tutorial catch is the Hodag (ruling 18); the "any Common" assumption line is superseded. |
 | Lairs | [`specs/02-player-bases.md`](specs/02-player-bases.md) (draft v1.3) |
-| Hollowmere and the Pale Pedlar | [`specs/03-town-centre.md`](specs/03-town-centre.md) (draft v2.2) |
+| Hollowmere and the Pale Pedlar | [`specs/03-town-centre.md`](specs/03-town-centre.md) (draft v2.2). World-look rules that conflict with spec 15 are superseded (director ruling 1). The #14 district names are canonical (ruling 2). Town budget is 364 parts and 24 lights (ruling 17). |
 | Skill tree | [`specs/04-skill-tree.md`](specs/04-skill-tree.md) (draft v1.1) |
 | Ring 1 cut | [`specs/05-skill-tree-ring1-cut.md`](specs/05-skill-tree-ring1-cut.md) (draft v1.2) |
 | Offline haul, daily offering, bowl | [`specs/06-offline-and-daily.md`](specs/06-offline-and-daily.md) (draft v2) |
@@ -95,19 +105,20 @@ Design authority for gameplay numbers is specs 01–13, plus the change notes th
 | World events | [`specs/12-world-events.md`](specs/12-world-events.md) (v1.2) |
 | Seasons | [`specs/13-seasons.md`](specs/13-seasons.md) |
 | Feel and wow answers | [`specs/14-feel-and-wow.md`](specs/14-feel-and-wow.md) — proposals, not an implementation approval |
-| Creative brief v3 | [`specs/15-creative-brief-v3.md`](specs/15-creative-brief-v3.md) — approved direction for look, feel, and hunt |
+| Creative brief v3 | [`specs/15-creative-brief-v3.md`](specs/15-creative-brief-v3.md) — approved direction for look, feel, and hunt. World look wins where style guide v0.2, v0.8, and specs 01 and 03 conflict (director ruling 1). Covers the Stat Card (ruling 21). Clock-face colour is Update 1. |
+| UI psychology | [`specs/16-ui-psychology.md`](specs/16-ui-psychology.md) — draft v1, 11 Nov 2026. Ten UI rules in §8. Does not change gameplay numbers, prices, or economy formulae. |
 | Cash-as-paid-currency audit | [`specs/compliance-audit-cash-random.md`](specs/compliance-audit-cash-random.md) |
 | Store icon and thumbnails | [`specs/store-art-brief.md`](specs/store-art-brief.md) |
 | Competitor snapshots (4 Nov 2026) | [`specs/research/gamepasses-snapshot-2026-11-04.json`](specs/research/gamepasses-snapshot-2026-11-04.json), [`specs/research/devproducts-snapshot-2026-11-04.json`](specs/research/devproducts-snapshot-2026-11-04.json) |
 
 Art direction and VFX intent:
 
-- [`art/style-guide-v0.8.md`](art/style-guide-v0.8.md) — living style guide through D49.
+- [`art/style-guide-v0.8.md`](art/style-guide-v0.8.md) — living style guide through D49. World-look rules that conflict with spec 15 are superseded by director ruling 1. Decisions that do not conflict (including D34 for Mythic, D38/D41 RiftDim on the fissure, and the Highlight pool of 2) stay.
 - [`art/ART-DIRECTION-V2.md`](art/ART-DIRECTION-V2.md) — v2 (5 Nov) and the v3 mythic-town update the same day. v2 shop shapes are retired.
 - [`art/vfx/vfx-audio-plan.md`](art/vfx/vfx-audio-plan.md), [`art/vfx/atmosphere-pass.md`](art/vfx/atmosphere-pass.md), [`art/vfx/atmosphere-events.md`](art/vfx/atmosphere-events.md), [`art/vfx/atmosphere-studio-capture-plan.md`](art/vfx/atmosphere-studio-capture-plan.md), [`art/vfx/vfx-templates-README.md`](art/vfx/vfx-templates-README.md), [`art/handoff/VFX-P0.md`](art/handoff/VFX-P0.md), [`art/handoff/ATMOSPHERE-LAUNCH.md`](art/handoff/ATMOSPHERE-LAUNCH.md).
 - Audio licence log (empty of asset ids): [`art/vfx/audio-licences.md`](art/vfx/audio-licences.md).
 
-Concept images, every file:
+Concept images, every file. Town name on the art is Hollowmere, and the apothecary is Runeheart Apothecary. Other place names on these sheets are placeholders (director ruling 3). Gems drawn on the sheets are superseded (ruling 4). Bystanders are mood only (ruling 22).
 
 | Image | What it shows |
 |---|---|
@@ -139,21 +150,22 @@ VFX template models (17, no scripts) are under [`art/vfx/templates/`](art/vfx/te
 
 ## Implemented behaviour
 
-On main at `86202dd`. This is what the code does today. It is not a claim that QA passed.
+On main at `c576b08`. This is what the code does today. It is not a claim that QA passed.
 
 - **UITheme and the opening rite.** `src/shared/UITheme.luau`, `src/client/UiFactory.luau`, `src/client/GoalBanner.luau`, `src/client/CashPlaque.luau`, `src/shared/Logic/OnboardingGoals.luau`, `src/server/PlayerSession.luau`. Tests: `tests/economy_onboarding.spec.luau`, `tests/theme_and_source.spec.luau`, `tests/number_format.spec.luau`.
 - **Eight lairs, pads, altar cost curve, RiftDim fissure.** `src/server/PlotBuilder.luau`, `src/server/Plot.luau`, `src/shared/Config/Plots.luau`, `src/shared/Config/Lair.luau`, `src/shared/Config/BoneAltar.luau`, `src/server/RiftGlow.luau`. Tests: `tests/plots.spec.luau`. `BoneAltar.MAX_REBIRTHS` is 40. The comment in that file says `rebirths` stays 0 until a rebirth spec writes the field.
 - **Hollowmere spec 03 town and Pale Pedlar.** `src/server/TownBuilder.luau`, `src/shared/Config/Town.luau`, `src/shared/Logic/TownLayout.luau`, `src/client/TownDress.luau`, `src/server/Pedlar.luau`, `src/client/PedlarShop.luau`, `src/server/ShopRoll.luau`. Tests: `tests/town.spec.luau`. Districts in code: Pale Pedlar live, Skill Shrine live, Lanternwright / Expedition Board / Bone Broker / Grimoire Lectern shuttered, Tarot Table and Great Rift reserved. No Runeheart Apothecary, Howling Horn, Veil & Fate, or Dusk & Dial.
 - **Twelve cryptid models.** `assets/cryptids/*.rbxmx`, `src/shared/Config/CryptidArt.luau`, `src/shared/CryptidModels.luau`. Tests: `tests/art_batch.spec.luau`. `src/shared/Config/Species.luau` also still lists placeholder ids (`uncommon_01`, `rare_01`, `epic_01`, and so on).
-- **Ring 1 skill tree.** `src/shared/Config/SkillConfig.luau`, `src/shared/Logic/SkillTree.luau`, `src/client/SkillTree.luau`. Tests: `tests/skill_tree.spec.luau`. The shrine billboard uses `Town.SHRINE_BODY` ("The carving is blank. The skill tree waits for a later rite.") while onboarding step is under 8. The tree module itself is on main.
+- **Ring 1 skill tree.** `src/shared/Config/SkillConfig.luau`, `src/shared/Logic/SkillTree.luau`, `src/client/SkillTree.luau`. Tests: `tests/skill_tree.spec.luau`. The shrine billboard uses `Town.SHRINE_BODY` ("The carving is blank. The skill tree waits for a later rite.") while the onboarding step is under 8, next to `Town.SHRINE_UNMARKED` ("The shrine is silent to the unmarked."). The tree module itself is on main. The body string is stale. Updating it is a code follow-up after #14 (director ruling 12). This index does not change `src/`.
 - **Offline haul, Nightly Offering, bowl.** `src/shared/Logic/Offline.luau`, `src/shared/Logic/Daily.luau`, `src/shared/Logic/Bowl.luau`, `src/client/HaulPanel.luau`, `src/client/OfferingPanel.luau`.
 - **Saves.** DataStore `ProjectCryptid_Player_v1`, `Save.DATA_VERSION = 9` in `src/shared/Config/Save.luau`. Migrations run in `src/shared/Logic/Schema.luau`. Lock, retry, and wipe guard: `src/server/Ledger.luau`, `src/shared/Logic/SaveGuard.luau`. Tests: `tests/save_hardening.spec.luau`, `tests/persistence.spec.luau`, `tests/session_document.spec.luau`.
 - **Monetisation core.** `src/server/MonetisationService.luau`, `src/shared/Config/Monetisation.luau`, `src/client/RelicsShop.luau`. Catalog ids are unset, so live sale is disabled. Tests: `tests/monetisation.spec.luau`.
 - **Rate limit and analytics.** `src/server/RateLimiter.luau`, `src/server/Analytics.luau`. Tests: `tests/rate_limit.spec.luau`, `tests/analytics.spec.luau`.
 - **Studio watchdog and QA args.** `src/server/Dev/StudioTestWatchdog.server.luau`, `src/shared/Logic/QaArgs.luau`. Tests: `tests/watchdog.spec.luau`, `tests/qa_args.spec.luau`, `tests/studio_qa.spec.luau`.
-- **Lighting on main.** `src/server/LightingSetup.luau` applies `UITheme.lighting`. Ambient `(60, 55, 52)`, OutdoorAmbient `(95, 88, 82)`, Atmosphere colour Ash `#1A1719`, fog 250–1100, density 0.18, haze 0.3, ClockTime 1. Technology Future is set in `default.project.json`.
+- **Lighting on main.** `src/server/LightingSetup.luau` applies `UITheme.lighting`. Ambient `(60, 55, 52)`, OutdoorAmbient `(95, 88, 82)`, Atmosphere colour Ash `#1A1719`, fog 250–1100, density 0.18, haze 0.3, ClockTime 1. Technology Future is set in `default.project.json`. Director ruling 8 keeps these values. Visual pass #17 may tune them.
+- **Studio mock DataStore.** `src/server/Ledger.luau`, `src/server/DataStoreGateway.luau`, `src/shared/Logic/StudioStore.luau`, `src/shared/Config/StudioDataStore.luau`. Tests: `tests/studio_store.spec.luau`. In Studio, PlaceId 0 uses the in-memory mock immediately and warns once. A 403 or a must-publish error in Studio falls back to that mock on the first failure and warns once. A published Studio place whose calls succeed uses the real store and does not warn. A live server never installs the mock. Pull request #18, on main at `c576b08`.
 
-Not on main, so not implemented behaviour: town v3 geometry, rebirth rite, Tithe board, `rbx_check`, the PlaceId-0 mock path described by pull request #18, tarot reel, biomes as portals, Fog Night, seasons, Sigil Trace, tools L2–L5, variants, expeditions, steal remote, rare-catch server banner.
+Not on main, so not implemented behaviour: town v3 geometry, rebirth rite, Tithe board, `rbx_check`, tarot reel, biomes as portals, Fog Night, seasons, Sigil Trace, tools L2–L5, variants, expeditions, steal remote, rare-catch server banner. `UITheme.rarity.Mythic` is still the Rift token; D34 (director ruling 6) is the colour, and changing the token is a later code change.
 
 ## Verified behaviour
 
@@ -169,12 +181,14 @@ Kept on purpose. Do not delete them. They are no longer the design authority.
 
 | File | What it is now |
 |---|---|
-| [`art/style-guide.md`](art/style-guide.md) | Style guide **v0.2** (3 Nov 2026, decisions D1–D13). Superseded by [`art/style-guide-v0.8.md`](art/style-guide-v0.8.md). |
+| [`art/style-guide.md`](art/style-guide.md) | Style guide **v0.2** (3 Nov 2026, decisions D1–D13). Superseded by [`art/style-guide-v0.8.md`](art/style-guide-v0.8.md). Its world-look lines (no bright purple, Neon only on two cryptids' eyes, Neon Rift conveyor trim) are also superseded where they conflict with spec 15 (director rulings 1 and 9). The Neon conveyor trim was already removed: main uses RiftDim. |
 | [`docs/spec-01.md`](docs/spec-01.md) | Implementation note for the opening rite as built. Superseded as design by [`specs/01-theme-and-first-3-min.md`](specs/01-theme-and-first-3-min.md). Still useful as a description of the build and its Lune map. |
 | [`docs/spec-02.md`](docs/spec-02.md) | Implementation note for lairs. Superseded as design by [`specs/02-player-bases.md`](specs/02-player-bases.md). |
 | [`docs/spec-03.md`](docs/spec-03.md) | Implementation note for Hollowmere and the Pedlar. Superseded as design by [`specs/03-town-centre.md`](specs/03-town-centre.md). |
 
-`README.md` still links the three implementation notes. That link is historical.
+[`art/style-guide-v0.8.md`](art/style-guide-v0.8.md) stays the living guide for decisions that do not conflict with the 11 Nov rulings. Its world-look lines that ban a purple night or limit Neon to two cryptids' eyes are superseded where they conflict with spec 15 (ruling 1). The same note is on [`specs/01-theme-and-first-3-min.md`](specs/01-theme-and-first-3-min.md) and [`specs/03-town-centre.md`](specs/03-town-centre.md): A2 UI tokens stay; the world-look conflict does not.
+
+`README.md` still links the three implementation notes. That link is historical. The mock-store paragraphs in `README.md` and [`docs/spec-01.md`](docs/spec-01.md) match main after pull request #18 (director ruling 11).
 
 ## Versions kept side by side
 
@@ -190,33 +204,36 @@ These bundle files differ from the copies already in the repo. The repo copies w
 
 Every other handoff file in the bundle matched the repo copy and was left as it is. New handoffs added once: `ATMOSPHERE-LAUNCH.md`, `HODAG-ONBOARDING.md`, `VFX-P0.md`.
 
+## Director rulings (11 Nov)
+
+The Project Director ruled on the conflicts the pull request #19 report left open. The numbers below are that report's numbers. **Resolved** means this ruling is the decision. Do not reopen one in a pull request. An earlier draft of this index split "names" into two items and counted 23. That count is retired. Only item 5 is open.
+
+1. **Look. Resolved.** Spec 15's world look wins: a purple night, coloured flames, and Neon on flames, portals, runes, signs, and eyes, within the budgets in [`docs/VISUAL_REFERENCES.md`](docs/VISUAL_REFERENCES.md). Spec 01 A2 palette tokens still apply to UI. Style guide v0.2, style guide v0.8, and the world-look rules in specs 01 and 03 are superseded where they conflict: the ban on bright purple, saturated blue, and cartoony shapes in the world, and the limit of Neon to the Mothman Hatchling's eyes and the Dover Demon's eyes. The notes in those files say so.
+2. **Town. Resolved.** The district and building names on pull request #14 are canonical: Runeheart Apothecary, The Howling Horn, Veil & Fate, and Dusk & Dial. The moon-face colour change moves to Update 1 (spec 15 §9). It is not part of #14. Portal locks on that pull request stay props.
+3. **Names. Resolved.** The town is Hollowmere. The apothecary is Runeheart Apothecary. Other names on the concept art (Greyhaven, Greyvale, Witchwood, Morrow Apothecary, Nell Night Cook, Hollowmere Apothecary, Veil & Vesper) are placeholders.
+4. **Gems. Resolved.** There is no gem currency. The gems and the "Open x3 = 3 gems" price on `v3-town.jpg`, `v2-town-portals.jpg`, and `v2-case-spin.jpg` are superseded. Decision B still forbids selling readings. Spec 10 still says every reel is a free pull.
+5. **Server Luck and Robux prices. OPEN — pending Eudai.** Specs 09 and 10 record Server Luck as the only paid random item, January only, PolicyService-gated. Style guide D37 still says "Server Luck: pending Eudai". Robux prices in spec 09 are still proposed. This ruling does not close either sentence.
+6. **Mythic colour. Resolved.** D34 wins. Mythic is GoldBright with a Bone flare, a distinct frame, and a thin Rift core. Legendary stays plain GoldBright. The Rift token is not the Mythic colour, and a purple frame is not the Mythic colour. `UITheme.rarity.Mythic` on main is still the Rift token. Changing that token is a later code change, not this docs change.
+7. **Highlights. Resolved.** The cap is 31 until 255 is verified in Studio. The pool of 2 stays (D8). The visual QA line uses 31.
+8. **Night grade. Resolved.** Keep main's lighting values: OutdoorAmbient `(95, 88, 82)`, Atmosphere colour Ash `#1A1719`, ClockTime 1. Visual pass #17 may tune them. D43 `(95, 98, 108)`, D44 `#282A30`, and the atmosphere handoff's ClockTime 0 do not override main until that pass.
+9. **Rift Neon. Resolved.** Read with ruling 1. Spec 15's Neon allowance is flames, portals, runes, signs, and eyes. Style guide v0.2's Neon Rift conveyor trim stays superseded: D38 and D41 removed it, and main's fissure uses RiftDim. Spec 15 does not put Neon back on the fissure belt, the Great Rift pit, or the Pedlar lantern.
+10. **Rebirth. Resolved.** Launch is tiers 1–7 (spec 07). Tier 8 stays sealed. Pull request #15 must enforce 7. `BoneAltar.MAX_REBIRTHS` on main is 40 until that pull request lands. No rite writes `rebirths` yet.
+11. **Studio mock store. Resolved.** The docs match main after pull request #18 (`c576b08`). In Studio, PlaceId 0 uses the in-memory mock immediately and warns once. A 403 or a must-publish error in Studio falls back to the same mock on the first failure and warns once. The load, save, and release path still runs on the mock. A live server never installs the mock. A published Studio place whose DataStore calls succeed uses the real store and does not warn. See [`README.md`](README.md) and [`docs/spec-01.md`](docs/spec-01.md).
+12. **Skill shrine copy. Resolved as a docs match, with a code follow-up.** `Town.SHRINE_BODY` on main is still `"The carving is blank. The skill tree waits for a later rite."` Ring 1 is merged (pull request #8). The billboard shows that string only while the onboarding step is under 8, beside `Town.SHRINE_UNMARKED`. This change does not edit `src/`. Updating the string is a follow-up after #14.
+13. **Jackalope. Resolved.** The Jackalope is Uncommon (spec 15). `stat-card.jpg` (Rare) and `v3-variants.jpg` (Legendary, and the word tradeable) do not change that. Variants stay earn-only. There is no trading.
+14. **Sigil Trace. Resolved.** Spec 15. Taps do nothing alone. No tap buffs and no catch-chance boosts. The labels on `v3-sigil-trace.jpg` (Dash, Stabilize, Reset, a combo, "increase your catch chance") are not the rule.
+15. **Fog Night. Resolved.** Spec 12: atmosphere only. The Wendigo and the survival frame on `fog-night.jpg` are out of scope. The Wendigo is not in the roster. Greyvale on that sheet is a placeholder (ruling 3).
+16. **Pumpkins and wreaths. Resolved.** No pumpkins. Use the spec 13 wreaths: dark green, holly-like, and no holiday name in UI text. Spec 13's autumn pumpkin row and the red bows on `winter-town.jpg` are superseded where they conflict. Spec 15's ban on witch hats and cauldron buildings stands.
+17. **Town budgets. Resolved.** The town is 364 parts and 24 lights. No map expansion. Spec 14's 4,000-part town ceiling does not raise this cap. Plot lights stay at 8 (D39). Cryptid handoffs keep their own part caps. Those are different objects, not a second town cap.
+18. **Tutorial catch. Resolved.** The tutorial catch is the Hodag (D33). The spec 01 v2.2 assumption line that says "any Common" is superseded.
+19. **Visual pass owner and scope. Resolved.** Issue #17 is owned by the Cryptid World Builder. Gemini is not the owner and is not joining development. The World Builder owns #17 (17a, 17b, 17c) and all town, visual, lighting, and VFX files. The Systems Architect owns scripting and systems: finishing #14, #15 rebirth, #16 tools, saves, and economy. The pass starts after #14 merges and is split into 17a (sky + cobbles), 17b (building shapes), and 17c (life + VFX). Town geometry within the cap (364 parts / 24 lights, under 31 Highlights); no map expansion. Built-in rbxasset skyboxes only. 0 new lights. 0 standing town Highlights (only a pooled rare-cryptid aura). No gameplay, economy, DataStore, remotes, or monetisation files. After #14 merges, no edits to `TownBuilder` or other town visual files without coordinating with the World Builder. Issue #17's text is this owner and this scope.
+20. **Pedlar restock. Resolved.** The restock stays earn-only, on the global 5-minute UTC timer, and the odds are shown behind the "Details" button. Buying does not reroll the stock. It is not a paid random item.
+21. **Spec 15 and spec 14. Resolved.** Spec 15 is approved. It covers the Stat Card. The clock-face colour change is Update 1 (ruling 2). Spec 14 stays a recommendation except where spec 15 adopts the Stat Card.
+22. **Fake players. Resolved.** No fake players. Named bystanders and the identical crowd on `v3-town.jpg`, `v2-town-portals.jpg`, and `hollow-clock-bloodmoon.jpg` are mood only. They are not NPCs, shops, or a player count.
+
 ## Conflicts and unresolved decisions
 
-Flagged only. Not resolved.
-
-1. **Look.** Style guide v0.2, style guide v0.8, and specs 01 and 03 forbid bright purple, saturated blue, pastel, and cartoony shapes. Neon is limited to the Mothman Hatchling's eyes and the Dover Demon's eyes. Spec 15 and art direction v2/v3 (both 5 Nov, and spec 15 is marked approved) require a purple night sky, saturated accents, and coloured flames including purple, blue, and green, and they allow Neon on flames, portals, runes, signs, and eyes. Issue #17 repeats the bright palette. The QA budgets recorded in [`docs/VISUAL_REFERENCES.md`](docs/VISUAL_REFERENCES.md) follow the muted palette and "no bright purple".
-2. **Which town.** Spec 03 is eight wooden districts around the Weeping Well. Art direction v3 retires cauldron and pumpkin shops and asks for a rune-tree apothecary, an overturned longship tavern, an eye-sigil tarot tent, and a moon-phase clock. Pull request #14 (not on main) builds Runeheart Apothecary, The Howling Horn, Veil & Fate, and Dusk & Dial, and says portal locks are props and the moon face does not change colour. Spec 15 says the moon-phase face changes colour at events and cites "spec 14 §6". In spec 14, section 6's Hollow Clock is an undecided recommendation.
-3. **Shop names.** No approved spec uses the string "Hollowmere Apothecary". Concepts use Morrow Apothecary (`stalls-morrow-nell.jpg`), a tree signed APOTHECARY (`v3-shops.jpg`), and RUNEHEART APOTHECARY (`v3-town.jpg`). The food shop is Nell Night Cook, a pumpkin stew shop (retired), or The Howling Horn. The tarot stall is the reserved Tarot Table, Veil & Fate, or a case UI titled Veil & Vesper.
-4. **Place names on the art.** Concepts label the town Greyhaven (`pale-pedlar.jpg`), Greyvale (`fog-night.jpg`), and Witchwood (`v2-town-portals.jpg`). The approved name is Hollowmere.
-5. **Gems and paid cases.** `v3-town.jpg`, `v2-town-portals.jpg`, and `v2-case-spin.jpg` show a diamond currency. `v2-case-spin.jpg` prices Open x3 at 3 gems. Spec 15 §7 forbids a Robux-only gem currency. Decision B forbids selling readings. Spec 10 says every reel is a free pull.
-6. **Server Luck.** Specs 09 and 10 record Eudai's option A: Server Luck is the only paid random item, January only, PolicyService-gated. Style guide D37 still says "Server Luck: pending Eudai". Spec 10 also says Robux prices are proposed and pending approval.
-7. **Mythic colour.** `UITheme.rarity.Mythic` on main is the Rift token. D28 then D34 say Mythic is GoldBright plus a Bone flare, a distinct frame, and a thin Rift core, and Legendary is plain GoldBright. Art direction v2 paints case frames grey, green, blue, purple, and gold. D24 says no purple. `v2-case-spin.jpg` uses a purple Epic frame and a blue Rare frame.
-8. **Highlight cap.** D8 says the engine limit was reported raised from 31 to 255 and that this project has not verified it. The pool of 2 stays. The visual QA line in this index still says fewer than 31 Highlights, which is the unverified older cap.
-9. **Night grade.** D43 sets OutdoorAmbient to `(95, 98, 108)`. D44 sets Atmosphere colour to `#282A30`. Main's `UITheme` uses OutdoorAmbient `(95, 88, 82)` and Atmosphere colour Ash `#1A1719`. The atmosphere handoff sets ClockTime 0. Main sets ClockTime 1.
-10. **Rift Neon.** Style guide v0.2 §2 still describes a Neon Rift conveyor trim. D38, D41, spec 01 v2.1, and spec 02 v1.2 remove that Neon. Main's fissure uses RiftDim (`src/server/PlotBuilder.luau`). The v0.2 sentence is the superseded file.
-11. **Rebirth cap.** Spec 07 seals tier 8. `BoneAltar.MAX_REBIRTHS` on main is 40, and no rite writes `rebirths` yet. The rite is pull request #15, not merged.
-12. **Unpublished Studio DataStore.** `README.md` and `docs/spec-01.md` say an unpublished Studio place uses the in-memory mock. Pull request #18 says that path does not run when `PlaceId` is 0, and the player is kicked. Both documents are on main. The fix is not.
-13. **Skill shrine copy.** `Town.SHRINE_BODY` says the skill tree waits for a later rite. The ring 1 tree is merged (pull request #8). The string is shown only before step 8, next to the correct "silent to the unmarked" line.
-14. **Jackalope rarity and variants.** Spec 15's roster table lists the Jackalope as Uncommon. `stat-card.jpg` labels it Rare. `v3-variants.jpg` labels it Legendary and says the forms are tradeable. Spec 15 says variants are earn-only and never sold for Robux or cash directly. No spec describes player trading.
-15. **Sigil Trace controls.** Spec 15 says taps do nothing alone, the path is randomised, and tools do not change push strength. `v3-sigil-trace.jpg` shows Dash (double tap), Stabilize, Reset, a combo, and the words "increase your catch chance".
-16. **Fog Night fiction.** Spec 12 is a server atmosphere event. `fog-night.jpg` adds a Wendigo, which is not in the 12-cryptid roster, and frames the night as survival.
-17. **Seasons versus Halloween.** Spec 15 forbids pumpkins, witch hats, and cauldron buildings. Spec 13's autumn row includes pumpkins. `winter-town.jpg` uses red-bow wreaths. Spec 13 says not to name region-specific holidays and asks for dark-green holly-like wreaths.
-18. **Part budgets.** Pull request #14 states a town part cap of 364 and a light cap of 24. Spec 14 mentions a 4,000-part town ceiling for the clock proposal. Cryptid handoffs use their own part caps (about 40, and 80 for the large ones). Plot lights stay at 8 (D39). These numbers are different scopes. Which cap a new town mesh must meet is not settled in one place.
-19. **Spec 01 assumptions.** The v2.2 header still says "the tutorial wild catch is still any Common" in the assumption block. The same file's open questions, and decision D33, name the Hodag.
-20. **Gemini.** Project rules: Gemini is not joining development yet. Issue #17 names Gemini as the owner of visual pass 1 and tells that agent to cut `gemini/visual-pass-1` from main.
-21. **Pedlar and paid-random policy.** The compliance audit records a medium judgement call: a preview-before-buy stall can still be a paid random item if buying is the way to discover the next roll. Spec 03 treats the Pedlar as outside that, because stock is a global UTC seed on a fixed 5-minute timer and buying never rerolls it. Roblox has not ruled on timed restocks. The audit leaves that as `[A]`.
-22. **Spec 14 versus spec 15.** Spec 14 says it is not an implementation approval. Spec 15 cites it for the clock's event colour change and for the Stat Card as launch scope. Spec 14's Stat Card and Hollow Clock are undecided recommendations.
-23. **Fake players.** Spec 15 says no fake players. `v3-town.jpg` and `v2-town-portals.jpg` paint named bystanders. `hollow-clock-bloodmoon.jpg` paints a crowd of identical avatars.
+Closed by the director rulings above, in the pull request #19 report's numbering. Item 5 (Server Luck and Robux prices) is the only one still open, flagged pending Eudai. Do not treat a sentence in an older file as the winner when a ruling above names the winner.
 
 ## Missing references
 

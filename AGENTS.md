@@ -148,7 +148,7 @@ Terms used in this repo and the rest of this pack.
 
 These rules sit with the field notes above. They are how this repository is coordinated. The map of specs, pictures, and status is [`PROJECT_INDEX.md`](PROJECT_INDEX.md).
 
-**Grok is Project Director and the final coordinator.** Gemini is not joining development yet. Issue #17 still names Gemini as the owner of visual pass 1. That assignment is unresolved. Do not start that pass on Gemini's behalf.
+**Grok is Project Director and the final coordinator.** Gemini is not joining development. Visual pass #17 is owned by the Cryptid World Builder (director ruling, 11 Nov). Do not start that pass on Gemini's behalf. It starts after #14 merges. The World Builder owns #17 (17a, 17b, 17c) and all town, visual, lighting, and VFX files. The Systems Architect owns scripting and systems: finishing #14, #15 rebirth, #16 tools, saves, and economy. After #14 merges, no edits to `TownBuilder` or other town visual files without coordinating with the World Builder.
 
 Every agent:
 
@@ -173,4 +173,4 @@ Precedence when sources disagree (also in the index):
 
 Keep intended, implemented, and verified behaviour in separate sections. The index does that.
 
-Current build order: **#14** town v3, then **#18** the preview-kick fix, then **#15** rebirth, then **#16** `rbx_check`, then **#17** visual pass 1. Do not skip ahead.
+Current build order: **#14** town v3, then **#15** rebirth, then **#16** `rbx_check`. **#18** the preview-kick fix is merged. **#17** visual pass 1 starts after #14 merges (17a sky + cobbles, 17b building shapes, 17c life + VFX) and is not blocked on #15 or #16. Do not skip #14.
