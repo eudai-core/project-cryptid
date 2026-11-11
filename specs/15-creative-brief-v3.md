@@ -27,7 +27,7 @@ Update 1, Sigil Trace duel (skill, autoclicker-proof):
 - Loser gets assist cash (spec 11). No exclusive species locked behind the minigame.
 
 ## 5. Tools (Lanternwright; deterministic, never odds)
-L1 Rusty Lantern (free, orange beam, base bind) · L2 Ember Lantern (green beam, -10% bind time) · L3 Spirit Compass (blue arrow and wisp trail to the nearest spawn) · L4 Binding Chains (purple chains, 16-stud range, harder to steal) · L5 Moonlit Censer (silver smoke, bind 2 at once). Each tool's beam colour = its identity.
+L1 Rusty Lantern (free, orange beam, base bind) · L2 Ember Lantern (green beam, -10% bind time) · L3 Spirit Compass (blue arrow and wisp trail to the nearest spawn) · L4 Binding Chains (purple chains, 16-stud range, harder to steal) · L5 Silver Censer (silver smoke, bind 2 at once). The tool is not named Moonlit; Moonlit is a variant (section 6). Each tool's beam colour = its identity.
 
 ## 6. Variants
 Normal, Spectral, Gilded, Shadow, Moonlit. Cosmetic + small earned stat flavour, earn-only, odds disclosed (spec 10 rules). Never sold for Robux/cash directly.

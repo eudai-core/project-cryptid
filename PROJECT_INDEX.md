@@ -138,7 +138,7 @@ Concept images, every file. Town name on the art is Hollowmere, and the apotheca
 | [`art/concepts/v2-town-portals.jpg`](art/concepts/v2-town-portals.jpg) | "Witchwood" plaza, three portals, gem HUD, pumpkins. |
 | [`art/concepts/v3-town.jpg`](art/concepts/v3-town.jpg) | Mythic plaza: Runeheart Apothecary, Howling Horn, Veil & Fate, Dusk & Dial, three portals, runestones, gem HUD. |
 | [`art/concepts/v3-shops.jpg`](art/concepts/v3-shops.jpg) | Tree apothecary and longship tavern with blue fire. |
-| [`art/concepts/v3-tools.jpg`](art/concepts/v3-tools.jpg) | Lanterns L1–L5: Rusty, Ember, Spirit Compass, Binding Chains, Moonlit Censer. |
+| [`art/concepts/v3-tools.jpg`](art/concepts/v3-tools.jpg) | Lanterns L1–L5: Rusty, Ember, Spirit Compass, Binding Chains, Silver Censer. The sheet's old "Moonlit Censer" label is the same tool. Moonlit is a variant name, not the tool. |
 | [`art/concepts/v3-variants.jpg`](art/concepts/v3-variants.jpg) | Jackalope as Normal, Spectral, Gilded, Shadow, Moonlit. Sheet says Legendary and tradeable. |
 | [`art/concepts/v3-sigil-trace.jpg`](art/concepts/v3-sigil-trace.jpg) | Sigil Trace minigame over a Jackalope. |
 | [`art/concepts/v3-tug-of-war.jpg`](art/concepts/v3-tug-of-war.jpg) | Two lantern beams clashing on one cryptid. |

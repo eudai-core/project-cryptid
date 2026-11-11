@@ -1,7 +1,7 @@
 # Spec 18: Tools, capture twists, and aptitudes
 
 **Status:** Draft v1.2 (11 Nov 2026). Design note only. This file does not change `src/`. Rulings from this afternoon are in [Rulings applied](#rulings-applied-11-nov).
-**Owner:** Growth Strategist tunes every number marked **PROPOSAL**. Art Director picks the UV Lamp beam. Systems Architect builds the PRs below.
+**Owner:** Growth Strategist tunes every number marked **PROPOSAL**. The UV Lamp beam is `#CC3F8A` (Art Director, 11 Nov). Systems Architect builds the PRs below, including analytics v1.2.
 **Reads with:** [spec 17](17-pedlar-supplies.md) (shop, prices, policy, expeditions, save version). Spec 15 §5 and §10, spec 14 §1 and §3, spec 16 §7 and §8, spec 01 B8, spec 06, spec 09 §3 and §9.4, spec 11 §4.2, spec 12 §0 and §7. Picture: [art/concepts/v3-tools.jpg](../art/concepts/v3-tools.jpg). Research: [2026-11-roblox-retention-monetisation-research.md](research/2026-11-roblox-retention-monetisation-research.md). Where that note marks **[A]**, this spec uses the cited config or spec instead.
 
 ## Goal
@@ -25,13 +25,13 @@ Beam colours match spec 15 §5 and the concept sheet. Stack is 1. Duration is pe
 | Rusty Lantern (L1) | `rusty_lantern` | Orange | $0 | Hold `Economy.CATCH_SECONDS` (3). Range `Economy.CATCH_DISTANCE_STUDS` (12). | Tutorial catch. Already granted by `PlayerSession` as a `Tool` named `"Lantern"`. | **Yes. Launch.** Not a cash sale. |
 | Ember Lantern (L2) | `ember_lantern` | Green | $1,575 (N = 2) | Hold ×0.9, stacked with skill `h1` by multiplying. Alone: 3.0 s → 2.7 s. With `h1`: 3.0 × 0.9 × 0.9 = 2.43 s. Floor `BIND_TIME_MIN_SECONDS` = 1.5. Range stays 12. | Shop gate. | The −10% exists only as skill `h1`. No second tool. Today's skill floor is `SkillConfig.CATCH_TIME_MIN` (2.25). **Deferred, Update 1. Not sold.** |
 | Spirit Compass (L3) | `spirit_compass` | Blue | $3,150 (N = 4) | Arrow and wisp to the nearest **already spawned** wild cryptid. Does not spawn, despawn, or reroll it. | Shop gate. | No nearest-spawn query. `h3` Keen Eye (outline, 40 studs) is sealed. **Deferred, Update 1. Not sold.** |
-| UV Lamp | `uv_lamp` | TBD. Art Director. | $4,725 (N = 6) | Information only. Shows server-placed tracks. Shows the variant already rolled, using spec 15 §6 names: Normal, Spectral, Gilded, Shadow, Moonlit. Does not roll or change weights. | Shop gate. Variant half also waits on variants (spec 15 §9, Update 1). | No tracks. No variant field is rolled. `CryptidRecord.mutation` is an empty string. **Deferred, Update 1. Not sold.** |
+| UV Lamp | `uv_lamp` | `#CC3F8A` | $4,725 (N = 6) | Information only. Shows server-placed tracks. Shows the variant already rolled, using spec 15 §6 names: Normal, Spectral, Gilded, Shadow, Moonlit. Does not roll or change weights. | Shop gate. Variant half also waits on variants (spec 15 §9, Update 1). | No tracks. No variant field is rolled. `CryptidRecord.mutation` is an empty string. **Deferred, Update 1. Not sold.** |
 | Binding Chains (L4) | `binding_chains` | Purple | $6,300 (N = 8) | Range **12 → 16** studs. While a hold is in progress, a tether keeps that cryptid from leaving the tool's range until the hold ends or fails. No steal bonus. | Shop gate. | `h2` Long Reach is +2 studs (12 → 14) on a skill. `StealGuard` is a gate, not a tool. **Deferred, Update 1. Not sold.** |
-| Moonlit Censer (L5) | `moonlit_censer` | Silver | $12,600 (N = 16) | Smoke pulls the next landing or low point forward: the wait until the next bindable phase is halved, and that phase is still at least 4 s. If two cryptids are already inside range and already in a bindable phase, the player may hold both. The server checks each hold. | Shop gate. | Not in code. `settings.bindAtOnce` auto-places a shop cryptid on an empty pad. **Deferred, Update 1. Not sold.** |
+| Silver Censer (L5) | `silver_censer` | Silver | $12,600 (N = 16) | Smoke pulls the next landing or low point forward: the wait until the next bindable phase is halved, and that phase is still at least 4 s. If two cryptids are already inside range and already in a bindable phase, the player may hold both. The server checks each hold. | Shop gate. | Not in code. `settings.bindAtOnce` auto-places a shop cryptid on an empty pad. **Deferred, Update 1. Not sold.** |
 
 **L2 and h1.** They stack by multiplying. `h1Factor` is 0.9 when Steady Hand is owned, else 1. `l2Factor` is 0.9 when the Ember Lantern is owned, else 1. Other `catchTime` skills stay a separate factor: `h4` Quiet Step is 0.15, so that factor is 0.85 when it is owned. Hold seconds = `max(BIND_TIME_MIN_SECONDS, Economy.CATCH_SECONDS × h1Factor × l2Factor × otherFactor)`. `BIND_TIME_MIN_SECONDS` is **1.5**. The code PR names that constant. It does not leave 1.5 written in the hold function. Today's `SkillConfig.CATCH_TIME_MIN` (2.25) is the skill-only floor until that PR. Worked check with no `h4`: 3 × 0.9 × 0.9 = **2.43 s**, which is above 1.5.
 
-**UV Lamp colour.** Token `UvBeam` is unset. The Art Director chooses it. It must not use L1 orange, L2 green, L3 blue, L4 purple, or L5 silver. No new Neon until that choice, and none on the Pedlar's stall lantern (director ruling 9).
+**UV Lamp colour.** The Art Director set the beam to **#CC3F8A**. The build PR adds `UvBeam = "CC3F8A"` to `UITheme.world`, not to the A2 `palette`. The beam is a widening fan: width 0.4 to 3.0 studs, length `Economy.WILD_SPAWN_STUDS` (20), `LightEmission` 0.5, no texture, no Neon. The PointLight is the same hex, brightness 0.8, range 12, shadows off, and it exists only on the holder's client while the lamp is on, so the town stays at 24 lights and a plot stays at 8 (D39). Other players see the beam without that light. A variant reveal uses that variant's own colour, not this rose. The lamp is not L4 purple and not the Moonlit variant.
 
 **Where the lamp sits.** It is an information tool beside L3, not a power rung and not a replacement for L3. Order on the counter: L1, L2, L3, UV Lamp, L4, L5. Buying it never raises catch chance (director ruling 14: no catch-chance boosts).
 
@@ -39,7 +39,7 @@ Beam colours match spec 15 §5 and the concept sheet. Stack is 1. Duration is pe
 
 The research's cone (30°), duty cycle (6 s on / 12 s off), and four cash radii (20 / 28 / 36 / 44 studs, priced as 15 / 60 / 180 minutes of income) are **[A]**. They are not in config, and this note does not add tiers. One lamp. Its reveal distance is `Economy.WILD_SPAWN_STUDS` (20), the distance the tutorial cryptid already uses. Hidebehind's track, the Fresno freeze, and the Dover perch are the twists in the table below. The lamp shows the tell. The L1 hold still completes without it.
 
-Beam skins are not sold here. The Pedlar takes cash only. A skin sits on a separate Robux tab. Its price is **PENDING EUDAI** and is not a config value ([spec 17](17-pedlar-supplies.md)). The lamp's label for a variant is one of Normal, Spectral, Gilded, Shadow, Moonlit (spec 15 §6). It does not say Shiny or Corrupted.
+Beam skins are not sold here. The Pedlar takes cash only. A skin sits on a separate Robux tab. Its price is **PENDING EUDAI** and is not a config value ([spec 17](17-pedlar-supplies.md)). The lamp shows the value already stored in `mutation`: Normal, Spectral, Gilded, Shadow, or Moonlit (spec 15 §6).
 
 **Details, every tool.** Before and after hold, before and after range, then the line "Catch odds unchanged. Rarity weights unchanged. Variant odds unchanged." Button label **Details** (spec 01 B8, spec 16 §8.5).
 
@@ -153,7 +153,7 @@ Spec 14 §1 recommended Courage, Instinct, and Attunement at 0–10, and said th
 |---|---|---|---|
 | `marshwise` | Familiar | 60% | Marks a landmark you have already visited. Reveals nothing new. |
 | `keen_listener` | Unusual | 25% | Subtitles a cue the server has already decided you can hear. |
-| `pathfinder` | Rare | 10% | Lists expedition routes you have already finished. No undiscovered route. |
+| `pathfinder` | Uncanny | 10% | Lists expedition routes you have already finished. No undiscovered route. |
 | `runesight` | Occult | 4% | Shows one fixed lore line on the Stat Card. |
 | `living_omen` | Singular | 1% | An idle and a pad sigil. Cosmetic. |
 
@@ -184,9 +184,17 @@ Same bump as [spec 17](17-pedlar-supplies.md). This branch is `Save.DATA_VERSION
 
 Spec 16 rule numbers: §7.2, §7.9, §8.1, §8.2, §8.5, §8.9. Targets are `UITheme.shape.touchPx` (44).
 
-**Dossier, which is the Stat Card (§8.2).** Research row 4's dossier is this card, not a second screen. It opens after the true-tier reveal. Portrait in a `ViewportFrame` of the scripted model. Name, real rarity chip (`UiFactory.rarityChip` and `UITheme.rarity`), base income and placed income as numbers, source. Variant word, when one exists, is Normal, Spectral, Gilded, Shadow, or Moonlit. Three bars labelled Courage, Instinct, Attunement with the text `7/10`. A Prime roll adds a highlight and the word Prime, with no extra numbers. Trait name and its one-line effect. If Instinct's duration effect is not live, the Instinct line reads **"Expeditions are not open yet."** Primary button **Bind / Place**. **Details** (the word) opens the 1/11 rows, the trait table, and **8/1331**. Phone: portrait, name, chip, income, and Bind first; Details holds the bars. No Robux, no View Item, no offer card, no reroll button. Spec 14's Compare / Keep / Bond / mastery are not on this card. Hodag at Courage 10, before the altar, is $5/s × 1.10 = **$5.50/s**. Tithe uses $5/s.
+**Dossier, which is the Stat Card (§8.2).** `art/concepts/stat-card.jpg` is frame mood only. It is not this layout. A new Dossier concept is still to be drawn when this screen is scheduled. The panel is dark `Ash`, not parchment.
 
-**Tool HUD.** Equipped tool name, beam colour, current hold seconds, current range studs. 44 px. No timer that is not a real phase. During the 3 s hold, the beam and the rune follow §8.1 and stop at the true tier.
+The first screen, including on a phone, shows the rarity word, a **NEW** seal on the first of that species, the three aptitudes, and the trait name. The seal is a Blood `#7A0F12` circle with Bone text, at the top right. The chip carries the rarity word, so colour is not the only signal. Aptitude bars share one fill, `GoldBright` on a `Soot` track, at least 8 px tall. Labels are 14 px Bone, values are 14 px Oswald, for example "Courage 7/10 · +7% income". Instinct and Attunement use the same fill. Words tell them apart, not extra hues. If Instinct's expedition effect is not live yet, that line is BoneDim and reads **"Expeditions are not open yet."** The trait line is text only. It does not use a rarity chip. The `mutation` word, when one exists, is Normal, Spectral, Gilded, Shadow, or Moonlit.
+
+**Prime** sits beside the bars: a Bone ◇ and the word Prime, 14 px, outline on Soot. It is not a frame colour, not GoldBright, not a Rift core, and not a Blood fill. It is not a button. Odds on the card are **8/1331** (about 0.60%).
+
+**Mythic** is not the same chip as Legendary. Both use GoldBright, and the build PR gives Mythic a distinct frame: Ash fill, a 2 px GoldBright stroke (Legendary stays 1 px), a ◆ before the word, and a 1 px Rift `#7FA34A` underline. A Bone sweep on reveal lasts 0.5 s and is skipped when Calm motion is on. That change is `UITheme.rarityChip` in the Dossier PR, not in this docs pass.
+
+**Details** says "Each value from 0 to 10 is equally likely (1 in 11)." Then the trait table at 60 / 25 / 10 / 4 / 1, and Prime at 8/1331. A paid grant reads **"Fixed by the Bound Rite: 5 / 5 / 5"** here and on the Relics card before purchase (spec 16 §8.4). Bind / Place and Details are at least 44 px and at least 8 px apart. Text is at least 14 px. Rows that open nothing are not drawn as buttons. No Robux, no View Item, no offer card, no reroll. Compare, Keep, and Bond stay off this card. Hodag at Courage 10, before the altar, is $5/s × 1.10 = **$5.50/s**. Tithe uses $5/s.
+
+**Tool HUD.** The tool name, the beam colour, the hold in seconds, and the range in studs. 44 px. The name is always there, not only a swatch. Beam swatches for L3 blue, L4 purple, and the other concept beams, including UV `#CC3F8A`, are an allowed exception to spec 01 A2. The rest of the UI keeps A2. Swatches live in the `ViewportFrame` or as a dot no wider than 16 px. No timer that is not a real phase. During the hold, the beam and the rune follow §8.1 and stop at the true tier.
 
 **Twist cues.** One line for the server's phase, in Bone, for example "It has stopped." or "It is under the water." The line matches the phase. It does not say "almost" unless that phase is real (§7.2). Reduced motion: the line stays, and the beam tween shortens. No shop button on the cue (§8.9).
 
@@ -201,39 +209,61 @@ Small code PRs. Shop, schema, and expedition manifest are [spec 17](17-pedlar-su
 5. **Lanternwright counter.** L2 through L5 and the UV Lamp, no restock countdown, L1 not priced. The Pedlar does not list them. No new town mesh in this PR.
 6. **Almanac.** Hollow Convergence is Saturday 18:00–20:00 UTC. Its luck constant is 1. Rift Tide's ×1.5 on that window stays spec 09 and is not a second Convergence bonus.
 7. **Contracts.** Daily 5/10/15 minute steps. The weekly bonus is `Contract.WEEKLY_CASH_MINUTES` = 30 and `Contract.WEEKLY_CASH_FLOOR` = 3000, plus `vigil_wick`. A missed day does not move `daily.step`.
-8. **Analytics v1.2, pending with the Analytics Lead.** Not in v1.1, and not final: `ConvergenceWitnessed`, `AlmanacOpened`, `ContractClaimed`, `WeeklyBonusClaimed`, `ExpeditionSent`, `DossierOpened`, `PrimeAwarded`. v1.1 stays `OnboardingSkipped`, `OnboardingStepTime`, `SessionEnded`, `PlayerReturned`, `LedgerLoadFailed`, `PedlarOddsViewed`, `CatchCompleted`, `PlotAssigned`.
+8. **Analytics v1.2.** The Systems Architect adds the seven names in the catalogue below. v1.1 is not edited in place. `Analytics.MAX_CUSTOM_NAMES` is 15 and v1.1 already uses 8, so these seven fill the cap. The server module is the only sender. Each event has at most three fields (`Analytics.MAX_FIELDS`). Field values are `Token - value` strings. No DisplayName, no username, and no user id in a field.
 
 ## QA
 
 1. L1 catch of the tutorial Hodag still matches spec 01 (3 s, 12 studs, no charge).
 2. With tools forced on in Studio, each species in the table can be caught with only L1 by waiting for the slow phase, and the counter-tool shortens that wait. A client that claims a shorter hold than the server is rejected.
 3. Equipping L4 does not change a rarity roll (compare two forced spawns, same seed, tool on and off).
-4. The Dossier shows the three numbers, the trait, and Details at 1/11 and at 8/1331. A 9/9/9 roll shows Prime, and its income is only the Courage formula. Tithe does not move. There is no reroll control. A 5/5/5 grant does not show Prime.
+4. The first Dossier screen shows the rarity word, the NEW seal on a first species, the three aptitudes, and the trait. Details says each of 0 through 10 is 1 in 11, and Prime is 8/1331. A 9/9/9 roll shows a Bone ◇ and the word Prime, not a new frame colour, and income is only the Courage formula. A 5/5/5 grant says "Fixed by the Bound Rite: 5 / 5 / 5" and does not show Prime. Tithe does not move.
 5. A save with `source = "pedlar"` loads the same species at 5/5/5. Cash is unchanged. A wild cryptid gets the hash, and a second load does not change it.
 6. Phone width: Bind and Details are at least 44 px. No shop card on the catch.
-7. The UV Lamp, if previewed, uses a colour the Art Director has set, and it is not one of the five tool beams. The variant word is one of Normal, Spectral, Gilded, Shadow, Moonlit. With the lamp off, the same spawn is still there.
+7. The UV Lamp beam is `#CC3F8A`, with no Neon, and its PointLight exists only on the holder's client while the lamp is on. The variant word is one of Normal, Spectral, Gilded, Shadow, Moonlit, in that variant's own colour. With the lamp off, the same spawn is still there.
 8. The Almanac lists Hollow Convergence as Saturday 18:00–20:00 UTC with no luck of its own. Rift Tide's ×1.5 on that window is still spec 09. Copy has no "last chance". The Lanternwright tool list has no "Restocks in".
 9. Three contract marks can be finished with a hold, a place, and a return home. Skipping a UTC day leaves the Offering step where it was. Five days in a Monday–Sunday week grant the named cash minutes, the named floor, and `vigil_wick`, and a fourth day does not.
 10. With Steady Hand and the Ember Lantern both owned, and no other catch-time skill, the server hold is 2.43 s. A client that claims 1.4 s is rejected.
 
 ## Rulings applied (11 Nov)
 
-- The lamp's name is **UV Lamp**. Beam colour is TBD by the Art Director.
+- The lamp's name is **UV Lamp**. The beam is `#CC3F8A`.
 - L2 and skill `h1` multiply. The floor is `BIND_TIME_MIN_SECONDS` = 1.5.
 - Chains do not grant a steal bonus.
 - Variant names on the lamp and the Dossier are Normal, Spectral, Gilded, Shadow, and Moonlit (spec 15 §6).
 - Rolls stay uniform, 1/11. Prime is a highlight when all three stats are ≥ 9. The faces ≥ 9 are 9 and 10, so the odds are (2/11)³ = 8/1331 (about 0.60%). (3/11)³ = 27/1331 would be every stat ≥ 8, and that is not this mark. A 5/5/5 grant cannot be Prime.
 - Rift Tide keeps free ×1.5 luck on Saturday 18:00–20:00 UTC. Hollow Convergence is that same window and adds no luck of its own (`Convergence.LUCK_MULTIPLIER` = 1).
 - Contracts pay 5/10/15 minute steps. Any 5 of 7 days pays 30 minutes of pre-2x income, floor $3,000, plus `vigil_wick`. The minute count and the floor are `Contract.WEEKLY_CASH_MINUTES` and `Contract.WEEKLY_CASH_FLOOR`.
-- Analytics names for the new actions are a v1.2 list pending with the Analytics Lead. They are not in v1.1 and they are not final.
+- The UV Lamp beam is `#CC3F8A`. The build PR puts `UvBeam` on `UITheme.world`, not on the A2 palette. The lamp's light is client-local and only while it is on.
+- Tool beam swatches, including L3 blue and L4 purple, are an allowed exception to spec 01 A2. The rest of the UI keeps A2.
+- L5 is the Silver Censer, so the name does not collide with the Moonlit variant.
+- The trait tier that was Rare is Uncanny. The trait line is text, not a rarity chip.
+- Mythic gets a distinct GoldBright frame. Legendary keeps the plain chip.
+- The Dossier's first screen shows aptitudes, the trait, the NEW seal, and the rarity word. Prime is a Bone ◇ and the word Prime, never a frame colour. Odds stay 8/1331 (about 0.60%).
+- v1.2 analytics is a catalogue the Systems Architect owns. The Analytics Lead role is retired. The seven events are specified below.
 - Pedlar-sourced cryptids migrate to 5/5/5. See spec 17 for the empty counter, the expedition constants, the single slot, and the Robux skin tab.
 - Courage carries the placed-income bonus, capped at +10%. Instinct drives expedition speed and route fit, capped at 5% time. Attunement drives bind slack and trait utility, and it does not change income.
 - The 4 s and 5 s twist windows wait for the wild-spawner PR.
 - Hollow Convergence is Saturday 18:00–20:00 UTC. `Convergence.WEEKDAY` is Saturday, `START_HOUR_UTC` is 18, and `END_HOUR_UTC` is 20.
 - The weekly bonus is 30 minutes of pre-2x income, floor $3,000 (`Contract.WEEKLY_CASH_MINUTES`, `Contract.WEEKLY_CASH_FLOOR`).
-- The v1.2 analytics names are pending with the Analytics Lead. They are not in the v1.1 catalogue.
+- v1.2 analytics is specified in this note. It is not waiting on the Analytics Lead.
 - L2 through L5 and the UV Lamp are sold at the Lanternwright. They have no restock clock. L1 stays free.
 
 ## Open questions for Eudai and Grok Bot
 
-None. The v1.2 names stay pending with the Analytics Lead, and `Lure.ENCOUNTER_INTERVAL_SECONDS` is filled in by the wild-spawner PR before that lure is sold.
+None for a director. `Lure.ENCOUNTER_INTERVAL_SECONDS` is still filled in by the wild-spawner PR before that lure is sold. A drawn Dossier layout does not exist yet. `stat-card.jpg` is mood only.
+
+## Analytics v1.2
+
+Addendum to the v1.1 catalogue in `src/shared/Config/Analytics.luau`. The server sends these. The client does not. No field carries a name, a username, or a user id.
+
+| Event | When the server fires it | Fields |
+|---|---|---|
+| `ConvergenceWitnessed` | The player is in the server at Saturday 18:00 UTC, once per window | none |
+| `AlmanacOpened` | The server accepts the open | none |
+| `ContractClaimed` | The server grants one daily mark | `Mark - 1`, `Mark - 2`, or `Mark - 3` |
+| `WeeklyBonusClaimed` | The server grants the 5-of-7 bonus | none |
+| `ExpeditionSent` | The server confirms Send | `Route - lantern_wood`, `Route - hollow_marsh`, or `Route - bell_quarry` |
+| `DossierOpened` | The server has granted the catch and opens the card | `Species - {id}` from the server record |
+| `PrimeAwarded` | A free roll has every stat ≥ 9 | `Species - {id}` from the server record |
+
+v1.1 stays `OnboardingSkipped`, `OnboardingStepTime`, `SessionEnded`, `PlayerReturned`, `LedgerLoadFailed`, `PedlarOddsViewed`, `CatchCompleted`, `PlotAssigned`. These seven are the only names added. A paid 5/5/5 grant does not fire `PrimeAwarded`.
