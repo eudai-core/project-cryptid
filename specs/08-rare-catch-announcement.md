@@ -1,5 +1,7 @@
 # Spec 08: Rare-Catch Announcements
 
+> **11 Nov 2026.** Variant words are spec 15 §6: Normal, Spectral, Gilded, Shadow, Moonlit. The save field stays `mutation`. A Shadow catch takes the banner that this spec used to give the darker variant. A Spectral catch takes the toast.
+
 > **4 Nov 2026:** all [A] assumptions are approved by the owner as starting values, to be tuned from playtest data. Robux prices are still pending Eudai's approval.
 
 **Owner:** Cryptid Growth Strategist · **Builder:** Cryptid Systems Architect · **Status:** Draft v2.3 (Wed 4 Nov 2026; v2.3: audit fix, free-source wording. v2.2: decision B, readings earn-only and silent; named boost banners; Mythic sky per style guide v0.6. v2.1: Epic = Blood `#7A0F12`, never purple; Mythic sky trigger rule. v2: readings never announce; boost-buyer banners for Blood Moon and Server Luck. v1 same day) · **Due:** Sun 8 Nov
@@ -10,7 +12,7 @@
 > - **Server-wide boosts name the buyer** in a thank-you banner with **no price and no buy link**: "**{DisplayName} summoned a Blood Moon over Hollowmere!**" and "**{DisplayName} summoned Server Luck ×2 over Hollowmere!**" (§4b). **Personal Robux purchases never announce.**
 > - **Server Luck is paid** (Eudai option A, January only): restricted players (`ArePaidRandomItemsRestricted`) **don't see its banner, chat line or chip** and don't benefit (spec 10 v2 §5).
 > - **Style guide:** D29 ("no banner for anything bought") is **overridden for server-wide boosts** (D36 already allows server-wide gift banners; **Art Director to amend D29** to cover Blood Moon and Server Luck explicitly). Rift-belt Epics still announce: D29 as amended says cash = free, so no conflict remains.
-> - **From spec 11 v1 §11 (approved by Grok Bot as the design base, 4 Nov):** **Corrupted** catches from the Wilds or the Rift belt (any rarity) also get the server banner, same rate limits (**Update 1**, with variants). Shiny catches get only the catcher's toast.
+> - **From spec 11 v1 §11 (approved by Grok Bot as the design base, 4 Nov):** **Shadow** catches from the Wilds or the Rift belt (any rarity) also get the server banner, same rate limits (**Update 1**, with variants). Spectral catches get only the catcher's toast.
 > - **Mythic sky (§8.5):** GoldBright + Bone flare + thin Rift core (D34); Rift ≤ 5% of the screen for 20 s (D35); fires on **every free source**. **v2.3 (compliance audit (`compliance-audit-cash-random.md` §4; Grok Bot approved, 4 Nov; cash = paid currency)):** Nothing bought at a shop, with Robux or cash, counts as a free source. The Rift belt counts as a building, so its catches stay free sources; Pedlar buys don't.
 
 > **[A]** = design assumption. Grounding (research canvas): rare-catch announcements are a launch must-have; Salganik et al. 2006 show visible signals of other people's success shape behaviour (social proof); loss aversion should be used gently, so no "you missed it!" copy. Odds from spec 09 (checked by `specs/tools/verify_odds.py`).
@@ -22,7 +24,7 @@ When someone catches something truly rare, **the whole server sees it for a mome
 
 | Rule | Value |
 |---|---|
-| Announces | Catching an **Epic** (Jersey Devil, Loch Ness Serpent) from the **Wilds** or the **Rift Fissure conveyor**. **Update 1 (spec 11 §3.2):** also a **Corrupted** catch of any rarity from those sources (banner: "**{DisplayName}** has bound a **Corrupted Hodag** from the Wilds."); Shiny = catcher's toast only |
+| Announces | Catching an **Epic** (Jersey Devil, Loch Ness Serpent) from the **Wilds** or the **Rift Fissure conveyor**. **Update 1 (spec 11 §3.2):** also a **Shadow** catch of any rarity from those sources (banner: "**{DisplayName}** has bound a **Shadow Hodag** from the Wilds."); Spectral = catcher's toast only |
 | Per-species odds at that threshold | Rift **0.2%** each, Wilds **0.1%** each (spec 09) |
 | Doesn't announce | Pedlar purchases (you chose to buy it), daily reward creatures, rebirth familiars, Rares, **every tarot reading** (readings are earn-only and always silent, spec 09 v3 §5.5, spec 10 v2), and **any personal Robux purchase** (Bound Rites, passes, cash bundles, cosmetics) |
 | Scope | **This server only** at launch |
