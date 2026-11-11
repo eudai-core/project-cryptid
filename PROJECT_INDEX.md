@@ -112,6 +112,7 @@ Design authority for gameplay numbers is specs 01–13, plus the change notes th
 | Cash-as-paid-currency audit | [`specs/compliance-audit-cash-random.md`](specs/compliance-audit-cash-random.md) |
 | Store icon and thumbnails | [`specs/store-art-brief.md`](specs/store-art-brief.md) |
 | Competitor snapshots (4 Nov 2026) | [`specs/research/gamepasses-snapshot-2026-11-04.json`](specs/research/gamepasses-snapshot-2026-11-04.json), [`specs/research/devproducts-snapshot-2026-11-04.json`](specs/research/devproducts-snapshot-2026-11-04.json) |
+| Retention and monetisation research (11 Nov 2026) | [`specs/research/2026-11-roblox-retention-monetisation-research.md`](specs/research/2026-11-roblox-retention-monetisation-research.md). Research, not a spec. Specs 17 and 18 fold in its top five recommendations and replace each **[A]** with a cited config or spec. |
 
 Art direction and VFX intent:
 

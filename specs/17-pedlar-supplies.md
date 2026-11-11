@@ -1,8 +1,8 @@
 # Spec 17: Pale Pedlar supplies shop
 
-**Status:** Draft v1 (11 Nov 2026). Design note only. This file does not change `src/`.
+**Status:** Draft v1.1 (11 Nov 2026). Design note only. This file does not change `src/`.
 **Owner:** Growth Strategist tunes every number marked **PROPOSAL**. Systems Architect builds it later, in the PRs named below.
-**Reads with:** [spec 18](18-tools-capture-aptitudes.md) (tool ladder, capture twists, aptitudes). Specs 01 B8, 03, 09, 10, 15 §5 and §10, 16 §6–§8, and [compliance-audit-cash-random.md](compliance-audit-cash-random.md).
+**Reads with:** [spec 18](18-tools-capture-aptitudes.md) (tool ladder, capture twists, aptitudes, Hollow Convergence, Dossier, Daily Contracts). Specs 01 B8, 03, 06, 09, 10, 12, 14 §3, 15 §5 and §10, 16 §6–§8, [compliance-audit-cash-random.md](compliance-audit-cash-random.md), and the research note [2026-11-roblox-retention-monetisation-research.md](research/2026-11-roblox-retention-monetisation-research.md). Where that note marks **[A]**, this spec uses the cited config or spec instead.
 
 ## Goal
 
@@ -77,15 +77,34 @@ The Robux **Lure Totem** (spec 09, 49 R$, moves spawns, does not change odds) st
 
 The four names in `Shop.SLOTS` are cryptid offers, not these items. Implementation stops offering species. It does not reuse those four names as supply SKUs.
 
-## Expedition egg tickets
+## Expeditions: the yield is on the card before Send
+
+Research row 2 asked for expeditions whose haul is known when you send them. The guessed route lengths (30 min / 2 h / 8 h) and guessed yields (15 / 45 / 120 min of income) are **[A]** and are not used. The named routes are spec 14 §3. The Board is shuttered in `Town.luau` (`ExpeditionBoard`). This is January, not launch (spec 15 §9, spec 14 §3).
+
+| Route | Duration | Source |
+|---|---|---|
+| Lantern Wood | 10 minutes | Spec 14 §3 |
+| Hollow Marsh | 1 hour | Spec 14 §3 |
+| Bell Quarry | 4 hours | Spec 14 §3 |
+
+One free slot (spec 14 §3). The chosen cryptid leaves its pad. The card states that income trade-off before Send. Server time advances while you are offline (spec 14). Skill `h7` Expedition Lore (−10% time) is sealed in `SkillConfig` and does not apply until it is unsealed. Aptitude time stays inside the 5% cap in [spec 18](18-tools-capture-aptitudes.md) and does nothing until expeditions exist.
+
+**Before Send, the card shows the whole manifest.** Return delivers that card once. A disconnect does not reroll it (spec 14).
+
+- **Cryptid or egg.** If the route returns a cryptid or an egg, the species, Courage, Instinct, Attunement, and trait are already written on the card (spec 14). There is no second reveal on the way home.
+- **Cash.** A disclosed amount at the pre-2x rate (spec 06: income per second before the 2x Cash pass). No config stores an expedition minute count. The research's 15 / 45 / 120 minutes are not adopted. The minute count is open question 6.
+- **Relic.** Rolled when the card is built, not when the party returns (audit row 9, spec 12 §6.2). Details shows the table before the roll: Fog Lantern 50%, Cracked Bell 20%, Wisp Jar 20%, Blood Chalice 7%, Rift Shard 2%, Black Sun Coin 1% (100%). The card then names the relic that was rolled. Cap 5 of each (spec 12 §6.2).
+- **No tarot token** (spec 09 v3). No Essence.
+
+The research's second slot (rebirth) and third slot (Robux) are **[A]**. This note keeps one free slot. A paid extra slot is **PENDING EUDAI**. It is not a config value, and it must not add a roll (audit: enhanced drops). Instant Expedition Return stays the spec 09 product. Its Robux figures are not copied here. Director ruling 5: those prices are still open (**PENDING EUDAI**). The skip may deliver only the manifest already shown (spec 09 §8). Spec 14 recommends shipping expeditions without the skip until that re-audit.
+
+### Egg tickets are not on the counter
 
 | Item | Effect | Duration / charges | Stack | Cash price | Hooks into | In code | Sale |
 |---|---|---|---|---|---|---|---|
-| Veil Egg Ticket | One egg for a named route. The hatch is a random cryptid. | 1 charge. | 1 | No price until a hatch table exists. | Expedition Board, eggs | Board is shuttered. Spec 14: eggs are not a specified system. No hatch odds exist in spec or code. | **Deferred. Not sold.** |
+| Veil Egg Ticket | Would sell a random hatch for cash. | 1 charge. | 1 | No price. | Eggs | No egg system (spec 14). No hatch table. | **Not sold.** |
 
-Do not invent a hatch table in the shop. When a table is approved it must sum to 100% and the Details view must show every row (spec 01 B8, spec 16 §8.5). Until then the ticket is absent from the counter.
-
-Tarot cases, readings, and the Fate Reel stay earn-only (spec 10, decision B). They are not rows here. No tokens on this stall.
+A cash ticket is a random-for-currency item. The stall does not sell it. An egg that appears on an expedition card is free, and its contents are already shown. Tarot cases, readings, and the Fate Reel stay earn-only (spec 10, decision B). They are not rows here. No tokens on this stall.
 
 ## Cosmetics
 
@@ -115,9 +134,22 @@ Restock stays as it is. `Shop.ROTATION_SECONDS` is 300. `ShopStock.rotationId` i
 
 Permanent tools are always on the counter. The clock still ticks, and a tick does not remove an unsold tool. That keeps the real timer without turning it into scarcity. Open question 4 records the alternative.
 
-**Egg tickets and the policy gate.** Cash is paid currency because it is sold in Robux bundles (audit ruling, spec 09 §8). A ticket that rolls a cryptid after a cash purchase is a paid random item. `PolicyGate.allows` reads `ArePaidRandomItemsRestricted` and fails closed: it returns true only when that field is explicitly false. `MonetisationService.paidRandomAllowed` calls it. Nothing in the Pedlar calls it today, because the stall sells a cryptid that was already rolled onto the card. If a ticket is ever sold, the server must call `paidRandomAllowed` and the row must be absent for a restricted player, not shown and then blocked. This note does not sell the ticket. Decision B and spec 09 still say nothing random is sold. Open question 3: do not implement the ticket until Eudai overrides that sentence in writing.
+**Cash and the policy gate.** Cash is paid currency because it is sold in Robux bundles (audit ruling, spec 09 §8). `PolicyGate.allows` reads `ArePaidRandomItemsRestricted` and fails closed: it returns true only when that field is explicitly false. `MonetisationService.paidRandomAllowed` calls it. Nothing in the Pedlar calls it today. This stall does not need the gate, because it sells no random item. A future random cash row would have to call it and hide the row when it returns false. That row is not in this catalogue.
 
 No paid random item ships from this stall at launch. The launch counter charges cash for nothing, because no supply effect beyond the free lantern exists yet.
+
+**Not sold, from the 11 Nov research as well as the earlier rulings.** No luck boost. No paid restock and no paid reroll (`Shop.ROTATION_SECONDS` stays 300, and buying does not change `rotationId`). No cash crate, case, or other random-for-currency row. Reed Bait, when it eventually exists, still does not change the spec 09 wild weights, and it is not sold now.
+
+**Robux prices the research wrote down.** None of them are approved here, and none are written as a config value.
+
+| Research row | What it priced | This note |
+|---|---|---|
+| 2 | A third expedition slot | **PENDING EUDAI.** One free slot only. The figure is not recorded here. |
+| 13 | A lantern or UV beam skin | **PENDING EUDAI.** Not a Pedlar row. The figure is not recorded here. |
+
+Moon Pass, Bound Rites, and Instant Expedition Return stay in spec 09. Ruling 5 leaves those Robux prices open. This note does not copy them into a new field.
+
+The stall also does not sell a start, a skip, or a luck item for Hollow Convergence, and it does not sell aptitude rerolls. Those systems are in [spec 18](18-tools-capture-aptitudes.md).
 
 ## Data
 
@@ -156,7 +188,7 @@ This note is not one of these PRs.
 1. **Stop the cryptid counter.** `Pedlar` publishes supply rows instead of `ShopRoll` species. Buy is enabled only when the server has an effect. L1's card says it is already yours and does not charge. `Species` ids are untouched. Tests: a buy request for a slot no longer grants a species; rotation id does not change on buy; existing `source = "pedlar"` records still load.
 2. **Schema, after #15.** Version 11 as above. Tests: the same instance id fills the same aptitudes twice; species id and `source` stay put; cash is unchanged; L2 is not granted.
 3. **Update 1 tools.** Spec 18 PRs. Prices live in config, not literals in the shop script. Details shows before and after. A grep test rejects `luck`, `spawnRate`, `rarityMult`, `variant`, and `mutation` on any supply SKU.
-4. **Deferred rows stay unwired.** Egg ticket only after a written override of decision B, an approved hatch table that sums to 100%, and `paidRandomAllowed`.
+4. **Deferred rows stay unwired.** No egg ticket. An expedition PR, when scheduled, shows the manifest before Send and refuses a send whose card is missing a line. A paid extra slot stays out until Eudai records an approval.
 
 ## QA
 
@@ -167,11 +199,16 @@ This note is not one of these PRs.
 5. Touch targets are 44 px on a phone width (`UITheme.shape.mobileWidthBreakpoint` 700).
 6. No Marketplace prompt, and no new product id.
 7. Tutorial Hodag still completes with the free lantern (spec 01). The charge twist does not run on that spawn (spec 18).
+8. The counter has no luck row, no restock skip, no crate, and no egg ticket. An expedition card, when that system exists, lists species, aptitudes, cash, and relic before Send, and a second send with the same id does not reroll.
 
-## Open questions for the director
+## Open questions for Eudai and Grok Bot
 
 1. The first supplies brief asked for lures that raise hunt odds. This note does not sell those, because the later tools ruling and the cash-random audit forbid them. Confirm that withdrawal.
 2. Launch then has a stall that charges nothing until Update 1. Confirm the cryptid counter still closes on that day, rather than staying until one supply can be charged.
-3. Egg tickets contradict spec 09's "Nothing random is ever sold." Confirm they stay deferred until you override that sentence. The policy gate would apply.
+3. Egg tickets stay off the counter. A free expedition egg is allowed only when its species and aptitudes are already on the send card. Confirm that split.
 4. Permanent tools never leave the counter, while the 5-minute clock still runs (ruling 20). Confirm, or say the clock should hide when the list cannot change.
 5. Stock stays on the Pedlar. The Lanternwright stays shuttered. Confirm.
+6. Expedition cash has no minute count in config. The research's 15 / 45 / 120 minutes are not used. What should the manifest show?
+7. A third expedition slot was priced in the research. It is **PENDING EUDAI**, with no figure stored here, and the design keeps one free slot. Confirm.
+8. A Robux price for a lantern or UV beam skin is **PENDING EUDAI** and is not a stall row. Confirm it stays out.
+9. Analytics stays the frozen v1.1 list in `Analytics.CUSTOM_ORDER` (eight names, cap `MAX_CUSTOM_NAMES` 15). An expedition send is not one of them. May a name be added later, and if so which? This note adds none. See spec 18 for the same question on the other new systems.
