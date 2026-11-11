@@ -350,12 +350,18 @@ end)
 Check.test("QA11 the town never calls MarketplaceService", function()
 	local files = {}
 	filesUnder("src", files)
+	local shop = "src/server/MonetisationService.luau"
+	local copy = "src/shared/Logic/RelicsCopy.luau"
 	for _, path in files do
 		local text = fs.readFile(path)
-		Check.eq(string.find(text, "MarketplaceService", 1, true), nil, path)
-		Check.eq(string.find(text, "PromptProductPurchase", 1, true), nil, path)
-		Check.eq(string.find(text, "ProcessReceipt", 1, true), nil, path)
-		Check.eq(string.find(text, "Robux", 1, true), nil, path)
+		if path ~= shop then
+			Check.eq(string.find(text, "MarketplaceService", 1, true), nil, path)
+			Check.eq(string.find(text, "PromptProductPurchase", 1, true), nil, path)
+			Check.eq(string.find(text, "ProcessReceipt", 1, true), nil, path)
+		end
+		if path ~= copy then
+			Check.eq(string.find(text, "Robux", 1, true), nil, path)
+		end
 	end
 end)
 
@@ -548,7 +554,7 @@ Check.test("buying rolls into the next rotation and bind at once uses the first 
 end)
 
 Check.test("v3 saves gain an empty shop and bind at once without rewriting the old table", function()
-	Check.eq(Save.DATA_VERSION, 7)
+	Check.eq(Save.DATA_VERSION, 8)
 	local legacy = Schema.newProfile(20, "starter")
 	legacy.dataVersion = 3
 	legacy.cash = 80

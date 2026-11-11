@@ -5,6 +5,7 @@
 -- `utcjump:<seconds>` adds one more day after that many seconds of the test.
 -- Unknown suffixes (such as `plots3`) are ignored so the watchdog still arms.
 -- `fresh` asks Studio to load a throwaway key instead of the real save.
+-- `relics` opens the shop gate once the rite has reached it.
 
 local QaArgs = {}
 
@@ -15,6 +16,7 @@ export type Tokens = {
 	openTree: boolean,
 	reducedMotion: string,
 	fresh: boolean,
+	relics: boolean,
 }
 
 local function empty(): Tokens
@@ -25,6 +27,7 @@ local function empty(): Tokens
 		openTree = false,
 		reducedMotion = "",
 		fresh = false,
+		relics = false,
 	}
 end
 
@@ -52,7 +55,10 @@ function QaArgs.parse(args: any): Tokens
 	local index = 3
 	while index <= #parts do
 		local key = parts[index]
-		if key == "opentree" or key == "fresh" then
+		if key == "relics" then
+			tokens.relics = true
+			index += 1
+		elseif key == "opentree" or key == "fresh" then
 			if key == "fresh" then
 				tokens.fresh = true
 			else

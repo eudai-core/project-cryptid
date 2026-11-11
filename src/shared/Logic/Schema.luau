@@ -41,6 +41,12 @@ end)
 local Settings = import("./Settings", function()
 	return script.Parent:WaitForChild("Settings")
 end)
+local MonetisationProfile = import("./MonetisationProfile", function()
+	return script.Parent:WaitForChild("MonetisationProfile")
+end)
+local RelicsPip = import("./RelicsPip", function()
+	return script.Parent:WaitForChild("RelicsPip")
+end)
 
 local SOURCES = {
 	starter = true,
@@ -48,6 +54,7 @@ local SOURCES = {
 	wild = true,
 	pedlar = true,
 	offering = true,
+	relic = true,
 }
 
 local Schema = {}
@@ -591,6 +598,15 @@ local function migrateToV7(profile: any, _raw: any, version: number, _now: numbe
 	return true
 end
 
+local function migrateToV8(profile: any, raw: any, version: number, _now: number): boolean
+	if version < 8 then
+		MonetisationProfile.applyDefaults(profile)
+		RelicsPip.armExisting(profile)
+		return true
+	end
+	return MonetisationProfile.parse(profile, raw)
+end
+
 local MIGRATION_STEPS: { { to: number, apply: (any, any, number, number) -> boolean } } = {
 	{
 		to = 2,
@@ -613,6 +629,7 @@ local MIGRATION_STEPS: { { to: number, apply: (any, any, number, number) -> bool
 	{ to = 5, apply = migrateToV5 },
 	{ to = 6, apply = migrateToV6 },
 	{ to = 7, apply = migrateToV7 },
+	{ to = 8, apply = migrateToV8 },
 }
 
 function Schema.migrationTargets(): { number }
@@ -654,7 +671,7 @@ end
 function Schema.newProfile(now: number, starterInstanceId: string): any
 	local starter = Species.get(Species.STARTER_ID)
 	assert(starter ~= nil, "starter species missing")
-	return {
+	local profile = {
 		dataVersion = Save.DATA_VERSION,
 		cash = Economy.STARTING_CASH,
 		totalEarned = 0,
@@ -711,6 +728,8 @@ function Schema.newProfile(now: number, starterInstanceId: string): any
 		},
 		skills = {},
 	}
+	MonetisationProfile.applyDefaults(profile)
+	return profile
 end
 
 function Schema.ensureStarter(profile: any, now: number, starterInstanceId: string): boolean
