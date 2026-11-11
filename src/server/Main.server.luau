@@ -15,9 +15,36 @@ local SpawnCheck = require(script.Parent:WaitForChild("SpawnCheck"))
 
 print(GameInfo.name .. " server started")
 
+local worldReady = false
+local starting: { [Player]: boolean } = {}
+local waiting: { Player } = {}
+
+local function beginPlayer(player: Player)
+	if not worldReady then
+		table.insert(waiting, player)
+		return
+	end
+	if player.Parent == nil or starting[player] == true then
+		return
+	end
+	starting[player] = true
+	task.spawn(function()
+		local opened = PlayerSession.onPlayer(player)
+		if opened == true and player.Parent ~= nil then
+			player:LoadCharacter()
+		end
+	end)
+end
+
+Players.PlayerAdded:Connect(function(player: Player)
+	beginPlayer(player)
+end)
+SpawnCheck.start()
+
 LightingSetup.apply()
 Plot.build()
-SpawnCheck.start()
+worldReady = true
+
 local folder = Remotes.create()
 Pedlar.start(function()
 	PlayerSession.republish()
@@ -28,9 +55,14 @@ end)
 TitheLedger.start()
 PlayerSession.start(folder)
 
-Players.PlayerAdded:Connect(PlayerSession.onPlayer)
-for _, player in Players:GetPlayers() do
-	task.spawn(PlayerSession.onPlayer, player)
+for _, player in waiting do
+	beginPlayer(player)
 end
-Players.PlayerRemoving:Connect(PlayerSession.onRemoving)
+for _, player in Players:GetPlayers() do
+	beginPlayer(player)
+end
+Players.PlayerRemoving:Connect(function(player: Player)
+	starting[player] = nil
+	PlayerSession.onRemoving(player)
+end)
 game:BindToClose(PlayerSession.shutdown)

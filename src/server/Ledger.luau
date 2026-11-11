@@ -23,43 +23,30 @@ local SessionDocument = import("../shared/Logic/SessionDocument", function()
 		:WaitForChild("Logic")
 		:WaitForChild("SessionDocument")
 end)
+local StudioDataStore = import("../shared/Config/StudioDataStore", function()
+	return game:GetService("ReplicatedStorage")
+		:WaitForChild("Shared")
+		:WaitForChild("Config")
+		:WaitForChild("StudioDataStore")
+end)
+local StudioStore = import("../shared/Logic/StudioStore", function()
+	return game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Logic"):WaitForChild("StudioStore")
+end)
 
 local Ledger = {}
 
-Ledger.MOCK_WARNING =
-	"[Cryptid:DataStore] Studio has no DataStore API access. Using an in-memory mock store. This session is not saved to a live DataStore."
+Ledger.MOCK_WARNING = StudioDataStore.MOCK_WARNING
 
 function Ledger.studioApiDenied(message: string): boolean
-	local lower = string.lower(message)
-	local phrases = {
-		"studioaccesstoapisnotallowed",
-		"studio access to apis",
-		"api access is not",
-		"enable studio access",
-		"cannot write to datastore",
-		"not published",
-		"must be published",
-		"place has to be published",
-		"publish the place",
-	}
-	for _, phrase in phrases do
-		if string.find(lower, phrase, 1, true) ~= nil then
-			return true
-		end
-	end
-	if string.find(lower, "studio", 1, true) == nil then
-		return false
-	end
-	return string.find(lower, "datastore", 1, true) ~= nil
-		or string.find(lower, "api", 1, true) ~= nil
-		or string.find(lower, "publish", 1, true) ~= nil
-		or string.find(lower, "403", 1, true) ~= nil
+	return StudioStore.isAccessDenied(message)
 end
 
 function Ledger.open(options: {
 	getStore: () -> any,
 	createMock: () -> any,
 	allowMock: () -> boolean,
+	isStudio: boolean?,
+	placeId: number?,
 	jobId: string,
 	now: () -> number,
 	waitFor: (number) -> (),
@@ -75,6 +62,23 @@ function Ledger.open(options: {
 	local warned = false
 	local ready: { [number]: boolean } = {}
 
+	local function studioNow(): boolean
+		if options.allowMock() ~= true then
+			return false
+		end
+		if options.isStudio ~= nil then
+			return options.isStudio == true
+		end
+		return true
+	end
+
+	local function placeNow(): number?
+		if type(options.placeId) == "number" then
+			return options.placeId
+		end
+		return nil
+	end
+
 	local function store(): any
 		if mock ~= nil then
 			return mock
@@ -82,17 +86,26 @@ function Ledger.open(options: {
 		return options.getStore()
 	end
 
+	local function armMock()
+		if mock ~= nil then
+			return
+		end
+		if not warned then
+			warned = true
+			options.warn(Ledger.MOCK_WARNING)
+		end
+		mock = options.createMock()
+	end
+
+	if StudioStore.preferMock(studioNow(), placeNow(), nil) then
+		armMock()
+	end
+
 	local function installMockIfDenied(err: any): boolean
-		if not options.allowMock() or not Ledger.studioApiDenied(tostring(err)) then
+		if not StudioStore.preferMock(studioNow(), placeNow(), err) then
 			return false
 		end
-		if mock == nil then
-			if not warned then
-				warned = true
-				options.warn(Ledger.MOCK_WARNING)
-			end
-			mock = options.createMock()
-		end
+		armMock()
 		return mock ~= nil
 	end
 
@@ -135,8 +148,9 @@ function Ledger.open(options: {
 	local function runUpdate(
 		label: string,
 		userKey: string,
-		transform: (any) -> (any?, string)
-	): (boolean, string, any?)
+		transform: (any) -> (any?, string),
+		trace: { pcallError: string }?
+	): (boolean, string, any?, number)
 		local lastStatus = "error"
 		local attempts = 0
 		for attempt = 1, Save.MAX_ATTEMPTS do
@@ -171,6 +185,9 @@ function Ledger.open(options: {
 			else
 				lastStatus = "error"
 				local message = tostring(result)
+				if trace ~= nil then
+					trace.pcallError = message
+				end
 				options.warn("Ledger " .. label .. " failed: " .. message)
 				if Retry.classify(message) == "fatal" then
 					return false, "fatal", nil, attempts
@@ -191,7 +208,36 @@ function Ledger.open(options: {
 
 	function api.load(userId: number, createProfile: any): any
 		ready[userId] = false
+		local trace = {
+			pcallError = "",
+			dataVersion = "missing",
+			lockJobId = "",
+			lockExpiresAt = "",
+			migrate = "unseen",
+		}
 		local ok, status, result, attempts = runUpdate("read", key(userId), function(old)
+			if old == nil then
+				trace.dataVersion = "missing"
+				trace.migrate = "create"
+			elseif type(old) ~= "table" or type(old.profile) ~= "table" then
+				trace.dataVersion = "bad"
+				trace.migrate = "nil"
+			else
+				trace.dataVersion = tostring(old.profile.dataVersion)
+				trace.lockJobId = tostring(old.lockJobId)
+				trace.lockExpiresAt = tostring(old.lockExpiresAt)
+				local version = old.profile.dataVersion
+				if
+					type(version) ~= "number"
+					or version ~= math.floor(version)
+					or version > Save.DATA_VERSION
+					or version < 1
+				then
+					trace.migrate = "nil"
+				else
+					trace.migrate = "in-range"
+				end
+			end
 			return SessionDocument.buildWrite(
 				old,
 				options.jobId,
@@ -200,23 +246,40 @@ function Ledger.open(options: {
 				createProfile,
 				options.settle
 			)
-		end)
+		end, trace)
 		if type(attempts) ~= "number" or attempts < 1 then
 			attempts = 1
+		end
+		if status == "loaded" or status == "created" then
+			trace.migrate = "ok"
+		elseif status == "corrupt" then
+			trace.migrate = "nil"
+		elseif status == "locked" then
+			trace.migrate = "skipped"
+		end
+		local function withTrace(fields: { [string]: any }): any
+			fields.dataVersionSeen = trace.dataVersion
+			fields.codeVersion = Save.DATA_VERSION
+			fields.migrate = trace.migrate
+			fields.lockOwner = trace.lockJobId
+			fields.lockExpiry = trace.lockExpiresAt
+			fields.pcallError = trace.pcallError
+			return fields
 		end
 		if ok and type(result) == "table" and result.lockJobId == options.jobId then
 			local seenUnix = result.seenUnix
 			local profile = Schema.migrate(result.profile, options.now())
 			if profile == nil then
-				return {
+				trace.migrate = "nil"
+				return withTrace({
 					ok = false,
 					message = Save.KICK_LOAD_FAILED,
 					reason = "corrupt",
 					attempts = attempts,
-				}
+				})
 			end
 			ready[userId] = true
-			return {
+			return withTrace({
 				ok = true,
 				profile = profile,
 				ephemeral = false,
@@ -224,26 +287,27 @@ function Ledger.open(options: {
 				fresh = status == "created",
 				seenUnix = if type(seenUnix) == "number" then seenUnix else nil,
 				attempts = attempts,
-			}
+				reason = status,
+			})
 		end
 		local reason = "read"
 		if status == "corrupt" then
 			reason = "corrupt"
 		end
 		if status == "locked" then
-			return {
+			return withTrace({
 				ok = false,
 				message = Save.KICK_LOCKED,
 				reason = "locked",
 				attempts = attempts,
-			}
+			})
 		end
-		return {
+		return withTrace({
 			ok = false,
 			message = Save.KICK_LOAD_FAILED,
 			reason = reason,
 			attempts = attempts,
-		}
+		})
 	end
 
 	local function requireReady(userId: number, label: string): boolean

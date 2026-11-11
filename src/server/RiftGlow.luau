@@ -1,10 +1,19 @@
 --!strict
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local function import(lunePath: string, getRoblox: () -> any): any
+	-- selene: allow(global_usage)
+	if _G.LUNE == true then
+		return require(lunePath)
+	end
+	return require(getRoblox())
+end
 
-local Shared = ReplicatedStorage:WaitForChild("Shared")
-local Lanterns = require(Shared:WaitForChild("Config"):WaitForChild("Lanterns")) :: any
-local UITheme = require(Shared:WaitForChild("UITheme")) :: any
+local Lanterns = import("../shared/Config/Lanterns", function()
+	return game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("Lanterns")
+end) :: any
+local UITheme = import("../shared/UITheme", function()
+	return game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("UITheme")
+end) :: any
 
 local RiftGlow = {}
 

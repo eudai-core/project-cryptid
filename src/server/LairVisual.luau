@@ -1,9 +1,16 @@
 --!strict
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local function import(lunePath: string, getRoblox: () -> any): any
+	-- selene: allow(global_usage)
+	if _G.LUNE == true then
+		return require(lunePath)
+	end
+	return require(getRoblox())
+end
 
-local Shared = ReplicatedStorage:WaitForChild("Shared")
-local CryptidArt = require(Shared:WaitForChild("Config"):WaitForChild("CryptidArt")) :: any
+local CryptidArt = import("../shared/Config/CryptidArt", function()
+	return game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("CryptidArt")
+end) :: any
 
 local LairVisual = {}
 
