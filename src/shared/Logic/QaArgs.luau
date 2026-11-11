@@ -3,6 +3,7 @@
 -- Studio playtests pass one string, `qa:<seconds>` plus optional suffixes.
 -- `offline:<seconds>` rewinds lastSeen. `utc:<days>` shifts the offering day.
 -- `utcjump:<seconds>` adds one more day after that many seconds of the test.
+-- `analytics` marks a Studio playtest that should print the analytics sink banner.
 -- Unknown suffixes (such as `plots3`) are ignored so the watchdog still arms.
 -- `fresh` asks Studio to load a throwaway key instead of the real save.
 -- `relics` opens the shop gate once the rite has reached it.
@@ -17,6 +18,7 @@ export type Tokens = {
 	reducedMotion: string,
 	fresh: boolean,
 	relics: boolean,
+	analytics: boolean,
 }
 
 local function empty(): Tokens
@@ -28,6 +30,7 @@ local function empty(): Tokens
 		reducedMotion = "",
 		fresh = false,
 		relics = false,
+		analytics = false,
 	}
 end
 
@@ -57,6 +60,9 @@ function QaArgs.parse(args: any): Tokens
 		local key = parts[index]
 		if key == "relics" then
 			tokens.relics = true
+			index += 1
+		elseif key == "analytics" then
+			tokens.analytics = true
 			index += 1
 		elseif key == "opentree" or key == "fresh" then
 			if key == "fresh" then

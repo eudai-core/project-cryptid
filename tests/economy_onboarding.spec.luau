@@ -67,7 +67,7 @@ Check.test("species and economy match spec 01", function()
 	Check.eq(Onboarding.GOAL_ONE_SECONDS, 5)
 	Check.eq(Onboarding.SKIP_LABEL, "Skip the rite")
 	Check.eq(Onboarding.BIND_HINT, "Carve a circle to bind it.")
-	Check.eq(Save.DATA_VERSION, 8)
+	Check.eq(Save.DATA_VERSION, 9)
 	Check.eq(Save.AUTOSAVE_SECONDS, 60)
 	Check.eq(Save.KICK_LOAD_FAILED, "The ledger would not open. Your progress is safe. Rejoin.")
 end)
@@ -672,7 +672,7 @@ Check.test("v5 in-progress rites recompute onto the v2 chain and finished rites 
 	mid.pads["2"] = "fresno"
 	mid.pads["3"] = "hide"
 	local migrated = Schema.migrate(mid)
-	Check.eq(migrated.dataVersion, 8)
+	Check.eq(migrated.dataVersion, 9)
 	Check.eq(migrated.onboarding.step, 3)
 	Check.eq(migrated.cash, 40)
 	Check.eq(migrated.upgrades.boneAltar, 1)

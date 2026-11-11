@@ -19,6 +19,7 @@ require("./studio_qa.spec")
 require("./return.spec")
 require("./monetisation.spec")
 require("./rate_limit.spec")
+require("./analytics.spec")
 
 local Check = require("./check")
 Check.finish()

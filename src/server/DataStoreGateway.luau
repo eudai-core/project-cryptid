@@ -114,7 +114,12 @@ local ledger = Ledger.open({
 	end,
 	settle = function(profile: any, now: number)
 		StudioQaHooks.rewindLastSeen(profile)
+		local prior = profile.lastSeenUnix
 		Offline.fold(profile, now)
+		if type(prior) ~= "number" or prior ~= prior or prior < 0 or prior == math.huge then
+			return 0
+		end
+		return math.floor(prior)
 	end,
 	profileKey = profileKey,
 })

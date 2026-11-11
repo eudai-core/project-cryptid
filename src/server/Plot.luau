@@ -302,9 +302,10 @@ function Plot.tryPlace(player: Player, character: Model): boolean
 	return hit ~= nil and hit.Instance.CanCollide
 end
 
-function Plot.claim(player: Player): (any?, string)
+function Plot.claim(player: Player): (any?, string, string?)
 	local claimed = nil
 	local why = "full"
+	local rule = nil
 	local ok, err = locked(function()
 		if player.Parent == nil then
 			why = "left"
@@ -320,7 +321,7 @@ function Plot.claim(player: Player): (any?, string)
 			end
 			state = snapshot()
 		end
-		local index = PlotAssign.choose(state, player.UserId, friends)
+		local index, chosen = PlotAssign.explain(state, player.UserId, friends)
 		if index == nil then
 			why = "full"
 			return
@@ -333,6 +334,7 @@ function Plot.claim(player: Player): (any?, string)
 		byPlayer[player] = plot
 		claimed = plot
 		why = "ok"
+		rule = chosen
 	end)
 	if not ok then
 		warn("Plot assignment failed: " .. tostring(err))
@@ -350,9 +352,9 @@ function Plot.claim(player: Player): (any?, string)
 	if player.Parent == nil then
 		byPlayer[player] = nil
 		clearPlot(claimed)
-		return nil, "left"
+		return nil, "left", nil
 	end
-	return claimed, "ok"
+	return claimed, "ok", rule
 end
 
 function Plot.hold(player: Player)

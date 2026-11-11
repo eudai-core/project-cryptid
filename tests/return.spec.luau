@@ -432,7 +432,7 @@ Check.test("settings stay inside their ranges and the v5 migration is idempotent
 	local migrated = Schema.migrate(legacy, 12_345)
 	Check.truthy(migrated)
 	Check.eq(migrated.dataVersion, Save.DATA_VERSION)
-	Check.eq(Save.DATA_VERSION, 8)
+	Check.eq(Save.DATA_VERSION, 9)
 	Check.eq(migrated.lastSeenUnix, 12_345)
 	Check.eq(migrated.daily.step, 1)
 	Check.eq(migrated.daily.lastClaimDay, -1)

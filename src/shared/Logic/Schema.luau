@@ -607,6 +607,40 @@ local function migrateToV8(profile: any, raw: any, version: number, _now: number
 	return MonetisationProfile.parse(profile, raw)
 end
 
+local function parseAnalytics(raw: any): { lastReturnDay: number, funnelStep: number }
+	local day = 0
+	local step = 0
+	if type(raw) == "table" and type(raw.analytics) == "table" then
+		local parsedDay = raw.analytics.lastReturnDay
+		local parsedStep = raw.analytics.funnelStep
+		if
+			type(parsedDay) == "number"
+			and parsedDay == math.floor(parsedDay)
+			and parsedDay >= 0
+			and parsedDay <= 10000000
+		then
+			day = parsedDay
+		end
+		if
+			type(parsedStep) == "number"
+			and parsedStep == math.floor(parsedStep)
+			and parsedStep >= 0
+			and parsedStep <= 9
+		then
+			step = parsedStep
+		end
+	end
+	return {
+		lastReturnDay = day,
+		funnelStep = step,
+	}
+end
+
+local function migrateToV9(profile: any, raw: any, _version: number, _now: number): boolean
+	profile.analytics = parseAnalytics(raw)
+	return true
+end
+
 local MIGRATION_STEPS: { { to: number, apply: (any, any, number, number) -> boolean } } = {
 	{
 		to = 2,
@@ -630,6 +664,7 @@ local MIGRATION_STEPS: { { to: number, apply: (any, any, number, number) -> bool
 	{ to = 6, apply = migrateToV6 },
 	{ to = 7, apply = migrateToV7 },
 	{ to = 8, apply = migrateToV8 },
+	{ to = 9, apply = migrateToV9 },
 }
 
 function Schema.migrationTargets(): { number }
@@ -727,6 +762,10 @@ function Schema.newProfile(now: number, starterInstanceId: string): any
 			defences = {},
 		},
 		skills = {},
+		analytics = {
+			lastReturnDay = 0,
+			funnelStep = 0,
+		},
 	}
 	MonetisationProfile.applyDefaults(profile)
 	return profile

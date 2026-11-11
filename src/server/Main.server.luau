@@ -74,6 +74,9 @@ worldReady = true
 local folder = Remotes.create()
 Pedlar.start(function()
 	PlayerSession.republish()
+	PlayerSession.onPedlarRotation()
+end, function(player)
+	PlayerSession.onPedlarOpen(player)
 end)
 PlayerSession.start(folder)
 

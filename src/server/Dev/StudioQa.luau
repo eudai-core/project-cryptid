@@ -68,4 +68,19 @@ function StudioQa.armRelics(profile: any)
 	end
 end
 
+function StudioQa.analytics(): boolean
+	-- selene: allow(global_usage)
+	if _G.LUNE == true then
+		return false
+	end
+	if not game:GetService("RunService"):IsStudio() then
+		return false
+	end
+	local ReplicatedStorage = game:GetService("ReplicatedStorage")
+	local Shared = ReplicatedStorage:WaitForChild("Shared")
+	local QaArgs = require(Shared:WaitForChild("Logic"):WaitForChild("QaArgs"))
+	local StudioQaHooks = require(script.Parent:WaitForChild("StudioQaHooks"))
+	return QaArgs.parse(StudioQaHooks.args()).analytics == true
+end
+
 return StudioQa

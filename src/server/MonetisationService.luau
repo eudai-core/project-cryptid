@@ -3,6 +3,8 @@
 local MarketplaceService = game:GetService("MarketplaceService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local Analytics = require(script.Parent:WaitForChild("Analytics"))
+
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Monetisation = require(Shared:WaitForChild("Config"):WaitForChild("Monetisation"))
 local Bundles = require(Shared:WaitForChild("Logic"):WaitForChild("Bundles"))
@@ -160,6 +162,9 @@ local function onReceipt(receipt: any): Enum.ProductPurchaseDecision
 	if result.decision == Receipts.GRANTED and result.fresh == true then
 		api.spend(session, result.spent)
 		api.publish(session, result.cash)
+		pcall(function()
+			Analytics.live():purchase(session.player, session, Monetisation.productById(receipt.ProductId))
+		end)
 	end
 	if result.decision == Receipts.GRANTED then
 		return Enum.ProductPurchaseDecision.PurchaseGranted

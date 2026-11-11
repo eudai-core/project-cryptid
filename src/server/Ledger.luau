@@ -137,9 +137,11 @@ function Ledger.open(options: {
 		userKey: string,
 		transform: (any) -> (any?, string),
 		trace: { pcallError: string }?
-	): (boolean, string, any?)
+	): (boolean, string, any?, number)
 		local lastStatus = "error"
+		local attempts = 0
 		for attempt = 1, Save.MAX_ATTEMPTS do
+			attempts = attempt
 			awaitBudget()
 			local why = "error"
 			local function call(): any
@@ -158,14 +160,14 @@ function Ledger.open(options: {
 					options.confirmLive()
 				end
 				if type(result) == "table" then
-					return true, why, result
+					return true, why, result, attempts
 				end
 				lastStatus = why
 				if why ~= "locked" then
 					if why == "wipe" or why == "downgrade" then
 						options.warn(string.format("[Cryptid:DataStore] refusing %s (%s) for %s", label, why, userKey))
 					end
-					return false, why, nil
+					return false, why, nil, attempts
 				end
 			else
 				lastStatus = "error"
@@ -175,7 +177,7 @@ function Ledger.open(options: {
 				end
 				options.warn("Ledger " .. label .. " failed: " .. message)
 				if Retry.classify(message) == "fatal" then
-					return false, "fatal", nil
+					return false, "fatal", nil, attempts
 				end
 			end
 			local pause = Retry.backoffSeconds(attempt)
@@ -186,7 +188,7 @@ function Ledger.open(options: {
 				options.waitFor(Retry.withJitter(pause, roll()))
 			end
 		end
-		return false, lastStatus, nil
+		return false, lastStatus, nil, attempts
 	end
 
 	local api = {}
@@ -200,7 +202,7 @@ function Ledger.open(options: {
 			lockExpiresAt = "",
 			migrate = "unseen",
 		}
-		local ok, status, result = runUpdate("read", key(userId), function(old)
+		local ok, status, result, attempts = runUpdate("read", key(userId), function(old)
 			if old == nil then
 				trace.dataVersion = "missing"
 				trace.migrate = "create"
@@ -232,6 +234,9 @@ function Ledger.open(options: {
 				options.settle
 			)
 		end, trace)
+		if type(attempts) ~= "number" or attempts < 1 then
+			attempts = 1
+		end
 		if status == "loaded" or status == "created" then
 			trace.migrate = "ok"
 		elseif status == "corrupt" then
@@ -239,8 +244,7 @@ function Ledger.open(options: {
 		elseif status == "locked" then
 			trace.migrate = "skipped"
 		end
-		local function withTrace(fields: { [string]: any }, reason: string?): any
-			fields.reason = reason or status
+		local function withTrace(fields: { [string]: any }): any
 			fields.dataVersionSeen = trace.dataVersion
 			fields.codeVersion = Save.DATA_VERSION
 			fields.migrate = trace.migrate
@@ -250,13 +254,16 @@ function Ledger.open(options: {
 			return fields
 		end
 		if ok and type(result) == "table" and result.lockJobId == options.jobId then
+			local seenUnix = result.seenUnix
 			local profile = Schema.migrate(result.profile, options.now())
 			if profile == nil then
 				trace.migrate = "nil"
 				return withTrace({
 					ok = false,
 					message = Save.KICK_LOAD_FAILED,
-				}, "migrate-nil")
+					reason = "corrupt",
+					attempts = attempts,
+				})
 			end
 			ready[userId] = true
 			return withTrace({
@@ -264,17 +271,29 @@ function Ledger.open(options: {
 				profile = profile,
 				ephemeral = false,
 				lockExpiresAt = result.lockExpiresAt,
+				fresh = status == "created",
+				seenUnix = if type(seenUnix) == "number" then seenUnix else nil,
+				attempts = attempts,
+				reason = status,
 			})
+		end
+		local reason = "read"
+		if status == "corrupt" then
+			reason = "corrupt"
 		end
 		if status == "locked" then
 			return withTrace({
 				ok = false,
 				message = Save.KICK_LOCKED,
+				reason = "locked",
+				attempts = attempts,
 			})
 		end
 		return withTrace({
 			ok = false,
 			message = Save.KICK_LOAD_FAILED,
+			reason = reason,
+			attempts = attempts,
 		})
 	end
 
