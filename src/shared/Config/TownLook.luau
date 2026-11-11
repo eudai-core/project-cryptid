@@ -1,0 +1,118 @@
+--!strict
+
+local TownLook = {
+	PART_CAP = 364,
+	LIGHT_CAP = 24,
+	VFX_MAX_EMITTERS = 6,
+	VFX_MAX_PARTICLES = 120,
+	LOW_QUALITY_MAX = 4,
+	WELL_LIGHT_RANGE = 14,
+	WELL_LIGHT_BRIGHTNESS = 1,
+	PORTAL_LIGHT_RANGE = 12,
+	PORTAL_LIGHT_BRIGHTNESS = 0.9,
+	MIST_RATE = 8,
+	MIST_LIFE = 1.8,
+	RUNE_DRIFT_RATE = 3,
+	RUNE_DRIFT_LIFE = 2,
+	FLAME_CORE_RATE = 16,
+	FLAME_CORE_LIFE = 1,
+	FLAME_EXTRA_RATE = 8,
+	FLAME_EXTRA_LIFE = 1.2,
+	VORTEX_SWIRL_RATE = 18,
+	VORTEX_SWIRL_LIFE = 1.4,
+	VORTEX_SPARK_RATE = 10,
+	VORTEX_SPARK_LIFE = 1,
+	CROW_COUNT = 3,
+	NEON_ROLES = table.freeze({
+		flame = true,
+		portal = true,
+		rune = true,
+		sign = true,
+		eye = true,
+	}),
+	SHOPS = table.freeze({
+		table.freeze({
+			id = "RuneheartApothecary",
+			kind = "apothecary",
+			angle = 112,
+			radius = 40,
+			sign = "Runeheart Apothecary",
+			flame = "FlameGreen",
+		}),
+		table.freeze({
+			id = "HowlingHorn",
+			kind = "tavern",
+			angle = 68,
+			radius = 42,
+			sign = "The Howling Horn",
+			flame = "FlameBlue",
+		}),
+		table.freeze({
+			id = "VeilAndFate",
+			kind = "tarot",
+			angle = 293,
+			radius = 40,
+			sign = "Veil & Fate",
+			flame = "FlameViolet",
+		}),
+		table.freeze({
+			id = "DuskAndDial",
+			kind = "clock",
+			angle = 248,
+			radius = 46,
+			sign = "Dusk & Dial",
+			flame = "MoonGlow",
+		}),
+	}),
+	PORTALS = table.freeze({
+		table.freeze({
+			id = "WhisperingWoods",
+			kind = "tree",
+			angle = 158,
+			radius = 58,
+			sign = "Whispering Woods",
+			color = "FlameGreen",
+			level = "",
+		}),
+		table.freeze({
+			id = "SunkenMarsh",
+			kind = "serpent",
+			angle = 203,
+			radius = 58,
+			sign = "Sunken Marsh",
+			color = "Spirit",
+			level = "Level 25+",
+		}),
+		table.freeze({
+			id = "BoneQuarry",
+			kind = "ribcage",
+			angle = 338,
+			radius = 58,
+			sign = "Bone Quarry",
+			color = "FlameOrange",
+			level = "",
+		}),
+	}),
+	BRAZIER = table.freeze({
+		id = "CrimsonBrazier",
+		angle = 20,
+		radius = 32,
+		color = "FlameCrimson",
+	}),
+}
+
+function TownLook.bloomEnabled(level: number, authored: boolean): boolean
+	if level >= 1 and level <= TownLook.LOW_QUALITY_MAX then
+		return false
+	end
+	return authored
+end
+
+function TownLook.flameTierEnabled(tier: string, level: number): boolean
+	if tier == "extra" and level >= 1 and level <= TownLook.LOW_QUALITY_MAX then
+		return false
+	end
+	return true
+end
+
+return table.freeze(TownLook)

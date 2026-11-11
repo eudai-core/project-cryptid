@@ -18,6 +18,7 @@ local LairBanners = require(script.Parent:WaitForChild("LairBanners"))
 local PedlarShop = require(script.Parent:WaitForChild("PedlarShop"))
 local SkillTree = require(script.Parent:WaitForChild("SkillTree"))
 local TownDress = require(script.Parent:WaitForChild("TownDress"))
+local TownQuality = require(script.Parent:WaitForChild("TownQuality"))
 local ReturnButton = require(script.Parent:WaitForChild("ReturnButton"))
 local SealToast = require(script.Parent:WaitForChild("SealToast"))
 local ThemeBind = require(script.Parent:WaitForChild("ThemeBind"))
@@ -291,6 +292,7 @@ if RunService:IsStudio() then
 end
 local pedlar = PedlarShop.mount(gui, player, remotes :: Folder, Names, isReduced)
 TownDress.start()
+TownQuality.start()
 Interactions.start(player, remotes :: Folder, Names, beginCatch, {
 	onPedlar = pedlar.open,
 	onShrine = skill.open,

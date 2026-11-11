@@ -1,10 +1,19 @@
 --!strict
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local function import(lunePath: string, getRoblox: () -> any): any
+	-- selene: allow(global_usage)
+	if _G.LUNE == true then
+		return require(lunePath)
+	end
+	return require(getRoblox())
+end
 
-local Shared = ReplicatedStorage:WaitForChild("Shared")
-local Town = require(Shared:WaitForChild("Config"):WaitForChild("Town")) :: any
-local UITheme = require(Shared:WaitForChild("UITheme")) :: any
+local Town = import("../shared/Config/Town", function()
+	return game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("Town")
+end) :: any
+local UITheme = import("../shared/UITheme", function()
+	return game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("UITheme")
+end) :: any
 
 local Wisp = {}
 
@@ -35,6 +44,7 @@ function Wisp.attach(parent: Instance, name: string, cf: CFrame)
 	emitter.Transparency = NumberSequence.new(spec.transparency)
 	emitter.Color = ColorSequence.new(UITheme.color(spec.color))
 	emitter.EmissionDirection = Enum.NormalId.Top
+	emitter:SetAttribute("TownEffect", name)
 	emitter.Parent = host
 end
 

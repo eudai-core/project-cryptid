@@ -34,8 +34,8 @@ local palette = table.freeze({
 	RiftDim = "4F6B34",
 	Moss = "5E7A4A",
 	TarnishedSilver = "8C9AA3",
-	LightAmbient = "3C3734",
-	LightOutdoor = "5F5852",
+	LightAmbient = "322848",
+	LightOutdoor = "51426E",
 })
 
 local world = table.freeze({
@@ -45,6 +45,23 @@ local world = table.freeze({
 	Floor = "3A342F",
 	Wall = "1C1917",
 	Altar = "403932",
+	NightSky = "140C22",
+	NightMist = "6E5C9A",
+	SkyTint = "F3ECFF",
+	Spirit = "3EE6D4",
+	FlameGreen = "39F06A",
+	FlameBlue = "3C92FF",
+	FlameViolet = "C45CFF",
+	FlameOrange = "FF6A1A",
+	FlameCrimson = "E0263A",
+	Bark = "4A3024",
+	ShipWood = "7B5434",
+	MossCanopy = "1E7A3C",
+	TentCloth = "4C2878",
+	Stone = "7C7784",
+	Bottle = "C8FFD8",
+	MoonFace = "F3E6C8",
+	MoonGlow = "F4E8FF",
 })
 
 local UITheme = {
@@ -182,15 +199,23 @@ local UITheme = {
 		outdoorAmbient = "LightOutdoor",
 		fogStart = 250,
 		fogEnd = 1100,
-		fogColor = "Ash",
+		fogColor = "NightMist",
 		atmosphereDensity = 0.18,
 		atmosphereOffset = 0,
 		atmosphereHaze = 0.3,
 		atmosphereGlare = 0,
-		atmosphereColor = "Ash",
-		atmosphereDecay = "Void",
-		-- Lighting.Technology is not scriptable. default.project.json writes Future.
-		technology = "Future",
+		atmosphereColor = "NightMist",
+		atmosphereDecay = "NightSky",
+		bloomEnabled = true,
+		bloomIntensity = 0.45,
+		bloomSize = 28,
+		bloomThreshold = 1.5,
+		colorSaturation = 0.16,
+		colorContrast = 0.08,
+		colorBrightness = 0.02,
+		colorTint = "SkyTint",
+		-- Lighting.Technology is not scriptable. default.project.json writes ShadowMap.
+		technology = "ShadowMap",
 	}),
 	materials = table.freeze({
 		floor = "Slate",

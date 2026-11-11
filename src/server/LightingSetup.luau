@@ -1,14 +1,30 @@
 --!strict
 
-local Lighting = game:GetService("Lighting")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local function import(lunePath: string, getRoblox: () -> any): any
+	-- selene: allow(global_usage)
+	if _G.LUNE == true then
+		return require(lunePath)
+	end
+	return require(getRoblox())
+end
 
-local Shared = ReplicatedStorage:WaitForChild("Shared")
-local UITheme = require(Shared:WaitForChild("UITheme")) :: any
+local UITheme = import("../shared/UITheme", function()
+	return game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("UITheme")
+end) :: any
 
 local LightingSetup = {}
 
+local function effect(lighting: Instance, className: string): any
+	local existing = lighting:FindFirstChildOfClass(className)
+	if existing == nil then
+		existing = Instance.new(className)
+		existing.Parent = lighting
+	end
+	return existing
+end
+
 function LightingSetup.apply()
+	local Lighting = game:GetService("Lighting")
 	local lighting = UITheme.lighting
 	Lighting.Ambient = UITheme.color(lighting.ambient)
 	Lighting.OutdoorAmbient = UITheme.color(lighting.outdoorAmbient)
@@ -21,17 +37,28 @@ function LightingSetup.apply()
 	Lighting.FogStart = lighting.fogStart
 	Lighting.FogEnd = lighting.fogEnd
 
-	local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere")
-	if atmosphere == nil then
-		atmosphere = Instance.new("Atmosphere")
-		atmosphere.Parent = Lighting
-	end
+	local atmosphere = effect(Lighting, "Atmosphere")
 	atmosphere.Density = lighting.atmosphereDensity
 	atmosphere.Offset = lighting.atmosphereOffset
 	atmosphere.Color = UITheme.color(lighting.atmosphereColor)
 	atmosphere.Decay = UITheme.color(lighting.atmosphereDecay)
 	atmosphere.Glare = lighting.atmosphereGlare
 	atmosphere.Haze = lighting.atmosphereHaze
+
+	local bloom = effect(Lighting, "BloomEffect")
+	bloom.Name = "TownBloom"
+	bloom.Enabled = lighting.bloomEnabled
+	bloom.Intensity = lighting.bloomIntensity
+	bloom.Size = lighting.bloomSize
+	bloom.Threshold = lighting.bloomThreshold
+
+	local grade = effect(Lighting, "ColorCorrectionEffect")
+	grade.Name = "TownGrade"
+	grade.Enabled = true
+	grade.Saturation = lighting.colorSaturation
+	grade.Contrast = lighting.colorContrast
+	grade.Brightness = lighting.colorBrightness
+	grade.TintColor = UITheme.color(lighting.colorTint)
 
 	local baseplate = workspace:FindFirstChild("Baseplate")
 	if baseplate ~= nil then

@@ -852,9 +852,9 @@ function PlayerSession.start(folder: Folder)
 	end)
 end
 
-function PlayerSession.onPlayer(player: Player)
+function PlayerSession.onPlayer(player: Player): boolean
 	if sessions[player] ~= nil then
-		return
+		return true
 	end
 	local fallback = Plot.fallbackSpawn()
 	if fallback ~= nil then
@@ -863,7 +863,7 @@ function PlayerSession.onPlayer(player: Player)
 	local plan = StudioQa.plan(RunService:IsStudio(), StudioQaHooks.args())
 	if plan == "kick" then
 		player:Kick(Save.KICK_LOAD_FAILED)
-		return
+		return false
 	end
 	if plan == "seed-fresh" or plan == "seed-stale" then
 		DataStoreGateway.seedForeignLock(player.UserId, plan == "seed-stale")
@@ -874,12 +874,12 @@ function PlayerSession.onPlayer(player: Player)
 		if loaded.ok and loaded.ephemeral ~= true and loaded.profile ~= nil then
 			DataStoreGateway.release(player.UserId, loaded.profile)
 		end
-		return
+		return false
 	end
 	if not loaded.ok or loaded.profile == nil then
 		sink().ledger(player, loaded.attempts, loaded.reason)
 		player:Kick(loaded.message or Save.KICK_LOAD_FAILED)
-		return
+		return false
 	end
 	local profile = loaded.profile
 	local grantedStarter = Schema.ensureStarter(profile, os.time(), HttpService:GenerateGUID(false))
@@ -912,14 +912,14 @@ function PlayerSession.onPlayer(player: Player)
 		if loaded.ok and loaded.ephemeral ~= true and loaded.profile ~= nil then
 			DataStoreGateway.release(player.UserId, loaded.profile)
 		end
-		return
+		return false
 	end
 	if plot == nil then
 		if loaded.ok and loaded.ephemeral ~= true and loaded.profile ~= nil then
 			DataStoreGateway.release(player.UserId, loaded.profile)
 		end
 		player:Kick(Plots.KICK_NO_LAIR)
-		return
+		return false
 	end
 
 	QaGrant.apply(profile, player.UserId)
@@ -988,6 +988,7 @@ function PlayerSession.onPlayer(player: Player)
 			MonetisationService.sync(session)
 		end
 	end)
+	return true
 end
 
 local function closeOwned(player: Player, session: any, bounded: boolean): (boolean, boolean)

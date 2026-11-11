@@ -1,22 +1,50 @@
 --!strict
 
+local function import(lunePath: string, getRoblox: () -> any): any
+	-- selene: allow(global_usage)
+	if _G.LUNE == true then
+		return require(lunePath)
+	end
+	return require(getRoblox())
+end
+
 local CollectionService = game:GetService("CollectionService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local Shared = ReplicatedStorage:WaitForChild("Shared")
-local ArtAssets = require(Shared:WaitForChild("ArtAssets")) :: any
-local CryptidArt = require(Shared:WaitForChild("Config"):WaitForChild("CryptidArt")) :: any
-local Lair = require(Shared:WaitForChild("Config"):WaitForChild("Lair")) :: any
-local RiftGlow = require(script.Parent:WaitForChild("RiftGlow"))
-local Lanterns = require(Shared:WaitForChild("Config"):WaitForChild("Lanterns")) :: any
-local PlotRing = require(Shared:WaitForChild("Logic"):WaitForChild("PlotRing")) :: any
-local Plots = require(Shared:WaitForChild("Config"):WaitForChild("Plots")) :: any
-local Town = require(Shared:WaitForChild("Config"):WaitForChild("Town")) :: any
-local UITheme = require(Shared:WaitForChild("UITheme")) :: any
-local LairVisual = require(script.Parent:WaitForChild("LairVisual"))
-local Wisp = require(script.Parent:WaitForChild("Wisp"))
-
-local TownBuilder = require(script.Parent:WaitForChild("TownBuilder"))
+local ArtAssets = import("../shared/ArtAssets", function()
+	return game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("ArtAssets")
+end) :: any
+local CryptidArt = import("../shared/Config/CryptidArt", function()
+	return game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("CryptidArt")
+end) :: any
+local Lair = import("../shared/Config/Lair", function()
+	return game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("Lair")
+end) :: any
+local RiftGlow = import("./RiftGlow", function()
+	return script.Parent:WaitForChild("RiftGlow")
+end)
+local Lanterns = import("../shared/Config/Lanterns", function()
+	return game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("Lanterns")
+end) :: any
+local PlotRing = import("../shared/Logic/PlotRing", function()
+	return game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Logic"):WaitForChild("PlotRing")
+end) :: any
+local Plots = import("../shared/Config/Plots", function()
+	return game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("Plots")
+end) :: any
+local Town = import("../shared/Config/Town", function()
+	return game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("Town")
+end) :: any
+local UITheme = import("../shared/UITheme", function()
+	return game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("UITheme")
+end) :: any
+local LairVisual = import("./LairVisual", function()
+	return script.Parent:WaitForChild("LairVisual")
+end)
+local Wisp = import("./Wisp", function()
+	return script.Parent:WaitForChild("Wisp")
+end)
+local TownBuilder = import("./TownBuilder", function()
+	return script.Parent:WaitForChild("TownBuilder")
+end)
 
 local PlotBuilder = {}
 
@@ -646,10 +674,19 @@ function PlotBuilder.build(): { any }
 	local plotsFolder = folder(workspace, "Plots")
 	local town = folder(workspace, "Town")
 	PlotBuilder.buildGround(town)
+	-- TownSpawn exists. Yield before the rest of the geometry so Play can join.
+	-- selene: allow(global_usage)
+	if _G.LUNE ~= true then
+		task.wait()
+	end
 	TownBuilder.build(town)
 	local plots = {}
 	for index = 1, Plots.COUNT do
 		plots[index] = PlotBuilder.buildPlot(plotsFolder, index)
+		-- selene: allow(global_usage)
+		if _G.LUNE ~= true then
+			task.wait()
+		end
 	end
 	return plots
 end
