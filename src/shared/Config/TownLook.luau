@@ -113,6 +113,17 @@ local TownLook = {
 		rt = "rbxasset://textures/sky/sky512_rt.tex",
 		up = "rbxasset://textures/sky/sky512_up.tex",
 	}),
+	-- Muted occult grade over the built-in sky512 cubemap. Not a bright violet.
+	SKY_AMBIENT = "3E2C4A",
+	SKY_OUTDOOR_AMBIENT = "62466C",
+	SKY_COLOR_SHIFT_TOP = "241030",
+	SKY_ATMOSPHERE_COLOR = "604A6E",
+	SKY_ATMOSPHERE_DECAY = "241430",
+	SKY_ATMOSPHERE_DENSITY = 0.16,
+	SKY_ATMOSPHERE_HAZE = 0.22,
+	SKY_ATMOSPHERE_GLARE = 0,
+	SKY_GRADE_SATURATION = 0.02,
+	SKY_GRADE_TINT = "E4DCE8",
 }
 
 function TownLook.bloomEnabled(level: number, authored: boolean): boolean
