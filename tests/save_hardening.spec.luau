@@ -888,7 +888,6 @@ Check.test("a save one version newer is refused and the ledger kick is logged", 
 	Check.eq(store:GetAsync(key(81)).profile.dataVersion, Save.DATA_VERSION + 1)
 	Check.eq(store:GetAsync(key(81)).profile.cash, 77)
 	local session = fs.readFile("src/server/PlayerSession.luau")
-	Check.contains(session, "[diag] ledger open %s reason=%s calls=%d site=%s dataVersion=%s codeVersion=%d")
 	Check.contains(session, "player:Kick(loaded.message or Save.KICK_LOAD_FAILED)")
 end)
 

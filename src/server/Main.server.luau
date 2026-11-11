@@ -13,22 +13,12 @@ local Remotes = require(script.Parent:WaitForChild("Remotes"))
 local SpawnCheck = require(script.Parent:WaitForChild("SpawnCheck"))
 
 print(GameInfo.name .. " server started")
-print("[diag] CharacterAutoLoads=" .. tostring(Players.CharacterAutoLoads)) -- TEMP diag
 
 local worldReady = false
 local starting: { [Player]: boolean } = {}
 local waiting: { Player } = {}
 
-local function watchCharacter(player: Player)
-	player.CharacterAdded:Connect(function()
-		print("[diag] CharacterAdded " .. player.Name) -- TEMP diag
-	end)
-	player.CharacterRemoving:Connect(function()
-		print("[diag] CharacterRemoving " .. player.Name) -- TEMP diag
-	end)
-end
-
-local function beginPlayer(player: Player, site: string)
+local function beginPlayer(player: Player)
 	if not worldReady then
 		table.insert(waiting, player)
 		return
@@ -38,37 +28,20 @@ local function beginPlayer(player: Player, site: string)
 	end
 	starting[player] = true
 	task.spawn(function()
-		local opened = PlayerSession.onPlayer(player, site)
+		local opened = PlayerSession.onPlayer(player)
 		if opened == true and player.Parent ~= nil then
-			print("[diag] LoadCharacter " .. player.Name) -- TEMP diag
 			player:LoadCharacter()
 		end
 	end)
 end
 
 Players.PlayerAdded:Connect(function(player: Player)
-	print("[diag] PlayerAdded " .. player.Name) -- TEMP diag
-	watchCharacter(player)
-	beginPlayer(player, "added")
+	beginPlayer(player)
 end)
-for _, player in Players:GetPlayers() do
-	watchCharacter(player)
-end
 SpawnCheck.start()
 
 LightingSetup.apply()
-print("[diag] build start") -- TEMP diag
 Plot.build()
-local town = workspace:FindFirstChild("Town")
-local partCount = 0
-if town ~= nil then
-	for _, inst in town:GetDescendants() do
-		if inst:IsA("BasePart") then
-			partCount += 1
-		end
-	end
-end
-print("[diag] build done " .. tostring(partCount)) -- TEMP diag
 worldReady = true
 
 local folder = Remotes.create()
@@ -81,10 +54,10 @@ end)
 PlayerSession.start(folder)
 
 for _, player in waiting do
-	beginPlayer(player, "queue")
+	beginPlayer(player)
 end
 for _, player in Players:GetPlayers() do
-	beginPlayer(player, "players")
+	beginPlayer(player)
 end
 Players.PlayerRemoving:Connect(function(player: Player)
 	starting[player] = nil

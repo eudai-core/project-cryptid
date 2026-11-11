@@ -852,43 +852,7 @@ function PlayerSession.start(folder: Folder)
 	end)
 end
 
-local loadCalls: { [number]: number } = {}
-
-local function ledgerDiag(player: Player, site: string, outcome: string, loaded: any?)
-	local calls = loadCalls[player.UserId] or 0
-	local reason = outcome
-	local dataVersion = "none"
-	local migrate = "none"
-	local lockJob = ""
-	local expires = ""
-	local err = ""
-	if type(loaded) == "table" then
-		reason = tostring(loaded.reason or loaded.message or outcome)
-		dataVersion = tostring(loaded.dataVersionSeen or "none")
-		migrate = tostring(loaded.migrate or "none")
-		lockJob = tostring(loaded.lockOwner or "")
-		expires = tostring(loaded.lockExpiry or "")
-		err = string.gsub(tostring(loaded.pcallError or ""), "%c", " ")
-	end
-	print(
-		string.format(
-			"[diag] ledger open %s reason=%s calls=%d site=%s dataVersion=%s codeVersion=%d migrate=%s lock=%s expires=%s error=%s",
-			outcome,
-			reason,
-			calls,
-			site,
-			dataVersion,
-			Save.DATA_VERSION,
-			migrate,
-			lockJob,
-			expires,
-			err
-		)
-	) -- TEMP diag
-end
-
-function PlayerSession.onPlayer(player: Player, site: string?): boolean
-	local where = if type(site) == "string" then site else "onPlayer"
+function PlayerSession.onPlayer(player: Player): boolean
 	if sessions[player] ~= nil then
 		return true
 	end
@@ -898,7 +862,6 @@ function PlayerSession.onPlayer(player: Player, site: string?): boolean
 	end
 	local plan = StudioQa.plan(RunService:IsStudio(), StudioQaHooks.args())
 	if plan == "kick" then
-		ledgerDiag(player, where, "fail", { reason = "studio-kick" }) -- TEMP diag
 		player:Kick(Save.KICK_LOAD_FAILED)
 		return false
 	end
@@ -906,22 +869,18 @@ function PlayerSession.onPlayer(player: Player, site: string?): boolean
 		DataStoreGateway.seedForeignLock(player.UserId, plan == "seed-stale")
 	end
 	local created = Schema.newProfile(os.time(), HttpService:GenerateGUID(false))
-	loadCalls[player.UserId] = (loadCalls[player.UserId] or 0) + 1
 	local loaded = DataStoreGateway.load(player.UserId, created)
 	if player.Parent == nil then
 		if loaded.ok and loaded.ephemeral ~= true and loaded.profile ~= nil then
 			DataStoreGateway.release(player.UserId, loaded.profile)
 		end
-		ledgerDiag(player, where, "left", loaded) -- TEMP diag
 		return false
 	end
 	if not loaded.ok or loaded.profile == nil then
-		ledgerDiag(player, where, "fail", loaded) -- TEMP diag
 		sink().ledger(player, loaded.attempts, loaded.reason)
 		player:Kick(loaded.message or Save.KICK_LOAD_FAILED)
 		return false
 	end
-	ledgerDiag(player, where, "ok", loaded) -- TEMP diag
 	local profile = loaded.profile
 	local grantedStarter = Schema.ensureStarter(profile, os.time(), HttpService:GenerateGUID(false))
 	local playedBefore = profile.onboarding.playSeconds

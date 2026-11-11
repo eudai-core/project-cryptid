@@ -1,10 +1,4 @@
 --!strict
-print(
-	"[diag] client start "
-		.. tostring(
-			if game:GetService("Players").LocalPlayer ~= nil then game:GetService("Players").LocalPlayer.Name else "nil"
-		)
-) -- TEMP diag
 
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
