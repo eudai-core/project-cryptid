@@ -183,6 +183,10 @@ local UITheme = {
 			buttonW = 240,
 			choiceH = 52,
 			barH = 10,
+			toastY = 8,
+			scrollY = 36,
+			scrollTrim = 108,
+			mobileW = 360,
 		}),
 		titheBoard = table.freeze({
 			width = 280,

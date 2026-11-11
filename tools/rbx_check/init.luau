@@ -38,16 +38,8 @@ local MAGIC_SKIP = {
 	"CryptidModels.luau",
 }
 
--- TODO(#20): replace with a named constant after #14 merges, then remove this entry
--- https://github.com/eudai-core/project-cryptid/issues/20
 type MagicAllow = { path: string, line: number, value: number }
-local MAGIC_ALLOWLIST: { MagicAllow } = {
-	{
-		path = "src/shared/Logic/Schema.luau",
-		line = 620,
-		value = 10000000,
-	},
-}
+local MAGIC_ALLOWLIST: { MagicAllow } = {}
 
 local KEY_FUNCTIONS = {
 	key = true,

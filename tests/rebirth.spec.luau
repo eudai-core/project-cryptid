@@ -141,18 +141,50 @@ Check.test("ring 1 income and one rebirth match the Jersey Devil example", funct
 	Check.near(earned, 258.75)
 end)
 
-Check.test("tier 8 is refused and an empty lair may still cross", function()
+local function sameProfile(left: any, right: any): boolean
+	if type(left) ~= type(right) then
+		return false
+	end
+	if type(left) ~= "table" then
+		return left == right
+	end
+	for key, value in left do
+		if not sameProfile(value, right[key]) then
+			return false
+		end
+	end
+	for key in right do
+		if left[key] == nil then
+			return false
+		end
+	end
+	return true
+end
+
+Check.test("tier 7 is the cap and a rite there changes nothing", function()
+	Check.eq(BoneAltar.MAX_REBIRTHS, 7)
+	Check.eq(RebirthRules.LAUNCH_CAP, 7)
+	Check.eq(BoneAltar.MAX_REBIRTHS, RebirthRules.LAUNCH_CAP)
+	Check.eq(Rebirth.cost(BoneAltar.MAX_REBIRTHS) ~= nil, true)
+	Check.eq(Rebirth.cost(BoneAltar.MAX_REBIRTHS + 1), nil)
 	local profile = ready()
-	profile.rebirths = RebirthRules.LAUNCH_CAP
-	profile.cash = Rebirth.cost(7)
-	profile.tithe = Rebirth.titheGate(7)
+	profile.rebirths = BoneAltar.MAX_REBIRTHS
+	profile.cash = Rebirth.cost(1) :: number
+	profile.tithe = Rebirth.titheGate(1) :: number
 	local view = Rebirth.view(profile)
 	Check.eq(view.sealed, true)
 	Check.eq(view.canBegin, false)
 	Check.eq(view.blockReason, RebirthRules.SEALED)
-	Check.eq(Rebirth.commit(profile, "keeper"), false)
-	Check.eq(profile.rebirths, RebirthRules.LAUNCH_CAP)
-	Check.eq(profile.upgrades.boneAltar, 4)
+	local before = Schema.deepCopy(profile)
+	local ok, reason = Rebirth.commit(profile, "keeper")
+	Check.eq(ok, false)
+	Check.eq(reason, "sealed")
+	Check.eq(sameProfile(profile, before), true)
+	Check.eq(profile.rebirths, BoneAltar.MAX_REBIRTHS)
+	Check.eq(profile.cash, before.cash)
+	Check.eq(profile.pads["1"], before.pads["1"])
+	Check.eq(profile.cryptids.keeper.speciesId, before.cryptids.keeper.speciesId)
+	Check.eq(profile.upgrades.boneAltar, before.upgrades.boneAltar)
 
 	local empty = ready()
 	empty.cryptids = {}
@@ -223,6 +255,17 @@ Check.test("daily cash does not move tithe and relic pads stay out of it", funct
 end)
 
 Check.test("v9 to v10 keeps tithe and v5 to v10 backfills it", function()
+	local targets = Schema.migrationTargets()
+	Check.eq(#targets, Save.DATA_VERSION - 1)
+	local seen: { [number]: boolean } = {}
+	for index, version in targets do
+		Check.eq(version, index + 1)
+		Check.eq(seen[version], nil)
+		seen[version] = true
+	end
+	Check.eq(targets[1], 2)
+	Check.eq(targets[#targets], Save.DATA_VERSION)
+
 	local current = Schema.newProfile(5, "starter")
 	current.dataVersion = 9
 	current.rebirths = nil
@@ -231,6 +274,15 @@ Check.test("v9 to v10 keeps tithe and v5 to v10 backfills it", function()
 	current.tithe = 80
 	current.totalEarned = RebirthRules.REVEAL_CASH
 	current.cash = 12
+	current.padsUnlocked = 5
+	current.cryptids.second = {
+		speciesId = "mothman_hatchling",
+		mutation = "",
+		traits = {},
+		acquiredAt = 5,
+		source = "rift",
+	}
+	current.pads["3"] = "second"
 	current.analytics.lastReturnDay = 2
 	current.analytics.funnelStep = 3
 	local fromV9 = Schema.migrate(current)
@@ -239,6 +291,12 @@ Check.test("v9 to v10 keeps tithe and v5 to v10 backfills it", function()
 	Check.eq(fromV9.familiarId, "")
 	Check.eq(fromV9.everHeld1M, true)
 	Check.eq(fromV9.tithe, 80)
+	Check.eq(fromV9.cash, 12)
+	Check.eq(fromV9.padsUnlocked, 5)
+	Check.eq(fromV9.pads["1"], "starter")
+	Check.eq(fromV9.pads["3"], "second")
+	Check.eq(fromV9.cryptids.starter.speciesId, "mothman_hatchling")
+	Check.eq(fromV9.cryptids.second.source, "rift")
 	Check.eq(fromV9.analytics.funnelStep, 3)
 	fromV9.rebirths = 4
 	fromV9.familiarId = "hodag"

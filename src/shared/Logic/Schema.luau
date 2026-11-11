@@ -8,6 +8,9 @@ local function import(lunePath: string, getRoblox: () -> any): any
 	return require(getRoblox())
 end
 
+local Analytics = import("../Config/Analytics", function()
+	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Analytics")
+end)
 local Economy = import("../Config/Economy", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Economy")
 end)
@@ -620,7 +623,7 @@ local function parseAnalytics(raw: any): { lastReturnDay: number, funnelStep: nu
 			type(parsedDay) == "number"
 			and parsedDay == math.floor(parsedDay)
 			and parsedDay >= 0
-			and parsedDay <= 10000000
+			and parsedDay <= Analytics.MAX_RETURN_DAY
 		then
 			day = parsedDay
 		end

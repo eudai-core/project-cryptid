@@ -30,7 +30,7 @@ function RebirthPanel.mount(parent: Instance, _isReduced: () -> boolean, fire: (
 
 	local toast = UiFactory.label(root, "body", spec.body, "GoldBright")
 	toast.Name = "RebirthToast"
-	toast.Position = UDim2.fromOffset(spec.detail, 8)
+	toast.Position = UDim2.fromOffset(spec.detail, spec.toastY)
 	toast.Size = UDim2.new(1, -spec.detail * 2, 0, spec.choiceH / 2)
 	toast.TextXAlignment = Enum.TextXAlignment.Center
 	toast.Visible = false
@@ -40,8 +40,8 @@ function RebirthPanel.mount(parent: Instance, _isReduced: () -> boolean, fire: (
 	scroll.Name = "Body"
 	scroll.BackgroundTransparency = 1
 	scroll.BorderSizePixel = 0
-	scroll.Position = UDim2.fromOffset(spec.detail, 36)
-	scroll.Size = UDim2.new(1, -spec.detail * 2, 1, -108)
+	scroll.Position = UDim2.fromOffset(spec.detail, spec.scrollY)
+	scroll.Size = UDim2.new(1, -spec.detail * 2, 1, -spec.scrollTrim)
 	scroll.CanvasSize = UDim2.new()
 	scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
 	scroll.ScrollBarThickness = UITheme.shape.plaqueGapPx
@@ -254,7 +254,7 @@ function RebirthPanel.mount(parent: Instance, _isReduced: () -> boolean, fire: (
 		local height = spec.desktop.h
 		if mobile then
 			height = spec.mobileH
-			width = math.min(spec.desktop.w, 360)
+			width = math.min(spec.desktop.w, spec.mobileW)
 		end
 		root.Size = UDim2.fromOffset(width, height)
 	end
