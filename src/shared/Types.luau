@@ -95,6 +95,10 @@ export type Profile = {
 		lairCosmetics: boolean,
 		sigilNameplate: boolean,
 	},
+	analytics: {
+		lastReturnDay: number,
+		funnelStep: number,
+	},
 }
 
 return {}
