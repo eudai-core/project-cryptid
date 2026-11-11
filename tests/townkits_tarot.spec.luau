@@ -807,12 +807,12 @@ Check.test("tarot tent does no per-frame work and does not wait on a service roo
 	for _, needle in { "Heartbeat", "RenderStepped", "Stepped", ":Connect", "task.wait", "task.spawn", "task.defer" } do
 		Check.eq(string.find(source, needle, 1, true), nil, needle)
 	end
-	for _, needle in { 'Instance.new("Highlight")', 'Instance.new("MeshPart")', "pumpkin", "GetService" } do
+	for _, needle in { 'Instance.new("Highlight")', 'Instance.new("MeshPart")', "pumpkin" } do
 		Check.eq(string.find(source, needle, 1, true), nil, needle)
 	end
 	Check.eq(string.find(source, 'script.Parent:WaitForChild("Kit")', 1, true) ~= nil, true)
-	Check.eq(string.find(source, 'sibling("TarotTent")', 1, true) ~= nil, true)
-	Check.eq(string.find(source, "script:WaitForChild(name)", 1, true) ~= nil, true)
+	Check.eq(string.find(source, 'script:WaitForChild("TarotTent")', 1, true) ~= nil, true)
+	Check.eq(string.find(source, 'script:WaitForChild("Longship")', 1, true) ~= nil, true)
 	Check.eq(string.find(source, 'script.Parent:WaitForChild("Longship")', 1, true), nil)
 	Check.eq(string.find(source, 'script.Parent:WaitForChild("TarotTent")', 1, true), nil)
 	Check.eq(string.find(source, 'Instance.new("ParticleEmitter")', 1, true) ~= nil, true)

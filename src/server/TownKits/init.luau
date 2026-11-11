@@ -8,23 +8,19 @@ local function import(lunePath: string, getRoblox: () -> any): any
 	return require(getRoblox())
 end
 
--- script is this TownKits module. Its parent is the service that owns the folder.
--- WaitForChild on that parent hangs: the kits are children of this module.
-local function sibling(name: string): any
-	return script:WaitForChild(name)
-end
-
+-- This file is the TownKits module. Sibling kit modules are its children, not
+-- siblings under ServerScriptService.
 local Longship = import("./Longship", function()
-	return sibling("Longship")
+	return script:WaitForChild("Longship")
 end)
 local WeepingWell = import("./WeepingWell", function()
-	return sibling("WeepingWell")
+	return script:WaitForChild("WeepingWell")
 end)
 local ApothecaryTree = import("./ApothecaryTree", function()
-	return sibling("ApothecaryTree")
+	return script:WaitForChild("ApothecaryTree")
 end)
 local TarotTent = import("./TarotTent", function()
-	return sibling("TarotTent")
+	return script:WaitForChild("TarotTent")
 end)
 
 local TownKits = {}

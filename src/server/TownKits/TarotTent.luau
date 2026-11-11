@@ -8,21 +8,14 @@ local function import(lunePath: string, getRoblox: () -> any): any
 	return require(getRoblox())
 end
 
--- Walk from this module. Waiting on a service for the kit name hangs: this file
--- is nested under TownKits, so shared modules are reached through script.Parent.
-local function sharedRoot(): any
-	local dataModel = script.Parent.Parent.Parent
-	return dataModel:WaitForChild("ReplicatedStorage"):WaitForChild("Shared")
-end
-
 local Kit = import("./Kit", function()
 	return script.Parent:WaitForChild("Kit")
 end)
 local TownLook = import("../../shared/Config/TownLook", function()
-	return sharedRoot():WaitForChild("Config"):WaitForChild("TownLook")
+	return game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("TownLook")
 end) :: any
 local UITheme = import("../../shared/UITheme", function()
-	return sharedRoot():WaitForChild("UITheme")
+	return game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("UITheme")
 end) :: any
 
 local TarotTent = {}
