@@ -63,6 +63,25 @@ for _, name in ENUM_MATERIAL do
 	VALID_MATERIAL[name] = true
 end
 
+local BASE_PART = {
+	Part = true,
+	MeshPart = true,
+	SpawnLocation = true,
+	Seat = true,
+	VehicleSeat = true,
+	TrussPart = true,
+	WedgePart = true,
+	CornerWedgePart = true,
+	UnionOperation = true,
+	NegateOperation = true,
+	IntersectOperation = true,
+}
+local LIGHT = {
+	PointLight = true,
+	SpotLight = true,
+	SurfaceLight = true,
+}
+
 local REQUIRED_SHOPS = { "RuneheartApothecary", "HowlingHorn", "VeilAndFate", "DuskAndDial" }
 local REQUIRED_PORTALS = { "WhisperingWoods", "SunkenMarsh", "BoneQuarry" }
 local REQUIRED_SIGNS = {
@@ -408,9 +427,13 @@ end
 local builtTown: any = nil
 local function townRoot(): any
 	if builtTown == nil then
+		local roblox = installRoblox()
+		local PlotBuilder = loadModule("src/server/PlotBuilder.luau")
 		local TownBuilder = loadModule("src/server/TownBuilder.luau")
-		local folder = installRoblox().Instance.new("Folder")
+		local folder = roblox.Instance.new("Folder")
 		folder.Name = "Town"
+		folder.Parent = roblox.workspace
+		PlotBuilder.buildGround(folder)
 		TownBuilder.build(folder)
 		builtTown = folder
 	end
@@ -446,6 +469,35 @@ local function countClass(root: any, className: string): number
 		end
 	end
 	return total
+end
+
+local function townCensus(root: any): (number, number, { [string]: { parts: number, lights: number } })
+	local parts = 0
+	local lights = 0
+	local byName: { [string]: { parts: number, lights: number } } = {}
+	local function bump(name: string, partDelta: number, lightDelta: number)
+		local row = byName[name]
+		if row == nil then
+			row = { parts = 0, lights = 0 }
+			byName[name] = row
+		end
+		row.parts += partDelta
+		row.lights += lightDelta
+	end
+	for _, inst in descendants(root) do
+		local owner = inst
+		while owner.Parent ~= nil and owner.Parent ~= root do
+			owner = owner.Parent
+		end
+		if BASE_PART[inst.ClassName] == true then
+			parts += 1
+			bump(owner.Name, 1, 0)
+		elseif LIGHT[inst.ClassName] == true then
+			lights += 1
+			bump(owner.Name, 0, 1)
+		end
+	end
+	return parts, lights, byName
 end
 
 local function channels(hex: string): (number, number, number)
@@ -519,8 +571,13 @@ end)
 
 Check.test("town part and light counts stay inside the mobile caps", function()
 	local root = townRoot()
-	local parts = countClass(root, "Part")
-	local lights = countClass(root, "PointLight") + countClass(root, "SpotLight") + countClass(root, "SurfaceLight")
+	Check.eq(root.Parent.ClassName, "Workspace")
+	Check.eq(named(root, "Ground") ~= nil, true)
+	Check.eq(named(root, "TownPlatform") ~= nil, true)
+	Check.eq(named(root, "TownSpawn") ~= nil, true)
+	Check.eq(named(root, "Cobble") ~= nil, true)
+	Check.eq(countClass(root, "SpawnLocation"), 1)
+	local parts, lights, byName = townCensus(root)
 	print(
 		string.format(
 			"town census parts=%d lights=%d capParts=%d capLights=%d",
@@ -530,6 +587,20 @@ Check.test("town part and light counts stay inside the mobile caps", function()
 			TownLook.LIGHT_CAP
 		)
 	)
+	local names = {}
+	for name in byName do
+		table.insert(names, name)
+	end
+	table.sort(names)
+	for _, name in names do
+		local row = byName[name]
+		print(string.format("  %s %d/%d", name, row.parts, row.lights))
+	end
+	Check.eq(byName.Ground.parts, 1)
+	Check.eq(byName.TownPlatform.parts, 1)
+	Check.eq(byName.TownSpawn.parts, 1)
+	Check.eq(byName.Cobble.parts, 1)
+	Check.eq(byName.LanternGlass.lights, 4)
 	Check.eq(parts <= TownLook.PART_CAP, true, "parts " .. tostring(parts) .. " cap " .. tostring(TownLook.PART_CAP))
 	Check.eq(
 		lights <= TownLook.LIGHT_CAP,

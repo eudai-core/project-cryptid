@@ -339,7 +339,31 @@ local function wall(town: Folder)
 	local step = (2 * math.pi) / count
 	local half = TownLayout.openingHalfAngle()
 	local margin = (Town.WALL_SEGMENT / radius) * 0.5
-	local width = radius * step + 0.2
+	local mergedPairs = 0
+	local held: { angle: number, scale: number }? = nil
+	local function place(angle: number, scale: number, span: number)
+		local height = Town.WALL_HEIGHT * scale
+		local y = Town.FLOOR_Y + height / 2
+		local x = radius * math.sin(angle)
+		local z = radius * math.cos(angle)
+		local width = radius * step * span + 0.2
+		local cf = CFrame.lookAt(Vector3.new(x, y, z), Vector3.new(0, y, 0))
+		part(
+			folder,
+			"TownWall",
+			Vector3.new(width, height, Town.WALL_THICKNESS),
+			cf,
+			UITheme.materials.wall,
+			"Wall",
+			true
+		)
+	end
+	local function flush()
+		if held ~= nil then
+			place(held.angle, held.scale, 1)
+			held = nil
+		end
+	end
 	for index = 1, count do
 		local angle = (index - 0.5) * step
 		local open = false
@@ -351,24 +375,23 @@ local function wall(town: Folder)
 				break
 			end
 		end
-		if not open then
-			local scale = 0.72 + 0.28 * ((index % 5) / 4)
-			local height = Town.WALL_HEIGHT * scale
-			local y = Town.FLOOR_Y + height / 2
-			local x = radius * math.sin(angle)
-			local z = radius * math.cos(angle)
-			local cf = CFrame.lookAt(Vector3.new(x, y, z), Vector3.new(0, y, 0))
-			part(
-				folder,
-				"TownWall",
-				Vector3.new(width, height, Town.WALL_THICKNESS),
-				cf,
-				UITheme.materials.wall,
-				"Wall",
-				true
-			)
+		if open then
+			flush()
+			mergedPairs = 0
+			continue
+		end
+		local scale = 0.72 + 0.28 * ((index % 5) / 4)
+		if mergedPairs < 2 and held == nil then
+			held = { angle = angle, scale = scale }
+		elseif mergedPairs < 2 and held ~= nil then
+			place(held.angle + step / 2, math.max(held.scale, scale), 2)
+			held = nil
+			mergedPairs += 1
+		else
+			place(angle, scale, 1)
 		end
 	end
+	flush()
 end
 
 local function flicker(light: PointLight)
@@ -427,14 +450,17 @@ local function lamps(town: Folder)
 		uprightCylinder(post, CFrame.new(position))
 		local headCf = CFrame.new(position + Vector3.new(0, Town.LAMP_HEIGHT / 2 + 0.6, 0))
 		local head = part(folder, "Lamp", Vector3.new(1.1, 1.3, 1.1), headCf, UITheme.materials.iron, "Ash", false)
-		local light = Instance.new("PointLight")
-		light.Color = UITheme.color(Lanterns.COLOR_TOKEN)
-		light.Range = Lanterns.RANGE
-		light.Brightness = Lanterns.BRIGHTNESS
-		light.Shadows = Lanterns.SHADOWS
-		light.Parent = head
-		if index % Town.FLICKER_STRIDE == 0 then
-			flicker(light)
+		-- Four ring lamps stay dark so the corner lanterns, well, and portals keep the light cap.
+		if index % 4 ~= 0 then
+			local light = Instance.new("PointLight")
+			light.Color = UITheme.color(Lanterns.COLOR_TOKEN)
+			light.Range = Lanterns.RANGE
+			light.Brightness = Lanterns.BRIGHTNESS
+			light.Shadows = Lanterns.SHADOWS
+			light.Parent = head
+			if index % Town.FLICKER_STRIDE == 0 then
+				flicker(light)
+			end
 		end
 	end
 end
