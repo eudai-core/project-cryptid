@@ -40,6 +40,7 @@ Every screen should feel like a **candle-lit ritual ledger**: dark, heavy, a lit
 
 **Rules**
 - **No bright purple, no saturated blue, no pastel, no rounded "bubble" UI.**
+- A tool beam swatch of **16 px or smaller** may use the concept beam colour (L3 blue, L4 purple, UV `#CC3F8A`). It is not an A2 token and it is not UI chrome. The concept sheet still labels L5 "Moonlit Censer". The in-game name is **Silver Censer**. Moonlit stays a variant name, and that variant's look, odds, and source are TBD (AD).
 - `Rift` green max **2% of any screen's area** (style guide D35; the Mythic sky may reach 5% for 20 s). It means "supernatural / rare".
 - Contrast (computed): `Bone` on `Void` ≈ 15:1; `Gold` on `Void` ≈ 5:1; `Bone` on `Blood` ≈ 11:1. All body text must be `Bone` or `BoneDim`; never `Blood` text on `Void` (too dark).
 - Colour is never the only signal: pair with an icon or word (e.g. disabled = `BoneDim` + lock icon).
