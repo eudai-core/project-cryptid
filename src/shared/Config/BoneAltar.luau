@@ -106,7 +106,15 @@ function BoneAltar.l3Owned(profile: any): boolean
 	if type(skills) ~= "table" then
 		return false
 	end
-	return skills[L3_SKILL] == true
+	if skills[L3_SKILL] == true then
+		return true
+	end
+	for _, id in skills do
+		if id == L3_SKILL then
+			return true
+		end
+	end
+	return false
 end
 
 function BoneAltar.cost(level: number, rebirths: number): number?

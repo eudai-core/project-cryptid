@@ -97,6 +97,12 @@ function Ledger.open(options: {
 	end
 
 	local function key(userId: number): string
+		if options.profileKey ~= nil then
+			local named = options.profileKey(userId)
+			if type(named) == "string" and named ~= "" then
+				return named
+			end
+		end
 		return Save.KEY_PREFIX .. tostring(userId)
 	end
 
@@ -264,6 +270,28 @@ function Ledger.open(options: {
 			return true, "renewed", result.lockExpiresAt
 		end
 		return false, status, nil
+	end
+
+	function api.seedForeignLock(userId: number, stale: boolean): boolean
+		local now = options.now()
+		local expires = now + Save.LOCK_TTL_SECONDS
+		if stale then
+			expires = now - Save.QA_STALE_LOCK_AGE_SECONDS
+		end
+		local ok, _status, result = runUpdate("seed", key(userId), function(old)
+			if type(old) ~= "table" or type(old.profile) ~= "table" then
+				return nil, "missing"
+			end
+			return {
+				lockJobId = Save.QA_FOREIGN_JOB_ID,
+				lockTimestamp = now,
+				lockLeaseSeconds = Save.LOCK_TTL_SECONDS,
+				lockExpiresAt = expires,
+				profile = old.profile,
+			},
+				"seeded"
+		end)
+		return ok == true and type(result) == "table" and result.lockJobId == Save.QA_FOREIGN_JOB_ID
 	end
 
 	function api.release(userId: number, profile: any, rebirth: boolean?): (boolean, string)

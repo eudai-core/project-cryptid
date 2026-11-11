@@ -280,9 +280,22 @@ local UITheme = {
 	reducedMotion = table.freeze({
 		maxFade = 0.15,
 	}),
-	sigil = "✶",
+	-- GrenzeGotisch draws basic Latin only. A star dingbat shows as an empty box.
+	sigil = "+",
 	disabledMark = "⊘",
 }
+
+function UITheme.textIsSafe(value: string): boolean
+	if type(value) ~= "string" then
+		return false
+	end
+	for _, code in utf8.codes(value) do
+		if code < 32 or code > 126 then
+			return false
+		end
+	end
+	return true
+end
 
 function UITheme.color(token: string): Color3
 	local hex = palette[token]

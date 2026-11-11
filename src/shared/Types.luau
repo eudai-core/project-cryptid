@@ -62,6 +62,7 @@ export type Profile = {
 	base: {
 		defences: { [number]: string },
 	},
+	skills: { string },
 	purchases: {
 		ledger: { [string]: { productId: number, grantedAt: number, grants: { string } } },
 		ritesOwned: { [string]: boolean },
