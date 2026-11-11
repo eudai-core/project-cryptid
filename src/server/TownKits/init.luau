@@ -16,11 +16,14 @@ end)
 local WeepingWell = import("./WeepingWell", function()
 	return script:WaitForChild("WeepingWell")
 end)
+local ApothecaryTree = import("./ApothecaryTree", function()
+	return script:WaitForChild("ApothecaryTree")
+end)
 
 local TownKits = {}
 
 -- Future kits append here. TownBuilder keeps a single applyAll call.
-local KITS = { Longship, WeepingWell }
+local KITS = { Longship, WeepingWell, ApothecaryTree }
 
 function TownKits.applyAll(townFolder: Instance, refs: any)
 	local reports = {}

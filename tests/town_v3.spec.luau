@@ -105,6 +105,7 @@ local VISUAL_FILES = {
 	"src/server/TownKits/Kit.luau",
 	"src/server/TownKits/Longship.luau",
 	"src/server/TownKits/WeepingWell.luau",
+	"src/server/TownKits/ApothecaryTree.luau",
 }
 
 local function makeInstance(className: string): any
@@ -852,13 +853,27 @@ Check.test("town part and light counts stay inside the sanity guard", function()
 	Check.eq(named(root, "Cobble") ~= nil, true)
 	Check.eq(countClass(root, "SpawnLocation"), 1)
 	local parts, lights, byName = townCensus(root)
+	local censusEmitters = 0
+	local censusParticles = 0
+	local censusHighlights = countClass(root, "Highlight")
+	for _, inst in descendants(root) do
+		if inst.ClassName == "ParticleEmitter" then
+			censusEmitters += 1
+			local life = inst.Lifetime
+			censusParticles += inst.Rate * life.Max
+		end
+	end
 	print(
 		string.format(
-			"town census parts=%d lights=%d capParts=%d capLights=%d",
+			"town census parts=%d lights=%d emitters=%d particles=%.2f highlights=%d capParts=%d capLights=%d capEmitters=%d",
 			parts,
 			lights,
+			censusEmitters,
+			censusParticles,
+			censusHighlights,
 			TownLook.PART_CAP,
-			TownLook.LIGHT_CAP
+			TownLook.LIGHT_CAP,
+			TownLook.EMITTER_CAP
 		)
 	)
 	local names = {}
@@ -876,7 +891,8 @@ Check.test("town part and light counts stay inside the sanity guard", function()
 	Check.eq(byName.Cobble.parts, 1)
 	Check.eq(byName.LanternGlass.lights, 4)
 	Check.eq(countClass(root, "Highlight"), 0)
-	-- Sanity guard only. There is no part budget.
+	Check.eq(censusHighlights, 0)
+	-- Sanity guards only. There is no part, light, or emitter budget.
 	Check.eq(TownLook.PART_CAP, 20000)
 	Check.eq(parts <= 20000, true, "parts " .. tostring(parts))
 	Check.eq(parts <= TownLook.PART_CAP, true, "parts " .. tostring(parts) .. " cap " .. tostring(TownLook.PART_CAP))
@@ -886,7 +902,13 @@ Check.test("town part and light counts stay inside the sanity guard", function()
 		"lights " .. tostring(lights) .. " cap " .. tostring(TownLook.LIGHT_CAP)
 	)
 	Check.eq(TownLook.LIGHT_CAP, 200)
-	Check.eq(TownLook.VFX_MAX_EMITTERS, 6)
+	Check.eq(TownLook.EMITTER_CAP, 200)
+	Check.eq(
+		censusEmitters <= TownLook.EMITTER_CAP,
+		true,
+		"emitters " .. tostring(censusEmitters) .. " cap " .. tostring(TownLook.EMITTER_CAP)
+	)
+	Check.eq(censusEmitters <= 200, true, "emitters " .. tostring(censusEmitters))
 	Check.eq(TownLook.VFX_MAX_PARTICLES, 120)
 	Check.eq(parts > 0, true)
 	Check.eq(lights > 0, true)
@@ -915,7 +937,6 @@ Check.test("town part and light counts stay inside the sanity guard", function()
 	end
 	Check.eq(lone <= 16, true, "untagged emitters " .. tostring(lone))
 	for effect, group in groups do
-		Check.eq(group.emitters <= TownLook.VFX_MAX_EMITTERS, true, effect .. " emitters " .. tostring(group.emitters))
 		Check.eq(
 			group.particles <= TownLook.VFX_MAX_PARTICLES,
 			true,
@@ -1432,4 +1453,117 @@ Check.test("weeping well kit keeps the basin anchors and stays inside the sanity
 	Check.eq(townHighlights, 0)
 	Check.eq(TownLook.LIGHT_CAP, 200)
 	Check.eq(TownLook.PART_CAP, 20000)
+end)
+
+Check.test("apothecary tree kit keeps the shop sign and replaces the blockout", function()
+	local root = townRoot()
+	local shop = nil
+	for _, inst in descendants(root) do
+		if inst.Name == "RuneheartApothecary" and inst.ClassName == "Model" then
+			shop = inst
+		end
+	end
+	Check.truthy(shop, "RuneheartApothecary")
+	Check.eq(shop:GetAttribute("TownKit"), "ApothecaryTree")
+	Check.eq(shop:GetAttribute("KitQuality"), 10)
+	Check.eq(shop:GetAttribute("KitDetail"), true)
+	Check.eq(shop.PrimaryPart.Name, "Root")
+	local signText = nil
+	local door = nil
+	local prompts = 0
+	local trunk = 0
+	local hollow = 0
+	local bole = 0
+	local reach = 0
+	local crow = 0
+	local lights = 0
+	local highlights = 0
+	local mesh = 0
+	local humanoids = 0
+	local emitters = 0
+	local particles = 0
+	local kitParts = 0
+	local life = 0
+	for _, inst in descendants(shop) do
+		if inst.Name == "SignText" then
+			signText = inst.Text
+		elseif inst.Name == "DoorAnchor" then
+			door = inst
+		elseif inst.Name == "Trunk" then
+			trunk += 1
+		elseif inst.Name == "Hollow" then
+			hollow += 1
+		elseif inst.Name == "Bole" then
+			bole += 1
+		elseif inst.Name == "Reach" then
+			reach += 1
+		elseif inst.Name == "CrowBody" then
+			crow += 1
+		end
+		if inst.ClassName == "ProximityPrompt" then
+			prompts += 1
+		elseif inst.ClassName == "PointLight" or inst.ClassName == "SpotLight" or inst.ClassName == "SurfaceLight" then
+			lights += 1
+			Check.eq(inst.Shadows, false, inst.Name)
+		elseif inst.ClassName == "Highlight" then
+			highlights += 1
+		elseif inst.ClassName == "MeshPart" then
+			mesh += 1
+		elseif inst.ClassName == "Humanoid" then
+			humanoids += 1
+		elseif inst.ClassName == "ParticleEmitter" then
+			emitters += 1
+			local span = inst.Lifetime
+			particles += inst.Rate * span.Max
+			if inst:GetAttribute("TownEffect") == "ApothecaryLife" then
+				life += 1
+				Check.eq(inst:GetAttribute("TownFlame"), "extra")
+			end
+		end
+		if inst:GetAttribute("TownKitPart") == true then
+			kitParts += 1
+			Check.eq(inst.Anchored, true, inst.Name)
+			if inst:GetAttribute("TownDecor") == true then
+				Check.eq(inst.CanCollide, false, inst.Name)
+				Check.eq(inst.CanTouch, false, inst.Name)
+				Check.eq(inst.CanQuery, false, inst.Name)
+			end
+		end
+	end
+	print(
+		string.format(
+			"apothecary beforeParts=%s afterParts=%s beforeLights=%s afterLights=%s beforeEmitters=%s afterEmitters=%s emitters=%d particles=%.2f lights=%d kitParts=%d highlights=%d life=%d",
+			tostring(shop:GetAttribute("KitBeforeParts")),
+			tostring(shop:GetAttribute("KitAfterParts")),
+			tostring(shop:GetAttribute("KitBeforeLights")),
+			tostring(shop:GetAttribute("KitAfterLights")),
+			tostring(shop:GetAttribute("KitBeforeEmitters")),
+			tostring(shop:GetAttribute("KitAfterEmitters")),
+			emitters,
+			particles,
+			lights,
+			kitParts,
+			highlights,
+			life
+		)
+	)
+	Check.eq(signText, "Runeheart Apothecary")
+	Check.truthy(door, "DoorAnchor")
+	Check.eq(door:GetAttribute("TownAnchor"), "Door")
+	Check.eq(prompts, 0)
+	Check.eq(trunk, 0)
+	Check.eq(hollow, 0)
+	Check.eq(bole >= 3, true, tostring(bole))
+	Check.eq(reach, 1)
+	Check.eq(crow, 1)
+	Check.eq(highlights, 0)
+	Check.eq(mesh, 0)
+	Check.eq(humanoids, 0)
+	Check.eq(life, 3)
+	Check.eq(lights, shop:GetAttribute("KitAfterLights"))
+	Check.eq(particles <= TownLook.VFX_MAX_PARTICLES, true, tostring(particles))
+	Check.eq(kitParts > 0, true)
+	local builder = fs.readFile("src/server/TownBuilder.luau")
+	local _, hooks = string.gsub(builder, "TownKits.applyAll", "")
+	Check.eq(hooks, 1)
 end)
