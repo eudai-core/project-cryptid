@@ -38,6 +38,17 @@ local MAGIC_SKIP = {
 	"CryptidModels.luau",
 }
 
+-- TODO(#20): replace with a named constant after #14 merges, then remove this entry
+-- https://github.com/eudai-core/project-cryptid/issues/20
+type MagicAllow = { path: string, line: number, value: number }
+local MAGIC_ALLOWLIST: { MagicAllow } = {
+	{
+		path = "src/shared/Logic/Schema.luau",
+		line = 620,
+		value = 10000000,
+	},
+}
+
 local KEY_FUNCTIONS = {
 	key = true,
 	profileKey = true,
@@ -467,6 +478,15 @@ end
 local function magicSkipped(path: string): boolean
 	for _, piece in MAGIC_SKIP do
 		if string.find(path, piece, 1, true) ~= nil then
+			return true
+		end
+	end
+	return false
+end
+
+local function magicAllowed(path: string, line: number, value: number): boolean
+	for _, entry in MAGIC_ALLOWLIST do
+		if entry.path == path and entry.line == line and entry.value == value then
 			return true
 		end
 	end
@@ -1276,13 +1296,17 @@ local function check(files: { [string]: string }): { Finding }
 					end
 					local prefix = string.sub(masked, lineStart, startAt - 1)
 					local assigned = string.match(prefix, "[%w_]+%s*=%s*$") ~= nil
-					if value >= MAGIC_ANY_MIN or (assigned and value >= MAGIC_ASSIGN_MIN) then
+					local line = lineOf(source, startAt)
+					if
+						(value >= MAGIC_ANY_MIN or (assigned and value >= MAGIC_ASSIGN_MIN))
+						and not magicAllowed(path, line, value)
+					then
 						addFinding(
 							findings,
 							seen,
 							"magic_number",
 							path,
-							lineOf(source, startAt),
+							line,
 							"integer " .. tostring(value) .. " belongs in Config"
 						)
 					end
