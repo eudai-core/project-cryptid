@@ -98,7 +98,7 @@ end
 
 local function runestoneAt(model: Model, position: Vector3, colorToken: string)
 	local cf = CFrame.lookAt(position, Vector3.new(0, position.Y, 0))
-	part(model, "Runestone", Vector3.new(1.15, 2.3, 0.42), cf, "altar", "Stone", false)
+	part(model, "Runestone", Vector3.new(1.15, 2.3, 0.42), cf, UITheme.materials.altar, "Stone", false)
 	neonPart(model, "RuneMark", Vector3.new(0.55, 1.15, 0.08), cf * CFrame.new(0, 0.1, -0.24), colorToken, "rune")
 end
 

@@ -11,6 +11,58 @@ local Town = require("../src/shared/Config/Town")
 local TownLook = require("../src/shared/Config/TownLook")
 local UITheme = require("../src/shared/UITheme")
 
+local ENUM_MATERIAL = {
+	"Plastic",
+	"SmoothPlastic",
+	"Neon",
+	"Wood",
+	"WoodPlanks",
+	"Marble",
+	"Basalt",
+	"Slate",
+	"CrackedLava",
+	"Concrete",
+	"Limestone",
+	"Granite",
+	"Pavement",
+	"Brick",
+	"Pebble",
+	"Cobblestone",
+	"Rock",
+	"Sandstone",
+	"CorrodedMetal",
+	"DiamondPlate",
+	"Foil",
+	"Metal",
+	"Grass",
+	"LeafyGrass",
+	"Sand",
+	"Fabric",
+	"Snow",
+	"Mud",
+	"Ground",
+	"Asphalt",
+	"Salt",
+	"Ice",
+	"Glacier",
+	"Glass",
+	"ForceField",
+	"Air",
+	"Water",
+	"Cardboard",
+	"Carpet",
+	"CeramicTiles",
+	"ClayRoofTiles",
+	"RoofShingles",
+	"Leather",
+	"Plaster",
+	"Rubber",
+}
+local VALID_MATERIAL = {}
+for _, name in ENUM_MATERIAL do
+	VALID_MATERIAL[name] = true
+end
+
 local REQUIRED_SHOPS = { "RuneheartApothecary", "HowlingHorn", "VeilAndFate", "DuskAndDial" }
 local REQUIRED_PORTALS = { "WhisperingWoods", "SunkenMarsh", "BoneQuarry" }
 local REQUIRED_SIGNS = {
@@ -220,6 +272,9 @@ local function installRoblox(): any
 			__index = function(self, enumName)
 				local bucket = setmetatable({}, {
 					__index = function(items, itemName)
+						if enumName == "Material" and VALID_MATERIAL[itemName] ~= true then
+							error(tostring(itemName) .. " is not a valid member of Enum.Material", 2)
+						end
 						local item = { Name = itemName, EnumType = enumName, Value = 0 }
 						rawset(items, itemName, item)
 						return item
@@ -644,4 +699,43 @@ Check.test("hollowmere is the mythic plaza and neon stays on flames portals rune
 		end
 	end
 	Check.eq(crows, TownLook.CROW_COUNT)
+end)
+
+Check.test("every town material string is a real Enum.Material", function()
+	Check.eq(#ENUM_MATERIAL, 45)
+	Check.eq(VALID_MATERIAL.Slate, true)
+	Check.eq(VALID_MATERIAL.Basalt, true)
+	Check.eq(VALID_MATERIAL.altar, nil)
+	local configured = 0
+	for token, name in UITheme.materials do
+		configured += 1
+		Check.eq(type(name), "string", tostring(token))
+		Check.eq(VALID_MATERIAL[name] == true, true, tostring(token) .. " -> " .. tostring(name))
+	end
+	Check.eq(configured > 0, true)
+	local builder = fs.readFile("src/server/TownBuilder.luau")
+	for token, _name in UITheme.materials do
+		if VALID_MATERIAL[token] ~= true then
+			Check.eq(
+				string.find(builder, '"' .. token .. '"', 1, true),
+				nil,
+				"TownBuilder quotes material key " .. token
+			)
+		end
+	end
+	local root = townRoot()
+	local used = 0
+	for _, inst in descendants(root) do
+		if inst.ClassName ~= "Part" then
+			continue
+		end
+		local mat = materialName(inst)
+		if mat == nil then
+			continue
+		end
+		used += 1
+		Check.eq(VALID_MATERIAL[mat] == true, true, tostring(inst.Name) .. " " .. mat)
+	end
+	Check.eq(used > 0, true)
+	Check.eq(used <= countClass(root, "Part"), true)
 end)
