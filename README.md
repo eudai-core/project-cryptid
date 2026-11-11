@@ -105,10 +105,13 @@ In Studio, connect with the Rojo plugin.
 
 ```bash
 selene src
-stylua --check src
+stylua --check src tools/rbx_check
 lune run tests/run.luau
+lune run tools/rbx_check
 ```
 
 Lune runs the pure-logic tests (cash format, income, onboarding, schema, session lock, plot ring, assignment, migration, the Pale Pedlar, the playtest watchdog budget, the ledger against the in-memory DataStore, offline haul, the Nightly Offering, and the Offering Bowl). It does not need Studio. Studio steps are in [`docs/spec-01.md`](docs/spec-01.md), [`docs/spec-02.md`](docs/spec-02.md), and [`docs/spec-03.md`](docs/spec-03.md).
+
+`lune run tools/rbx_check` is a static, offline pass over `src`: server-side remote checks, no client cash or shop rolls, no yields on Heartbeat-style callbacks or in `*.hot.luau`, no allocation in `*.hot.luau`, DataStore keys within 50 characters, deprecated APIs, `wait()`, `Instance.new` with the parent in the constructor, and gameplay integers that belong in Config. It does not call the network. A failed check exits non-zero. `lune run tools/rbx_check --self-test` checks the rules against built-in samples. The MIT notice for the adapted runner is in [`tools/rbx_check/LICENSE-THIRDPARTY`](tools/rbx_check/LICENSE-THIRDPARTY).
 
 `selene.toml` sets `std = "roblox"`. `stylua.toml` is the formatter config.
