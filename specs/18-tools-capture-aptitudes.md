@@ -1,8 +1,8 @@
 # Spec 18: Tools, capture twists, and aptitudes
 
-**Status:** Draft v1 (11 Nov 2026). Design note only. This file does not change `src/`.
+**Status:** Draft v1.1 (11 Nov 2026). Design note only. This file does not change `src/`.
 **Owner:** Growth Strategist tunes every number marked **PROPOSAL**. Art Director picks the Veil Lamp beam. Systems Architect builds the PRs below.
-**Reads with:** [spec 17](17-pedlar-supplies.md) (shop, prices, policy, save version). Spec 15 §5 and §10, spec 14 §1, spec 16 §7 and §8, spec 01 B8, spec 09 §3. Picture: [art/concepts/v3-tools.jpg](../art/concepts/v3-tools.jpg).
+**Reads with:** [spec 17](17-pedlar-supplies.md) (shop, prices, policy, expeditions, save version). Spec 15 §5 and §10, spec 14 §1 and §3, spec 16 §7 and §8, spec 01 B8, spec 06, spec 09 §3 and §9.4, spec 11 §4.2, spec 12 §0 and §7. Picture: [art/concepts/v3-tools.jpg](../art/concepts/v3-tools.jpg). Research: [2026-11-roblox-retention-monetisation-research.md](research/2026-11-roblox-retention-monetisation-research.md). Where that note marks **[A]**, this spec uses the cited config or spec instead.
 
 ## Goal
 
@@ -35,6 +35,12 @@ Beam colours match spec 15 §5 and the concept sheet. Stack is 1. Duration is pe
 
 **Where the lamp sits.** It is an information tool beside L3, not a power rung and not a replacement for L3. Order on the counter: L1, L2, L3, Veil Lamp, L4, L5. Buying it never raises catch chance (director ruling 14: no catch-chance boosts).
 
+**Aligned with the research (row 3).** The lamp stays information only, the same class as sealed `h3` Keen Eye (audit row 8). Spawns exist with the lamp off. Spec 15 §10 conditions stay the Bestiary text. The lamp does not create a spawn, change a weight, change hold time (that is L2), or change bind range (that is L4).
+
+The research's cone (30°), duty cycle (6 s on / 12 s off), and four cash radii (20 / 28 / 36 / 44 studs, priced as 15 / 60 / 180 minutes of income) are **[A]**. They are not in config, and this note does not add tiers. One lamp. Its reveal distance is `Economy.WILD_SPAWN_STUDS` (20), the distance the tutorial cryptid already uses. Hidebehind's track, the Fresno freeze, and the Dover perch are the twists in the table below. The lamp shows the tell. The L1 hold still completes without it.
+
+No Robux skin. A research price for a beam colour is **PENDING EUDAI** and is not a config value ([spec 17](17-pedlar-supplies.md)). The stall does not sell it.
+
 **Details, every tool.** Before and after hold, before and after range, then the line "Catch odds unchanged. Rarity weights unchanged. Variant odds unchanged." Button label **Details** (spec 01 B8, spec 16 §8.5).
 
 **Pull-forward.** Only L1 is in code as a tool, so only L1 is at launch. L2–L5 and the Veil Lamp stay Update 1, which is also spec 15 §9. The effect numbers above are the spec those PRs implement. They are not sold early under a tooltip with no server check.
@@ -66,7 +72,54 @@ On top of hold-to-bind. One twist per launch species (spec 09 §3). Ids are the 
 | Jersey Devil | `epic_01` | Epic | Flies a loop (hold rejected) and lands. | L5 halves the wait until the next landing. The landing is still at least 4 s. | Landing lasts **4 s** inside 12. |
 | Loch Ness Serpent | `epic_02` | Epic | On the surface it drifts out to **14 studs**. A calm at the end brings it inside 12. | L4's tether holds it inside 16 for the whole surface, so the hold can start immediately. | Calm lasts **5 s** inside 12, after the drift. Spec 15's 30 s rise is the whole surface, not the calm. |
 
-Code incomes, unchanged by this note: Commons 2 / 3 / 4 / 5; `uncommon_01` and `uncommon_02` and `loveland_frogman` are 15 (spec 09 writes Jackalope $12/s and Dover Demon $14/s; the file on this branch says 15); `snallygaster` uses `Return.SNALLYGASTER_INCOME` (16); `flatwoods_monster` uses `Return.FLATWOODS_INCOME` (40); `rare_01` / `rare_02` are 45; `epic_01` / `epic_02` are 160. Spec 09's $150/s and $170/s Epics are not what `Species.luau` stores. Do not "fix" that in a tools PR.
+## Hollow Convergence and the Moon Almanac
+
+Research row 1 asked for a free weekly gathering and a calendar. Its Saturday 17:00 UTC slot, 30-minute length, luck ×2, spawn change (45 s → 30 s), and max-alive change (3 → 4) are **[A]**. They are not added. This note does not add a luck boost.
+
+**When.** The weekly window already written is **Saturday 18:00–20:00 UTC** (spec 09 §9.4, spec 12 §7.1). Hollow Convergence is that window, under this name. It is Update 1, with the calendar. Launch ships Fog Night only (spec 12 §0), and Fog Night is atmosphere only (director ruling 15).
+
+**What it does.** It does not change rarity weights, spawn interval, or max alive. The shared goal during the window, once the rite exists, is the Hollow Rite (spec 11 §4.2, Update 1): server totals Ember 25, Flame 40, Inferno 60, in a 10-minute rite. Rewards are 5, 10, and 15 minutes of each contributor's own pre-2x income. Inferno also grants the Rite Candle once per tier per week. A player needs 3 catches. AFK players get nothing. Assists count one half. Those rewards are the rite's, not a new Convergence multiplier. Spec 12's rule stands: event income stays out of Tithe.
+
+Spec 09 §9.4 still says Rift Tide carries free event luck ×1.5. This note does not use that line. Open question 8 asks Grok Bot which sentence wins. Nobody can buy a start, a restock, or a longer window (spec 12: event starts other than the Blood Moon gift are not sold, and the gift does not start this hour).
+
+**Moon Almanac.** The 7-day board spec 09 §9.4 and spec 12 §7.1 already call for. It shows the schedule in the player's local time (`os.date`). No push notification (spec 12 §7.1).
+
+| Row on the board | Time | What the player reads |
+|---|---|---|
+| Hollow Convergence | Saturday 18:00–20:00 UTC | The weekly gathering. Next Saturday is listed if this one was missed. |
+| Witching Hour | 19:00–20:00 UTC and 01:00–02:00 UTC daily | Update 1. Spec 12 §7.1. |
+| Blood Moon Night | First Friday, 19:00–21:00 UTC | Update 1. Spec 09 §9.4. |
+| Fog Night | Whenever the director rolls it | Launch. Atmosphere only (ruling 15). Odds stay the spec 12 §3 table, behind **Details**. |
+
+The only clock is the real time until the next published start, in the same spirit as spec 06's "Next offering in …". Copy does not say "last chance", "only", "expires", or "hurry". Missing the hour has no penalty. The next row is already on the board. No cash catch-up. The Pedlar does not sell a seat ([spec 17](17-pedlar-supplies.md)).
+
+## Daily Contracts
+
+Research row 5 asked for three daily marks and no missed-day penalty. Its pool size, its 5-of-7 candle, and its "Contract Seal" are **[A]**. Spec 06 already has the daily gift, and it pauses instead of resetting. Contracts sit beside that ladder. They do not add a streak.
+
+**Gate.** `Return.GATE_STEP` (8) and `Return.BUTTON_PLAY_SECONDS` (3 minutes), the Offering's gate. The panel does not open over a bind, reveal, haul, or rite (spec 16 §8.7). No shop button and no Robux line (spec 06).
+
+**Day.** `floor(os.time() / 86400)`, the Offering's UTC day (spec 06). Three marks, all completable with what the server can already check:
+
+| Mark | Check | Why it is always possible |
+|---|---|---|
+| Finish one hold | Server accepts a complete-hold | L1 and the tutorial Hodag exist today. Later species use the same hold. |
+| Place one cryptid | A pad gains an instance id from inventory | Spec 01 already places from inventory. |
+| Come home | The player enters their own lair threshold once | Spec 02 return. If a Fog Night is active, witnessing it satisfies this mark instead (spec 12). It is never required. |
+
+**Pay.** Minutes of pre-2x income, with the floors already in `Return.STEPS`:
+
+| Marks done today | Minutes | Floor | Source |
+|---|---|---|---|
+| 1 | 5 | $250 | `Return.STEPS` step 1 |
+| 2 | 10 | $500 | `Return.STEPS` step 2 |
+| 3 | 15 | $1,000 | `Return.STEPS` step 4 |
+
+At the post-rite **$17.50/s** (spec 17), the first mark is 5 × 60 × 17.50 = **$5,250** before the floor, the same worked example as spec 06 day 1. Cash only. No Essence, no token, no reading, no crate.
+
+**Missed day.** Tomorrow's three marks are new. Nothing resets to zero, and nothing is labelled lost. Unclaimed contract cash waits. It is not deleted at midnight. The Offering ladder is a separate counter and does not move. There is no 5-of-7 reward and no candle on this panel. The Rite Candle stays the Inferno grant in spec 11 §4.2. No "Revive Streak" (spec 06, spec 09 §8.2).
+
+Roster incomes for the twist table, unchanged by this note: Commons 2 / 3 / 4 / 5; `uncommon_01` and `uncommon_02` and `loveland_frogman` are 15 (spec 09 writes Jackalope $12/s and Dover Demon $14/s; the file on this branch says 15); `snallygaster` uses `Return.SNALLYGASTER_INCOME` (16); `flatwoods_monster` uses `Return.FLATWOODS_INCOME` (40); `rare_01` / `rare_02` are 45; `epic_01` / `epic_02` are 160. Spec 09's $150/s and $170/s Epics are not what `Species.luau` stores. Do not "fix" that in a tools PR.
 
 ## Aptitudes
 
@@ -93,7 +146,9 @@ Spec 14 §1 recommended Courage, Instinct, and Attunement at 0–10, and said th
 
 **Roll, on a free-source obtain** (wild, starter, rift belt, offering, earned reading, expedition). Each aptitude is an integer from 0 through 10, uniform, independent. Each value has weight 1. Details shows **1/11**, not a rounded percent that fails to sum. The trait roll is a separate 0–99 draw against the table above. Show that table in the same Details view (spec 01 B8, spec 16 §8.2). The roll is earned, not sold. We still show it.
 
-**Paid grants** (Relics bundles, including the Starter Pack's Hidebehind) use fixed disclosed values, written on the card before purchase (spec 16 §8.4): Courage **5**, Instinct **5**, Attunement **5**, trait **Marshwise**. No reroll, no trait luck, no cash item that re-rolls a stat. The Pedlar no longer sells cryptids, so it does not sell these rolls.
+The research's weighted row (0 through 10 as 3, 5, 8, 11, 14, 16, 15, 12, 8, 6, 2) and its "Prime" mark (total ≥ 24, about 1.77%) are **[A]**. No config defines that table. This note keeps the uniform 1/11 roll. It does not add a Prime mark.
+
+**Paid grants** (Relics bundles, including the Starter Pack's Hidebehind) use fixed disclosed values, written on the Dossier before purchase (spec 16 §8.4): Courage **5**, Instinct **5**, Attunement **5**, trait **Marshwise**. No reroll, no trait luck, no cash item that re-rolls a stat. The Pedlar does not sell these rolls ([spec 17](17-pedlar-supplies.md)). Bound Rite prices stay in spec 09. Ruling 5 leaves them **PENDING EUDAI**. This note does not copy a Robux figure into a field.
 
 **Backfill.** Seeded from the instance id so a second migration cannot reroll. FNV-1a 32-bit, offset basis 2166136261, prime 16777619, over the bytes of the salt and then the instance id:
 
@@ -114,7 +169,7 @@ Same bump as [spec 17](17-pedlar-supplies.md). This branch is `Save.DATA_VERSION
 
 Spec 16 rule numbers: §7.2, §7.9, §8.1, §8.2, §8.5, §8.9. Targets are `UITheme.shape.touchPx` (44).
 
-**Stat Card (§8.2).** After the true-tier reveal. Portrait in a `ViewportFrame` of the scripted model. Name, real rarity chip (`UiFactory.rarityChip` and `UITheme.rarity`), base income and placed income as numbers, source. Three bars labelled Courage, Instinct, Attunement with the text `7/10`. Trait name and its one-line effect. If Instinct's duration effect is not live, the Instinct line reads **"Expeditions are not open yet."** Primary button **Bind / Place**. **Details** (the word) opens the 1/11 rows and the trait table. Phone: portrait, name, chip, income, and Bind first; Details holds the bars. No Robux, no View Item, no offer card. Spec 14's Compare / Keep / Bond / mastery are not on this card.
+**Dossier, which is the Stat Card (§8.2).** Research row 4's dossier is this card, not a second screen. It opens after the true-tier reveal. Portrait in a `ViewportFrame` of the scripted model. Name, real rarity chip (`UiFactory.rarityChip` and `UITheme.rarity`), base income and placed income as numbers, source. Three bars labelled Courage, Instinct, Attunement with the text `7/10`. Trait name and its one-line effect. If Instinct's duration effect is not live, the Instinct line reads **"Expeditions are not open yet."** Primary button **Bind / Place**. **Details** (the word) opens the 1/11 rows and the trait table. Phone: portrait, name, chip, income, and Bind first; Details holds the bars. No Robux, no View Item, no offer card, no reroll button. Spec 14's Compare / Keep / Bond / mastery are not on this card. Hodag at Courage 10, before the altar, is $5/s × 1.10 = **$5.50/s**. Tithe uses $5/s.
 
 **Tool HUD.** Equipped tool name, beam colour, current hold seconds, current range studs. 44 px. No timer that is not a real phase. During the 3 s hold, the beam and the rune follow §8.1 and stop at the true tier.
 
@@ -127,19 +182,22 @@ After the spec 17 PRs that stop cryptid sales and land version 11. Still not ahe
 1. **Tool config.** A frozen module of the six rows: id, price, hold multiplier, range, flags. L2–L5 and the lamp stay `forSale = false` until their effect PR. Test: every `forSale` row has a non-empty effect, and none of them write an odds field.
 2. **L2–L5 and the lamp (Update 1).** Server applies hold, range, tether, compass target, and variant display from the equipped id. Compass and lamp are read-only. Test: restricted distance rejects the hold; L1 still passes the 12-stud, 3 s case; odds tables are byte-identical with the tool equipped and unequipped.
 3. **Phases (Update 1).** One pure function from species id + server clock → phase. Test, per row above: a bindable phase of at least 4 s exists inside 12 studs for `rusty_lantern`, and the named reject phase returns false. Tutorial Hodag never enters the charge phase.
-4. **Aptitudes.** Multiply Courage into `Income.perSecond` only. Test: Courage 10 is +10% and not more; Courage 0 matches today's income; `tithePerSecond` ignores Courage; the FNV fill is stable for a fixed id; a second migrate does not change it; a `source = "pedlar"` record keeps its species id.
+4. **Aptitudes and the Dossier.** Multiply Courage into `Income.perSecond` only. Test: Courage 10 is +10% and not more; Courage 0 matches today's income; `tithePerSecond` ignores Courage; the FNV fill is stable for a fixed id; a second migrate does not change it; a `source = "pedlar"` record keeps its species id. A paid grant writes 5 / 5 / 5 and `marshwise` and has no reroll remote.
+5. **Almanac and Contracts (Update 1 for Convergence; Contracts can follow the Offering).** The board lists Saturday 18:00–20:00 UTC and does not change a rarity table while the hour is active. A missed UTC day leaves contract cash unclaimed and does not move `daily.step`. No new `Analytics.CUSTOM` name is added in these PRs.
 
 ## QA
 
 1. L1 catch of the tutorial Hodag still matches spec 01 (3 s, 12 studs, no charge).
 2. With tools forced on in Studio, each species in the table can be caught with only L1 by waiting for the slow phase, and the counter-tool shortens that wait. A client that claims a shorter hold than the server is rejected.
 3. Equipping L4 does not change a rarity roll (compare two forced spawns, same seed, tool on and off).
-4. Stat Card shows the three numbers, the trait, and Details at 1/11. Tithe on the plaque does not move when Courage changes and the altar and pads do not.
+4. The Dossier shows the three numbers, the trait, and Details at 1/11. Tithe on the plaque does not move when Courage changes and the altar and pads do not. There is no reroll control.
 5. A save from before the migration loads the same Pedlar species, with aptitudes filled, cash unchanged.
 6. Phone width: Bind and Details are at least 44 px. No shop card on the catch.
-7. Veil Lamp, if previewed, uses a colour the Art Director has signed, and it is not one of the five tool beams.
+7. Veil Lamp, if previewed, uses a colour the Art Director has signed, and it is not one of the five tool beams. With the lamp off, the same spawn is still there, and the rarity roll matches a run with the lamp on.
+8. The Almanac shows the next Saturday 18:00–20:00 UTC in local time. Copy has no "last chance". Skipping the hour does not charge cash and does not change Sunday's board.
+9. Three contract marks can be finished with a hold, a place, and a return home. Skipping a UTC day leaves the Offering step where it was. Unclaimed contract cash is still there the next day.
 
-## Open questions for the director
+## Open questions for Eudai and Grok Bot
 
 1. L2 and skill `h1` are the same −10%. This note takes the better of the two and does not add them. Confirm, or say they stack under the 2.25 s floor.
 2. Spec 15 says the chains are "harder to steal." This note leaves that out, so cash does not buy a PvP edge. Confirm.
@@ -148,3 +206,7 @@ After the spec 17 PRs that stop cryptid sales and land version 11. Still not ahe
 5. Backfill gives old cryptids a real Courage, so their placed income can rise by up to 10%. The first supplies ruling said a Pedlar cryptid already in a save is unaffected. Confirm the income may move, or say pre-migration cryptids are stored at Courage 0 so the rate does not jump.
 6. Spec 14 said these three stats do not change pad income. This ruling puts the whole +10% on Courage and leaves Instinct and Attunement off income. Confirm that split.
 7. Twist timings (the 4 s and 5 s windows) are proposals. They wait on a wild spawner for all 12 species, which is not in code.
+8. Hollow Convergence uses Saturday 18:00–20:00 UTC and adds no luck. Spec 09 §9.4 still gives Rift Tide free event luck ×1.5. Which sentence stands?
+9. Aptitude rolls stay uniform, 1/11 each. The research's weighted table and Prime mark are not used. Confirm.
+10. Daily Contracts pay the Offering's 5, 10, and 15 minute steps and do not add a 5-of-7 candle. Confirm.
+11. The v1.1 analytics list is frozen: `OnboardingSkipped`, `OnboardingStepTime`, `SessionEnded`, `PlayerReturned`, `LedgerLoadFailed`, `PedlarOddsViewed`, `CatchCompleted`, `PlotAssigned` (`Analytics.CUSTOM_ORDER`, cap 15). This note adds none. May any of these be added later: a Convergence witness, an Almanac open, a contract claim, an expedition send, a Dossier open?
