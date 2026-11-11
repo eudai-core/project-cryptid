@@ -76,34 +76,35 @@ function GoalBanner.mount(parent: Instance, isReduced: () -> boolean, onAction: 
 
 	local api = {}
 
-	function api.layout(isMobile: boolean, plaqueHeight: number)
-		local width = if isMobile then 360 else 520
-		local height = if isMobile then 156 else 168
-		frame.Size = UDim2.fromOffset(width, height)
-		local top = UITheme.shape.plaqueTopPx + plaqueHeight + UITheme.shape.plaqueGapPx
-		target = UDim2.new(0.5, 0, 0, top)
+	function api.layout(isMobile: boolean): number
+		local banner = UITheme.shape.goalBanner
+		local metrics = if isMobile then banner.mobile else banner.desktop
+		frame.Size = UDim2.fromOffset(metrics.w, metrics.h)
+		target = UDim2.new(0.5, 0, 0, banner.topPx)
 		if not entered then
 			entered = true
 			place(true)
 		else
 			frame.Position = target
 		end
-		local titleSize = if isMobile then UITheme.fonts.display.mobile else UITheme.fonts.display.desktop
+		local titleSize = if isMobile then banner.titleMobile else banner.titleDesktop
 		local bodySize = if isMobile then UITheme.fonts.body.mobile else UITheme.fonts.body.desktop
-		title.Position = UDim2.fromOffset(16, 28)
-		title.Size = UDim2.new(1, -32, 0, titleSize * 2 + 4)
-		progress.Position = UDim2.fromOffset(16, 28 + titleSize * 2)
-		progress.Size = UDim2.new(1, -32, 0, bodySize + 6)
+		local pad = banner.pad
+		title.Position = UDim2.fromOffset(pad, pad)
+		title.Size = UDim2.new(1, -(pad * 2 + 108), 0, titleSize * 2)
+		progress.Position = UDim2.fromOffset(pad, pad + titleSize * 2)
+		progress.Size = UDim2.new(1, -pad * 2, 0, bodySize + 2)
 		action.AnchorPoint = Vector2.new(0.5, 1)
-		action.Position = UDim2.new(0.5, 0, 1, -10)
-		action.Size = UDim2.fromOffset(if isMobile then 220 else 240, 36)
+		action.Position = UDim2.new(0.5, 0, 1, -pad)
+		action.Size = UDim2.fromOffset(if isMobile then 180 else 200, banner.buttonH)
 		skip.AnchorPoint = Vector2.new(1, 0)
-		skip.Position = UDim2.new(1, -8, 0, 4)
-		skip.Size = UDim2.fromOffset(120, 22)
+		skip.Position = UDim2.new(1, -pad, 0, 2)
+		skip.Size = UDim2.fromOffset(108, UITheme.text.minSize + 4)
 		ThemeBind.apply(title, "display", titleSize)
 		ThemeBind.apply(progress, "body", bodySize)
 		ThemeBind.apply(action, "body", bodySize)
 		ThemeBind.apply(skip, "body", UITheme.text.minSize)
+		return metrics.h
 	end
 
 	function api.isBusy(): boolean
@@ -164,7 +165,7 @@ function GoalBanner.mount(parent: Instance, isReduced: () -> boolean, onAction: 
 	end)
 	skip.Activated:Connect(onSkip)
 
-	api.layout(false, UITheme.shape.plaqueSize.desktop.h)
+	api.layout(false)
 	return api
 end
 

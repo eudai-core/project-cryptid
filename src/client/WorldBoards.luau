@@ -169,8 +169,13 @@ local function paintRift(part: BasePart, snapshot: any)
 	board.gui.Enabled = true
 	board.name.Text = tostring(entry.displayName)
 	board.name.TextColor3 = UITheme.color("Bone")
-	board.line.Text = NumberFormat.formatCash(entry.price or 0)
-	board.line.TextColor3 = UITheme.color("GoldBright")
+	if type(entry.hint) == "string" and entry.hint ~= "" then
+		board.line.Text = entry.hint
+		board.line.TextColor3 = UITheme.color("BoneDim")
+	else
+		board.line.Text = NumberFormat.formatCash(entry.price or 0)
+		board.line.TextColor3 = UITheme.color("GoldBright")
+	end
 end
 
 function WorldBoards.refresh(snapshot: any)

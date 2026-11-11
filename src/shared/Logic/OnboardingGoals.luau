@@ -8,6 +8,12 @@ local function import(lunePath: string, getRoblox: () -> any): any
 	return require(getRoblox())
 end
 
+local Analytics = import("../Config/Analytics", function()
+	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Analytics")
+end)
+local BoneAltar = import("../Config/BoneAltar", function()
+	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("BoneAltar")
+end)
 local Economy = import("../Config/Economy", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Economy")
 end)
@@ -50,20 +56,21 @@ local function goalMet(profile: any, step: number): boolean
 	elseif step == 2 then
 		return ProfileQuery.placedSpecies(profile, Species.RIFT_1_ID, 2)
 	elseif step == 3 then
-		return profile.padsUnlocked >= 3
+		return ProfileQuery.hasSource(profile, "wild")
 	elseif step == 4 then
-		return ProfileQuery.placedSpecies(profile, Species.RIFT_2_ID, 3)
+		return profile.padsUnlocked >= Onboarding.HODAG_PAD and ProfileQuery.wildPlaced(profile)
 	elseif step == 5 then
 		return profile.upgrades.boneAltar >= 1
 	elseif step == 6 then
-		return ProfileQuery.hasSource(profile, "wild")
+		return profile.padsUnlocked >= Onboarding.RIFT_2_PAD
 	elseif step == 7 then
-		return profile.padsUnlocked >= 4 and ProfileQuery.wildPlaced(profile)
+		return ProfileQuery.placedSpecies(profile, Species.RIFT_2_ID, Onboarding.RIFT_2_PAD)
 	end
 	return false
 end
 
-function OnboardingGoals.advance(profile: any): boolean
+function OnboardingGoals.advance(profile: any): (boolean, { any })
+	local fromStep = profile.onboarding.step
 	local changed = false
 	local guard = 0
 	while profile.onboarding.step < 8 and goalMet(profile, profile.onboarding.step) do
@@ -74,7 +81,8 @@ function OnboardingGoals.advance(profile: any): boolean
 			break
 		end
 	end
-	return changed
+	local events = Analytics.eventsForTransition(fromStep, profile.onboarding.step, false)
+	return changed, events
 end
 
 local function baseView(step: number): any
@@ -93,6 +101,18 @@ local function baseView(step: number): any
 		showArrow = step < 8,
 		guide = "none",
 	}
+end
+
+local function emptyPad(profile: any, preferred: number): number
+	if preferred >= 1 and preferred <= profile.padsUnlocked and ProfileQuery.padAt(profile, preferred) == nil then
+		return preferred
+	end
+	for index = 1, profile.padsUnlocked do
+		if ProfileQuery.padAt(profile, index) == nil then
+			return index
+		end
+	end
+	return preferred
 end
 
 local function setCostAction(
@@ -141,42 +161,22 @@ function OnboardingGoals.view(profile: any): any
 			view.guide = "pad:2"
 		end
 	elseif step == 3 then
-		setCostAction(view, profile, "unlockPad", 3, 0, Economy.PAD_COST[3], "Carve")
-		view.guide = "pad:3"
-	elseif step == 4 then
-		local species = Species.get(Species.RIFT_2_ID)
-		local owned = ProfileQuery.instanceOfSpecies(profile, Species.RIFT_2_ID)
-		if owned == nil then
-			setCostAction(view, profile, "buyRift", 3, 2, species.riftPrice, "Claim")
-			view.guide = "rift:2"
-		else
-			view.progressText = "Bind it to circle 3."
-			view.actionKind = "place"
-			view.actionPad = 3
-			view.actionInstanceId = owned
-			view.buttonText = "Bind"
-			view.buttonEnabled = ProfileQuery.padAt(profile, 3) == nil
-			view.guide = "pad:3"
-		end
-	elseif step == 5 then
-		local cost = Economy.ALTAR_COST[1]
-		setCostAction(view, profile, "upgradeAltar", 0, 0, cost, "Raise")
-		view.guide = "altar"
-	elseif step == 6 then
 		view.progressText = Onboarding.CATCH_PROGRESS
 		view.guide = "wild"
-	elseif step == 7 then
+	elseif step == 4 then
 		local wildId = ProfileQuery.instanceOfSource(profile, "wild") or ""
-		if profile.padsUnlocked < 4 then
-			local cost = Economy.PAD_COST[4]
-			setCostAction(view, profile, "unlockPad", 4, 0, cost, "Carve")
+		if profile.padsUnlocked < Onboarding.HODAG_PAD then
+			local cost = Economy.PAD_COST[Onboarding.HODAG_PAD]
+			setCostAction(view, profile, "unlockPad", Onboarding.HODAG_PAD, 0, cost, "Carve")
 			view.progressText = Onboarding.BIND_HINT .. "  " .. moneyPair(profile.cash, cost)
+			view.guide = "pad:" .. tostring(Onboarding.HODAG_PAD)
 		else
+			local pad = emptyPad(profile, Onboarding.HODAG_PAD)
 			view.progressText = Onboarding.PLACE_PROGRESS
 			view.actionKind = "place"
 			view.actionInstanceId = wildId
-			view.actionPad = 4
-			local occupant = ProfileQuery.padAt(profile, 4)
+			view.actionPad = pad
+			local occupant = ProfileQuery.padAt(profile, pad)
 			if occupant == nil and wildId ~= "" then
 				view.buttonText = "Bind"
 				view.buttonEnabled = true
@@ -184,8 +184,34 @@ function OnboardingGoals.view(profile: any): any
 				view.buttonText = UITheme.disabledMark .. " Need an empty circle"
 				view.buttonEnabled = false
 			end
+			view.guide = "pad:" .. tostring(pad)
 		end
-		view.guide = "pad:4"
+	elseif step == 5 then
+		local cost = BoneAltar.cost(1, BoneAltar.rebirths(profile)) or Economy.ALTAR_COST[1]
+		setCostAction(view, profile, "upgradeAltar", 0, 0, cost, "Raise")
+		view.guide = "altar"
+	elseif step == 6 then
+		local cost = Economy.PAD_COST[Onboarding.RIFT_2_PAD]
+		setCostAction(view, profile, "unlockPad", Onboarding.RIFT_2_PAD, 0, cost, "Carve")
+		view.guide = "pad:" .. tostring(Onboarding.RIFT_2_PAD)
+	elseif step == 7 then
+		local species = Species.get(Species.RIFT_2_ID)
+		local owned = ProfileQuery.instanceOfSpecies(profile, Species.RIFT_2_ID)
+		if owned == nil then
+			setCostAction(view, profile, "buyRift", Onboarding.RIFT_2_PAD, 2, species.riftPrice, "Claim")
+			if profile.padsUnlocked < Onboarding.RIFT_2_PAD then
+				view.progressText = Onboarding.NEEDS_CIRCLE .. "  " .. view.progressText
+			end
+			view.guide = "rift:2"
+		else
+			view.progressText = "Bind it to circle " .. tostring(Onboarding.RIFT_2_PAD) .. "."
+			view.actionKind = "place"
+			view.actionPad = Onboarding.RIFT_2_PAD
+			view.actionInstanceId = owned
+			view.buttonText = "Bind"
+			view.buttonEnabled = ProfileQuery.padAt(profile, Onboarding.RIFT_2_PAD) == nil
+			view.guide = "pad:" .. tostring(Onboarding.RIFT_2_PAD)
+		end
 	else
 		view.progressText = moneyPair(profile.cash, Economy.WARD_CANDLES_COST)
 		view.actionKind = "none"

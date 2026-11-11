@@ -382,7 +382,7 @@ Check.test("the rites circle text stays inside the fonts we draw", function()
 end)
 
 Check.test("QA16 owned rites survive a mock rejoin", function()
-	Check.eq(Save.DATA_VERSION, 6)
+	Check.eq(Save.DATA_VERSION, 7)
 	local legacy = Schema.newProfile(10, "starter")
 	legacy.dataVersion = 4
 	legacy.skills = nil
