@@ -406,9 +406,17 @@ end)
 
 Check.test("an unknown id builds a generic silhouette from config", function()
 	local shop = CryptidModels.recipe("uncommon_01")
-	Check.eq(shop.family, "winged")
+	Check.eq(shop.family, "beast")
 	Check.eq(shop.rarity, "Uncommon")
 	Check.eq(Species.get("uncommon_01").rarity, "Uncommon")
+	Check.eq(Species.get("uncommon_01").displayName, "Jackalope")
+	Check.eq(Species.modelId("uncommon_01"), "jackalope")
+	Check.eq(Species.modelId("uncommon_02"), "dover_demon")
+	Check.eq(Species.modelId("rare_01"), "beast_of_bray_road")
+	Check.eq(Species.modelId("epic_01"), "jersey_devil")
+	Check.eq(Species.modelId("epic_02"), "loch_ness_serpent")
+	Check.eq(Species.modelId("hodag"), "hodag")
+	Check.eq(Species.modelId("loveland_frogman"), "loveland_frogman")
 	local bandToken = UITheme.rarity.Uncommon
 	local sawBand = false
 	for _, part in shop.parts do

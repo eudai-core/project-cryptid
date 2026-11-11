@@ -37,7 +37,7 @@ The bottom-left HUD is unchanged. Return to Lair, then Steady gaze. The slot to 
 
 Each column of odds sums to 100. After the rarity, the species is uniform in that rarity's pool. An empty pool falls back to the next lower rarity that has species and warns. The shop never rolls a mutation.
 
-Price is that species' base income times its rarity's payback. Mothman Hatchling is $60, Fresno Nightcrawler $90, Hidebehind $120, Hodag $150. Placeholders use the rarity seed income, so an Uncommon placeholder is $900 and a Mythic placeholder is $9,000,000. The card shows that price and the creature's real income (`species base × Bone Altar`).
+Price is that species' base income times its rarity's payback. Mothman Hatchling is $60, Fresno Nightcrawler $90, Hidebehind $120, Hodag $150. Higher-rarity shop species keep the rarity seed income, so an Uncommon is $900 and an Epic is $64,000. The Pedlar's Curio is Rare 70 / Epic 30. Legendary and Mythic are not stocked. The card shows that price and the creature's real income (`species base × Bone Altar`).
 
 `RequestPedlarBuy(rotationId, slot)` is refused unless the player is still within 12 studs of the stall, the slot is an integer 1–4, the rotation is the server's current one, the slot is not already bought, the player can pay, and onboarding step is at least 8. The prompt itself opens at 10 studs. The remote is on the same per-second cap and 0.25 second purchase debounce as the other spends. A stale rotation answers "The Pedlar has moved on." and refreshes the snapshot. Before step 8 the stall reads "The Pedlar ignores the unmarked." and the prompt stays off. The shrine uses the same step and reads "The shrine is silent to the unmarked."
 
@@ -83,7 +83,7 @@ The Odds control draws the four columns from the same config the roll uses. The 
 - The Skill Shrine opens a themed panel and does nothing else. Spec 04 replaces that body.
 - Lanternwright, Expedition Board, Bone Broker, and Grimoire Lectern are dressed and shuttered. They have no remotes.
 - The Tarot Table and the Great Rift are empty footprints. The personal rift in each lair is unchanged.
-- Higher-rarity species are placeholders (`uncommon_01` and so on) until the grimoire list exists.
+- Higher-rarity shop ids (`uncommon_01` and so on) keep their ids. Display names are launch-roster cryptids. Legendary and Mythic are not stocked.
 - The Tarot Table footprint is empty. When that spec arrives, cases are earn-only and never sold for Robux.
 - No creature portraits. The card shows the sigil in the rarity colour.
 - No wind, bell, crow, or moon assets.
@@ -98,9 +98,9 @@ The spec owner accepted the build and set the remaining values:
 - v1.2 lighting is the single `UITheme.lighting` table: density 0.18, haze 0.3, offset 0, glare 0, color `#1A1719`, decay `#0B0A0C`, fog 250/1100, brightness 1.5, exposure +0.3, ambient `(60, 55, 52)`, outdoor ambient `(95, 88, 82)`.
 - The home-beam tip is about 122 studs from the town edge, inside fog start 250, so the beam was not brightened. Streaming stays off. The town spawn stays on the solid platform, and the well is off that pad.
 - A buy is refused past 12 studs from the stall. The prompt still opens at 10.
-- Price is that species' income times its rarity payback. Mothman is $60, Fresno $90, Hidebehind $120, Hodag $150. Placeholders use the rarity seed income.
+- Price is that species' income times its rarity payback. Mothman is $60, Fresno $90, Hidebehind $120, Hodag $150. Higher rarities use the rarity seed income.
 - The Skill Shrine stays shut until step 8 and reads "The shrine is silent to the unmarked."
 - The stock RNG stays a server-side xorshift (`rotationId + 9031841` in `ShopSalt`) so Lune and every server share one sequence.
 - Town roads stay 16 studs. Lair approaches stay 14. Cobble stays at y = −1, with the outer ground at y = 0.
 - Bind at once stays a control inside the Pedlar panel. The rites HUD slot stays empty.
-- Placeholder display names still say Placeholder until the grimoire list exists.
+- Shop and species display names do not say Placeholder. Jackalope is the Uncommon on `uncommon_01`.

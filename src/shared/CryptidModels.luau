@@ -220,7 +220,11 @@ end
 function CryptidModels.get(cryptidId: string): Model
 	local real = catalog(ArtAssets.folder(CryptidArt.folders.cryptids))
 	local placeholders = catalog(ArtAssets.folder(CryptidArt.folders.placeholders))
-	local choice = CryptidModels.choose(cryptidId, flags(real), flags(placeholders))
+	local lookedUp = cryptidId
+	if type(cryptidId) == "string" then
+		lookedUp = Species.modelId(cryptidId)
+	end
+	local choice = CryptidModels.choose(lookedUp, flags(real), flags(placeholders))
 	local recipe = CryptidModels.recipe(choice.cryptidId)
 	if choice.warn and CryptidModels.markWarned(choice.cryptidId) then
 		local using = if choice.procedural
