@@ -23,6 +23,9 @@ end)
 local ProfileQuery = import("./ProfileQuery", function()
 	return script.Parent:WaitForChild("ProfileQuery")
 end)
+local SkillEffects = import("./SkillEffects", function()
+	return script.Parent:WaitForChild("SkillEffects")
+end)
 
 local Income = {}
 
@@ -30,20 +33,46 @@ function Income.multiplier(altarLevel: number, l3: boolean?): number
 	return BoneAltar.multiplier(altarLevel, l3 == true)
 end
 
-function Income.contribution(speciesId: string, altarLevel: number, l3: boolean?): number
+function Income.contribution(
+	speciesId: string,
+	altarLevel: number,
+	altarArg: number | boolean | nil,
+	skillIncome: number?
+): number
 	local species = Species.get(speciesId)
 	if species == nil then
 		return 0
 	end
-	return Money.round(species.baseIncome * Income.multiplier(altarLevel, l3 == true))
+	local skill = 0
+	if type(skillIncome) == "number" then
+		skill = skillIncome
+	end
+	local altar
+	if type(altarArg) == "number" then
+		local level = altarLevel
+		if type(level) ~= "number" or level < 0 then
+			level = 0
+		end
+		if level > BoneAltar.MAX_LEVEL then
+			level = BoneAltar.MAX_LEVEL
+		end
+		level = math.floor(level)
+		altar = 1 + altarArg * level
+	else
+		altar = Income.multiplier(altarLevel, altarArg == true)
+	end
+	return Money.round(species.baseIncome * altar * (1 + skill))
 end
 
-local function placed(profile: any, includeRelic: boolean): number
+local function accrue(profile: any, includeRelic: boolean): number
 	local unlocked = profile.padsUnlocked
 	if type(unlocked) ~= "number" then
 		return 0
 	end
-	local base = 0
+	local altar = Income.multiplier(profile.upgrades.boneAltar, BoneAltar.l3Owned(profile))
+	local skill = SkillEffects.skillIncome(profile)
+	local wild = SkillEffects.wildIncome(profile)
+	local total = 0
 	for index = 1, unlocked do
 		if includeRelic or not Monetisation.isRelicPad(index) then
 			local instanceId = ProfileQuery.padAt(profile, index)
@@ -52,21 +81,25 @@ local function placed(profile: any, includeRelic: boolean): number
 				if record ~= nil then
 					local species = Species.get(record.speciesId)
 					if species ~= nil then
-						base += species.baseIncome
+						local factor = 1 + skill
+						if record.source == "wild" then
+							factor += wild
+						end
+						total += species.baseIncome * altar * factor
 					end
 				end
 			end
 		end
 	end
-	return Money.round(base * Income.multiplier(profile.upgrades.boneAltar, BoneAltar.l3Owned(profile)))
+	return Money.round(total)
 end
 
 function Income.perSecond(profile: any): number
-	return placed(profile, true)
+	return accrue(profile, true)
 end
 
 function Income.tithePerSecond(profile: any): number
-	return placed(profile, false)
+	return accrue(profile, false)
 end
 
 return Income

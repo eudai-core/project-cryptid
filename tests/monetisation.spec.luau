@@ -80,7 +80,7 @@ local BANNED = {
 }
 
 Check.test("no product id or catalog price ships enabled", function()
-	Check.eq(Save.DATA_VERSION, 7)
+	Check.eq(Save.DATA_VERSION, 8)
 	local sawBundle = false
 	local sawPass = false
 	for _, entry in Monetisation.items() do
@@ -535,4 +535,64 @@ Check.test("the shop copy stays inside the gate and the receipt path does not ro
 	Check.eq(UITheme.shape.relicsPip, 10)
 	Check.eq(UITheme.motion.relicsPip.pulses, 2)
 	Check.eq(UITheme.resolveMotion("relicsPip", true).allowScale, false)
+end)
+
+Check.test("v5 and v7 saves gain only shop defaults on the way to v8", function()
+	local v5 = fresh()
+	v5.dataVersion = 5
+	v5.cash = 80
+	v5.skills = { "h1" }
+	v5.onboarding.step = 8
+	v5.onboarding.playSeconds = 40
+	v5.purchases = nil
+	v5.passes = nil
+	v5.ui = nil
+	v5.cashDouble = nil
+	v5.autoCollect = nil
+	local fromV5 = Schema.migrate(v5, 10)
+	Check.eq(fromV5.dataVersion, 8)
+	Check.eq(fromV5.cash, 80)
+	Check.eq(fromV5.skills[1], "h1")
+	Check.eq(fromV5.onboarding.step, 8)
+	Check.eq(fromV5.onboarding.playSeconds, 40)
+	Check.eq(fromV5.passes.extraPads, false)
+	Check.eq(fromV5.cashDouble, false)
+	Check.eq(fromV5.purchases.starterPackClaimed, false)
+	Check.eq(fromV5.ui.relicsPipCleared, false)
+
+	local v7 = fresh()
+	v7.dataVersion = 7
+	v7.cash = 19
+	v7.skills = { "l1" }
+	v7.onboarding.step = 4
+	v7.onboarding.playSeconds = 9
+	v7.purchases = nil
+	v7.cosmetics = nil
+	v7.giftedPasses = nil
+	v7.giftsReceived = nil
+	v7.tarot = nil
+	v7.bloodMoon = nil
+	v7.ui = nil
+	v7.cashDouble = nil
+	v7.autoCollect = nil
+	v7.passes = nil
+	local fromV7 = Schema.migrate(v7, 10)
+	Check.eq(fromV7.dataVersion, 8)
+	Check.eq(fromV7.cash, 19)
+	Check.eq(fromV7.skills[1], "l1")
+	Check.eq(fromV7.onboarding.step, 4)
+	Check.eq(fromV7.onboarding.playSeconds, 9)
+	Check.eq(fromV7.passes.extraPads, false)
+	Check.eq(fromV7.passes.lairCosmetics, false)
+	Check.eq(fromV7.passes.sigilNameplate, false)
+	Check.eq(fromV7.cashDouble, false)
+	Check.eq(fromV7.autoCollect, false)
+	Check.eq(fromV7.purchases.starterPackClaimed, false)
+	Check.eq(next(fromV7.purchases.ledger), nil)
+	Check.eq(fromV7.ui.relicsPipShown, false)
+	local again = Schema.migrate(fromV7, 99)
+	Check.eq(again.cash, 19)
+	Check.eq(again.onboarding.step, 4)
+	Check.eq(again.skills[1], "l1")
+	Check.eq(again.passes.extraPads, false)
 end)

@@ -4,6 +4,12 @@
 *.rbxm
 *.rbxmx
 
+# Source art models are the Rojo inputs. Generator previews are not.
+!assets/**/*.rbxmx
+*.parts.json
+*_roster_sheet*
+art/models/
+
 # Studio lock files created beside open places and models
 *.rbxl.lock
 *.rbxlx.lock
