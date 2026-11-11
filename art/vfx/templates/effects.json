@@ -1,0 +1,12 @@
+{"_doc":"D14 budget sets: which templates play together as ONE effect, and how many copies. Checked by: python3 art/tools/validate_rbxmx.py --effects art/vfx/templates/effects.json. Entry = [template, copies] or [template, copies, {\"emit\": n}] for the :Emit(n) this effect uses.",
+ "effects":[
+  {"name":"Reveal_Common","tier":"Common","templates":[["VFX_Reveal_Circle_Common",1],["VFX_Emit_AshRise",1],["VFX_Emit_RevealBurst",1]]},
+  {"name":"Reveal_Common_Rift","tier":"Common","templates":[["VFX_Reveal_Circle_Common",1],["VFX_Emit_AshRise",1],["VFX_Emit_RevealBurst",1],["VFX_Emit_RiftSpark",1]]},
+  {"name":"Reveal_Uncommon","tier":"Uncommon","templates":[["VFX_Reveal_Circle_Uncommon",1],["VFX_Reveal_Candle",3],["VFX_Emit_CandleFlame",1],["VFX_Emit_AshRise",1],["VFX_Emit_RevealBurst",1],["VFX_Emit_RiftSpark",1]]},
+  {"name":"Reveal_Rare_Rift","tier":"Rare","templates":[["VFX_Reveal_Circle_Rare",1],["VFX_Reveal_Candle",5],["VFX_Emit_CandleFlame",1],["VFX_Emit_AshRise",1],["VFX_Emit_RevealBurst",1],["VFX_Emit_EmberRise",1],["VFX_Emit_RiftSpark",1],["VFX_Beam_LightPillar_Rare",1]]},
+  {"name":"Reveal_Epic","tier":"Epic","templates":[["VFX_Reveal_Circle_Epic",1],["VFX_Reveal_Candle",7],["VFX_Emit_CandleFlame",1],["VFX_Emit_AshRise",1],["VFX_Emit_RevealBurst",1],["VFX_Emit_GoldLeaf",1],["VFX_Emit_EmberRise",1],["VFX_Beam_LightPillar_Epic",1]]},
+  {"name":"Reveal_Epic_Rift","tier":"Epic","templates":[["VFX_Reveal_Circle_Epic",1],["VFX_Reveal_Candle",7],["VFX_Emit_CandleFlame",1],["VFX_Emit_AshRise",1],["VFX_Emit_RevealBurst",1],["VFX_Emit_GoldLeaf",1],["VFX_Emit_EmberRise",1],["VFX_Emit_RiftSpark",1],["VFX_Beam_LightPillar_Epic",1]]},
+  {"name":"Collect_BankLarge","tier":"Common","templates":[["VFX_Collect_CoinSigil",1]]},
+  {"name":"Pad_Carve","tier":"Common","templates":[["VFX_Pad_Carve",1],["VFX_Emit_AshRise",1,{"emit":8}]]},
+  {"name":"Pad_Deny","tier":"Common","templates":[["VFX_Pad_Deny",1],["VFX_Emit_AshRise",1,{"emit":4}]]}
+ ]}

@@ -141,3 +141,36 @@ Terms used in this repo and the rest of this pack.
 
 > Reproduce it. Run it. Prove it. Fix the cause, not the symptom.
 > When you're wrong, write down the principle — not the story.
+
+---
+
+## Project rules
+
+These rules sit with the field notes above. They are how this repository is coordinated. The map of specs, pictures, and status is [`PROJECT_INDEX.md`](PROJECT_INDEX.md).
+
+**Grok is Project Director and the final coordinator.** Gemini is not joining development yet. Issue #17 still names Gemini as the owner of visual pass 1. That assignment is unresolved. Do not start that pass on Gemini's behalf.
+
+Every agent:
+
+1. **Read `PROJECT_INDEX.md` first.** Then read this file.
+2. **Read the relevant specs and reference images before implementing.** Design specs are in `specs/`. Concept images are in `art/concepts/` and `art/vfx/concepts/`. `docs/spec-01.md`, `docs/spec-02.md`, `docs/spec-03.md`, and `art/style-guide.md` (v0.2) are superseded as design authority. The current style guide is `art/style-guide-v0.8.md`. The index says so. Do not treat a superseded file as the current decision.
+3. **Check existing issues, pull requests, and branches for duplicates** before starting work.
+4. **Follow the established standards.**
+   - `docs/studio-ops-guide` §11 when that guide is in the repo. It is not in the repo today.
+   - Server-authoritative gameplay. The client shows replicated state and sends intents. Cash, rolls, prices, rewards, and eligibility stay on the server.
+   - `UITheme` for colour, type, and motion (`src/shared/UITheme.luau`). No magic numbers. Name constants in the config modules.
+   - Versioned DataStore migrations. Do not rewrite a save in place. A new profile shape gets a new `dataVersion` and a migration. `Save.DATA_VERSION` on main is 9.
+5. **Keep approved decisions unless a human explicitly authorises a change.** Flag conflicts in the index or the pull request. Do not resolve them while passing through.
+6. **Record meaningful gameplay, architecture, or art changes** in the spec or the index, in the same change as the work.
+7. **Give verification evidence before calling work done.** A merged pull request is not QA Passed. QA Passed requires a `qa/*-report.md` that says PASS. Nothing is Released until a publish has happened.
+
+Precedence when sources disagree (also in the index):
+
+1. Approved decisions and specs.
+2. Verified implementation and tests.
+3. Approved issues and acceptance criteria.
+4. Historical or exploratory notes.
+
+Keep intended, implemented, and verified behaviour in separate sections. The index does that.
+
+Current build order: **#14** town v3, then **#18** the preview-kick fix, then **#15** rebirth, then **#16** `rbx_check`, then **#17** visual pass 1. Do not skip ahead.
