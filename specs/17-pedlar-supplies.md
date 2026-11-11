@@ -28,7 +28,7 @@ The wallet is the post-rite lair from spec 01 acceptance test 7, rebuilt from co
 - `BoneAltar.multiplier(1, false)` = 1 + `LINEAR_BONUS` (0.25) = **1.25**.
 - **R0 = 14 × 1.25 = $17.50/s.** Skills and `wildIncome` are not in R0.
 
-Spec 09's wild interval is **45 s**. That interval is not a field on `Economy`. One interval of this lair is **H = 17.50 × 45 = $787.50**. A price is **N × H**. Supplies do not print cash. N is how many intervals of R0 the price costs. `Money.round` keeps the cent.
+Spec 09's wild interval is **45 s**. That interval is not a field on `Economy`. One interval of this lair is **H = 17.50 × 45 = $787.50**. A price is **N × H**, except the Witness Cage. That cage is a flat **$400** (`Economy.PAD_COST[4]`), an explicit exception to N×H. Supplies do not print cash. N is how many intervals of R0 the price costs. `Money.round` keeps the cent.
 
 | N | Price |
 |---|---|
@@ -43,15 +43,15 @@ Compare: `Economy.PAD_COST[5]` is $1,200, Pad 7 is $15,000, and skill `h1` (the 
 
 ## Tools live at the Lanternwright
 
-The Pedlar does not sell tools. L2 through L5 and the UV Lamp are the Lanternwright's counter. L1 stays free and is not a row there. Numbers, gates, and what the code can do today are in [spec 18](18-tools-capture-aptitudes.md). The Lanternwright shows no restock clock. Those tools are always in stock. `Town.luau` still marks the stall `shuttered`. The first code PR sets that existing stub live and adds a prompt. It does not add parts. A new mesh waits for the World Builder.
+The Pedlar does not sell tools. L2 through L5 and the UV Lamp are the Lanternwright's counter. L1 stays free and is not a row there. Numbers, gates, and what the code can do today are in [spec 18](18-tools-capture-aptitudes.md). The Lanternwright shows no restock clock. Those tools are always in stock. `Town.luau` still marks the stall `shuttered`. The spawner PR sets that existing stub live and adds a prompt. It does not add parts. A new mesh waits for the World Builder.
 
-The first code PR sells the Ember Lantern (L2) only. L1 stays free. The UV Lamp, L3, L4, and the Silver Censer are in Later.
+The first code PR sells cages and cosmetics only. The Ember Lantern (L2) ships with the spawner PR. The UV Lamp ships with the spawner PR. L1 stays free. L3, L4, and the Silver Censer stay later.
 
 ## Lures and bait
 
 There is no interval lure. Reed Bait does not shorten the wait, and it does not pick a species or a rarity. It moves the next spawn the server has already rolled to the bait. The spec 09 interval stays 45 s. The rarity table and the species table stay the tables that roll was drawn from. `h5` and `h6` stay sealed. Reed Bait is not in the first code PR. It ships with the wild spawner, at most `Lure.DAILY_CAP` = **3** uses per UTC day. Price is N = 1, **$787.50**.
 
-**Compliance.** Cash is paid currency (spec 09 §8). Audit rows 6, 7, and 10 forbid a cash spawn-rate change and a cash odds change. This note does not allow either. The bait only relocates a spawn that has already rolled. The row is hidden unless `PolicyGate.allows` returns true (fail closed). The spawner PR includes a test that the rarity table and the species table are byte-identical with the bait active and inactive.
+**Compliance.** Cash is paid currency (spec 09 §8). Audit rows 6, 7, and 10 forbid a cash spawn-rate change and a cash odds change. This note does not allow either. The bait only relocates a spawn that has already rolled. The row is hidden unless `PolicyGate.allows` returns true (fail closed). The test code lands with the spawner PR. `allows` returns true only when `ArePaidRandomItemsRestricted` is explicitly false. A separate test asserts the rarity table and the species table are byte-identical with the bait active and inactive.
 
 ## Launch stock
 
@@ -59,10 +59,9 @@ Sold in the first code PR. Each row has a price, an effect, and something the pl
 
 | Item | Status | Effect | Price | Where |
 |---|---|---|---|---|
-| Witness Cage | **LAUNCH** | Shows the oldest unplaced cryptid in a scripted cage in the lair. Inventory already holds that cryptid (spec 01 B9). Stack 1. | `Economy.PAD_COST[4]` = **$400** | Pedlar |
+| Witness Cage | **LAUNCH** | Flat $400, an exception to N×H. The shop card and the placed pad both show "Oldest cryptid not on a pad." The cage shows that cryptid. The line is on the card by default. | `Economy.PAD_COST[4]` = **$400** | Pedlar |
 | Keeper's Rim | **LAUNCH** | Pad rim uses the Gold token. No income change. The first PR paints it. | $3,150 (N = 4) | Pedlar |
 | Veil Mantle | **LAUNCH** | Lantern glass uses the BoneDim token. No range, hold, or odds change. The first PR paints it. | $1,575 (N = 2) | Pedlar |
-| Ember Lantern (L2) | **LAUNCH** | Hold ×0.9 on the tutorial Hodag and any later hold. See spec 18. | $1,575 (N = 2) | Lanternwright |
 
 ## Later
 
@@ -70,8 +69,9 @@ Not sold in the first PR. Not listed on the launch counter.
 
 | Item | When | Effect | Price |
 |---|---|---|---|
-| Reed Bait | Wild spawner PR | Moves the next already-rolled spawn to the bait. Cap `Lure.DAILY_CAP` (3). No species, rarity, or interval change. | $787.50 (N = 1) |
-| UV Lamp | Spawner/variants PR | Shows a weighted variant (Normal, Spectral, Shadow) and a server track. No new roll. | $4,725 (N = 6) |
+| Reed Bait | Ships with the spawner PR | Moves the next already-rolled spawn to the bait. Cap `Lure.DAILY_CAP` (3). No species, rarity, or interval change. | $787.50 (N = 1) |
+| Ember Lantern (L2) | Ships with the spawner PR | Hold ×0.9 once a wild catch can repeat. The tutorial Hodag is once only. | $1,575 (N = 2) |
+| UV Lamp | Ships with the spawner PR | Shows a weighted variant (Normal, Spectral, Shadow) and a server track. No new roll. | $4,725 (N = 6) |
 | Spirit Compass (L3) | After the first PR | Points within 80 studs. No rarity change. | $3,150 (N = 4) |
 | Binding Chains (L4) | After the first PR | Range 12 → 16. No steal bonus. | $6,300 (N = 8) |
 | Silver Censer (L5) | After the first PR | Gap until the next landing is halved. Landing stays ≥ 4 s. | $12,600 (N = 16) |
@@ -82,13 +82,13 @@ The Robux **Lure Totem** (spec 09, 49 R$, moves spawns, does not change odds) st
 
 ## Cages
 
-Witness Cage is in the launch table above. A paid hatch speed-up is not sold.
+Witness Cage is in the launch table above. Its $400 price is the N×H exception. The effect line is visible on the shop card and on the placed pad. A paid hatch speed-up is not sold.
 
 The four names in `Shop.SLOTS` are cryptid offers, not these items. Implementation stops offering species. It does not reuse those four names as supply SKUs.
 
 ## Expeditions: the yield is on the card before Send
 
-Research row 2 asked for expeditions whose haul is known when you send them. Route length is spec 14: Lantern Wood 10 minutes, Hollow Marsh 1 hour, Bell Quarry 4 hours. They pay 15, 45, and 150 minutes of the **whole lair's** pre-2x income, Courage excluded, the same rate cash bundles use. Not the sent cryptid's rate. Those lengths are not the Instant Return skip brackets. The 10-minute route pays 15 minutes of that lair rate, so it is 1.5× the time away until the daily cap stops it. The Board is shuttered in `Town.luau` (`ExpeditionBoard`). This is January, not launch (spec 15 §9).
+Research row 2 asked for expeditions whose haul is known when you send them. Route length is spec 14: Lantern Wood 10 minutes, Hollow Marsh 1 hour, Bell Quarry 4 hours. They pay 15, 45, and 150 minutes of the **whole lair's** pre-2x income, Courage excluded, the same rate cash bundles use. The sent cryptid's own pad rate is a separate loss, stated on the card. Those lengths are not the Instant Return skip brackets. The 10-minute route pays 15 minutes of that lair rate, so it is 1.5× the time away until the daily cap stops it. At the post-rite $17.50/s that 10-minute send is 15 × 60 × 17.50 = **$15,750**. That figure is this formula, not a sim output. Expedition pacing sim pending GS, before spawner/expeditions code. The Board is shuttered in `Town.luau` (`ExpeditionBoard`). This is January, not launch (spec 15 §9).
 
 | Route | Duration constant | Cash constant | Cash shown |
 |---|---|---|---|
@@ -136,7 +136,7 @@ Cash only. No Robux button, no product id, no edit to `Monetisation.luau` or to 
 
 If a list cannot change, its countdown is hidden. There is no idle "Restocks in" timer. `Shop.ROTATION_SECONDS` stays in config for a list that really rotates. Buying still does not reroll. No "last chance", "only N left", or "deal of the day" (spec 16 §7.3 and §7.4). The launch stalls do not rotate, so they show no clock.
 
-**Cash and the policy gate.** Cash is paid currency (spec 09 §8). `PolicyGate.allows` fails closed. Reed Bait calls it and hides when it returns false. Cages, cosmetics, and L2 are not random and do not call it. The UV Lamp is not in the first code PR.
+**Cash and the policy gate.** Cash is paid currency (spec 09 §8). `PolicyGate.allows` returns true only when `ArePaidRandomItemsRestricted` is explicitly false, and it fails closed. Reed Bait calls it and hides when it returns false. Cages and cosmetics are not random and do not call it. The Ember Lantern ships with the spawner PR. The UV Lamp ships with the spawner PR.
 
 **Not sold, from the 11 Nov research as well as the earlier rulings.** No luck boost. No paid restock. No cash crate. No interval lure. Reed Bait does not change the spec 09 rarity table or the species table.
 
@@ -183,9 +183,9 @@ The Lanternwright is the tool shop. The Pedlar does not list L2 through L5 or th
 
 ## Implementation plan
 
-The first code PR sells the launch table: Witness Cage, Keeper's Rim, Veil Mantle, and the Ember Lantern, plus `qa:N:clock+<sec>`. No lure. No UV Lamp. The prompt sits on the existing Lanternwright stub. `onboarding.playSeconds` already exists on the profile (`Schema.luau`). A buy needs step ≥ 8 and that saved field ≥ 300.
+The first code PR sells cages and cosmetics only: Witness Cage, Keeper's Rim, and Veil Mantle, plus `qa:N:clock+<sec>`. No lure. The Ember Lantern ships with the spawner PR. The UV Lamp ships with the spawner PR. The Lanternwright stays shuttered until that PR. `onboarding.playSeconds` already exists on the profile (`Schema.luau`). A buy needs step ≥ 8 and that saved field ≥ 300.
 
-**Launch cards.** Pedlar: Witness Cage, Keeper's Rim, Veil Mantle, each **LAUNCH**. Lanternwright: Ember Lantern only. No lure. No UV Lamp. No "Not on the counter" row. No "Bind at once" toggle. No four-column cryptid odds table. **Details** shows the fixed effect. `PedlarOddsViewed` fires with `Item - {id}` in the first custom field, not a species roll. The prompt becomes "Browse the Pedlar's wares" in that same PR.
+**Launch cards.** Pedlar: Witness Cage, Keeper's Rim, Veil Mantle, each **LAUNCH**. The Lanternwright has no launch row. No lure. No Ember Lantern. No UV Lamp. No "Not on the counter" row. No "Bind at once" toggle. No four-column cryptid odds table. **Details** shows the fixed effect. `PedlarOddsViewed` fires with `Item - {id}` in the first custom field, not a species roll. The prompt becomes "Browse the Pedlar's wares" in that same PR.
 
 **Relic at the cap.** The expedition card rolls the spec 12 table when it is built. A relic the player already holds 5 of is skipped. If every relic is at 5, the card says no relic and still shows the cash. Cancel before Send does not keep a roll. Disconnect after Send does not roll again.
 
@@ -193,14 +193,14 @@ The first code PR sells the launch table: Witness Cage, Keeper's Rim, Veil Mantl
 
 ## QA
 
-1. Fresh profile after the gate: the Pedlar sells Witness Cage, Keeper's Rim, and Veil Mantle. The Lanternwright sells the Ember Lantern. No lure. No UV Lamp. L1 is already owned. No cryptid is for sale. There is no "Bind at once" toggle and no four-column cryptid odds table.
+1. Fresh profile after the gate: the Pedlar sells Witness Cage, Keeper's Rim, and Veil Mantle. The Lanternwright sells nothing. No lure. The Ember Lantern ships with the spawner PR. The UV Lamp ships with the spawner PR. L1 is already owned. No cryptid is for sale. There is no "Bind at once" toggle and no four-column cryptid odds table.
 2. A profile that already owns a Pedlar cryptid still owns that species after load, at Courage 5, Instinct 5, Attunement 5.
 3. Details on the Ember Lantern says the odds are unchanged, with the before and after hold. Reed Bait's Details says the next already-rolled spawn moves, and that the interval, the species, and the rarity table are unchanged.
 4. Neither stall shows "Restocks in". Copy has no "last chance" or "only".
 5. Touch targets are 44 px on a phone width (`UITheme.shape.mobileWidthBreakpoint` 700).
 6. No Marketplace prompt, and no new product id.
 7. Tutorial Hodag still completes with the free lantern (spec 01). The charge twist does not run on that spawn (spec 18).
-8. The counter has no luck row, no restock skip, no crate, and no egg ticket. An expedition card lists species, aptitudes, cash, and relic before Send. A second send with the same id does not reroll. The cash is absent from Tithe. A day already at 300 minutes grants no more expedition cash. Instant Return does not create a send. A stall that cannot rotate has no countdown. There is no "Not on the counter" row at launch.
+8. The counter has no luck row, no restock skip, no crate, and no egg ticket. An expedition card lists species, aptitudes, cash, and relic before Send. A second send with the same id does not reroll. The cash is absent from Tithe. A day already at 300 minutes grants no more expedition cash. Instant Return does not create a send. A stall that cannot rotate has no countdown. There is no "Not on the counter" row at launch. The PolicyGate test code lands with the spawner PR. `PolicyGate.allows` returns true only when `ArePaidRandomItemsRestricted` is explicitly false. A Player Emulator run as a restricted account hides the bait and the server refuses Buy. A mocked PolicyService error fails closed. A separate test asserts the rarity table and the species table are byte-identical with the bait active and inactive.
 
 ## Rulings applied (11 Nov)
 
@@ -212,13 +212,13 @@ The first code PR sells the launch table: Witness Cage, Keeper's Rim, Veil Mantl
 - A free expedition egg is allowed only when its contents are already on the send card.
 - A cash offer and a Rift belt offer roll aptitudes when the offer is created. Details shows them before purchase. Only a Robux grant stays 5/5/5 and Marshwise.
 - Expedition cash is not Tithe. `Expedition.CASH_CAP_MINUTES` is 300, counted on the UTC day of Send. Instant Return does not add a send, does not free the slot early, and is not offered on the 10-minute route.
-- The first code PR sells cages, cosmetics, and L2. No lure. No UV Lamp. Witness Cage, Keeper's Rim, and Veil Mantle are **LAUNCH**.
+- The first code PR sells cages and cosmetics only. Witness Cage, Keeper's Rim, and Veil Mantle are **LAUNCH**. The Ember Lantern ships with the spawner PR. The UV Lamp ships with the spawner PR. No lure.
 - The Compass does not change rarity odds.
-- Studio tests move time with `qa:N:clock+<sec>`.
+- Studio tests move time with `qa:N:clock+<sec>`. The Offering day and the contract day use that same offset.
 - Permanent tools have no 5-minute restock clock. They are always in stock at the Lanternwright.
-- The Lanternwright sells L2 through L5 and the UV Lamp. L2 is the only one in the first code PR. The UV Lamp waits for the spawner/variants PR. L5 is the Silver Censer. The concept sheet still says Moonlit Censer. L1 stays free. The Pedlar sells lures, cages, and cosmetics only.
+- The Lanternwright sells L2 through L5 and the UV Lamp. The Ember Lantern ships with the spawner PR. The UV Lamp ships with the spawner PR. L5 is the Silver Censer. The concept sheet still says Moonlit Censer. L1 stays free. The Pedlar sells lures, cages, and cosmetics only.
 - The UV Lamp beam is `#CC3F8A`, signed by the Art Director, pending the Fog Night capture. Tool beam swatches of 16 px or smaller, including L3 blue and L4 purple, are an allowed exception to spec 01 A2. The rest of the UI keeps A2.
 
 ## Open questions for Eudai and Grok Bot
 
-None for a director. Reed Bait ships with the wild-spawner PR, which also runs the PolicyGate byte-identity test. There is no interval constant. The UV Lamp ships with that same spawner/variants PR. The Dossier layout is [art/mocks/dossier-v1.png](../art/mocks/dossier-v1.png). `stat-card.jpg` stays mood only. v1.1 uses 8 custom names and v1.2 adds 7, which fills `MAX_CUSTOM_NAMES` (15). No eighth name without a later catalogue.
+None for a director. Reed Bait, the Ember Lantern, and the UV Lamp ship with the spawner PR. That PR carries the PolicyGate tests and the separate byte-identity test. There is no interval constant. The Dossier layout is [art/mocks/dossier-v1.png](../art/mocks/dossier-v1.png). `stat-card.jpg` stays mood only. v1.1 uses 8 custom names and v1.2 adds 7, which fills `MAX_CUSTOM_NAMES` (15). No eighth name without a later catalogue.
