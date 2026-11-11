@@ -90,16 +90,19 @@ function GoalBanner.mount(parent: Instance, isReduced: () -> boolean, onAction: 
 		local titleSize = if isMobile then banner.titleMobile else banner.titleDesktop
 		local bodySize = if isMobile then UITheme.fonts.body.mobile else UITheme.fonts.body.desktop
 		local pad = banner.pad
+		local gap = UITheme.shape.plaqueGapPx
+		local touch = UITheme.shape.touchPx
+		local titleRow = math.max(titleSize * 2, touch)
 		title.Position = UDim2.fromOffset(pad, pad)
-		title.Size = UDim2.new(1, -(pad * 2 + 108), 0, titleSize * 2)
-		progress.Position = UDim2.fromOffset(pad, pad + titleSize * 2)
+		title.Size = UDim2.new(1, -(pad * 2 + banner.skipW + gap), 0, titleRow)
+		progress.Position = UDim2.fromOffset(pad, pad + titleRow + gap)
 		progress.Size = UDim2.new(1, -pad * 2, 0, bodySize + 2)
 		action.AnchorPoint = Vector2.new(0.5, 1)
 		action.Position = UDim2.new(0.5, 0, 1, -pad)
-		action.Size = UDim2.fromOffset(if isMobile then 180 else 200, banner.buttonH)
+		action.Size = UDim2.fromOffset(if isMobile then banner.actionMobile else banner.actionDesktop, touch)
 		skip.AnchorPoint = Vector2.new(1, 0)
-		skip.Position = UDim2.new(1, -pad, 0, 2)
-		skip.Size = UDim2.fromOffset(108, UITheme.text.minSize + 4)
+		skip.Position = UDim2.new(1, -pad, 0, pad)
+		skip.Size = UDim2.fromOffset(banner.skipW, touch)
 		ThemeBind.apply(title, "display", titleSize)
 		ThemeBind.apply(progress, "body", bodySize)
 		ThemeBind.apply(action, "body", bodySize)

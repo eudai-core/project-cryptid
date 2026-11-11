@@ -51,7 +51,7 @@ A player who has not finished onboarding (step under 8 and under 5:00) has a sea
 3. One player: the server log is quiet, the player stands on Plot 1 at the north gate looking toward the altar, and the banner reads "Your Lair". The gold beam rises above that gate.
 4. Walk the spec 01 rite on that plot: claim, carve, altar, lantern, catch outside the Wild Gate, bind. The guide beam stays inside the plot except for the catch, which points through the Wild Gate.
 5. Pads 11–12 read "Sealed". Pads 9–10 read "Sealed" until the pass, and after step 8 and 5:00 their billboard says "Relic pad · View Item" (tap opens the shop, no purchase prompt). Pads 7–8 can be carved for $15,000 and $40,000. Carving during the rite still follows pads 3, then 4, at the spec 01 prices.
-6. **Return to Lair** (bottom left) puts you on your spawn. Steady gaze sits on its right. The slot to the right of both is empty. Press Return again within 10 seconds and you stay put.
+6. **Menu** (upper left, under the goal banner) opens **Return to Lair**, **Calm motion**, and **Rites**. Return puts you on your spawn. Press Return again within 10 seconds and you stay put. The cluster is not in the bottom-left thumbstick corner.
 7. Start a second player who has finished nothing. They cannot walk into the first lair. If that visitor is still in the rite, the toast is "Finish your own rite first." If the visitor has finished and the owner has not, the toast is "A warding seal holds this lair." Both are bone-dim. After both have skipped or finished, each can enter the other's plot and no prompt appears.
 8. Leave with the server still running and rejoin within 30 seconds: same plot, same cash and creatures. Leave again, wait 35 seconds: the banner reads "Unclaimed Lair", the gates are shut, and the next player can receive that plot.
 9. For eight players, start a local server with 8 players. Banners show eight names and the plots are the eight ring positions. A server output line `PlotIntruded <index> <userId>` appears when a finished player walks into another finished player's plot.
@@ -94,7 +94,7 @@ The spec owner approved the build and answered the open questions:
 - A friend whose profile is still loading is not an anchor until their plot is claimed.
 - The 30 second hold keeps the candles, the open gates, and the owner's name. Income stays stopped for that whole hold.
 - An onboarding visitor who tries to enter another lair sees "Finish your own rite first." A finished visitor at a sealed lair still sees "A warding seal holds this lair." Both are BoneDim, at most once every 3 seconds.
-- Return to Lair stays at the bottom-left, with Steady gaze on its right. The next slot to the right of both is empty for the spec 04 Rites button.
+- Return to Lair, Calm motion, and Rites sit in the upper-left Menu, not along the bottom edge.
 - Roads stay dark slate. Wall thickness stays 2 studs. The character root stays 3 studs above the floor. The town's own ground is spec 03.
 - The two rift offers stay on the fissure, slot 1 toward the gate.
 - Fog end stays 380. From the town edge (r = 120) the plot centre is 140 studs away, which is `FogStart`. The home beam stands on the Lair Gate, 80 studs from that edge, and its tip is about 122 studs from a player standing there, still inside the clear band. The beam was left as a normal gold Beam. Global fog was not changed.
