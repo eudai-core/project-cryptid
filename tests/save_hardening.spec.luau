@@ -668,17 +668,15 @@ end)
 
 Check.test("migrations run in order from every older dataVersion and are idempotent", function()
 	local targets = Schema.migrationTargets()
-	Check.eq(#targets, 5)
+	Check.eq(#targets, 6)
 	Check.eq(targets[1], 2)
 	Check.eq(targets[2], 3)
 	Check.eq(targets[3], 4)
 	Check.eq(targets[4], 5)
 	Check.eq(targets[5], 6)
-	Check.eq(targets[1] < targets[2], true)
-	Check.eq(targets[2] < targets[3], true)
-	Check.eq(targets[3] < targets[4], true)
-	Check.eq(targets[4] < targets[5], true)
-	Check.eq(Save.DATA_VERSION, 6)
+	Check.eq(targets[6], 7)
+	Check.eq(targets[5] < targets[6], true)
+	Check.eq(Save.DATA_VERSION, 7)
 
 	local fromV1 = legacy(1)
 	local once = Schema.migrate(fromV1)
@@ -740,7 +738,7 @@ Check.test("migrations run in order from every older dataVersion and are idempot
 	skillsOnly.settings.music = nil
 	skillsOnly.settings.effectsQuality = nil
 	local fromV5 = Schema.migrate(skillsOnly, 4242)
-	Check.eq(fromV5.dataVersion, 6)
+	Check.eq(fromV5.dataVersion, 7)
 	Check.eq(fromV5.skills[1], "h1")
 	Check.eq(fromV5.daily.step, 1)
 	Check.eq(fromV5.daily.lastClaimDay, -1)
@@ -750,18 +748,31 @@ Check.test("migrations run in order from every older dataVersion and are idempot
 	Check.eq(same(fromV5, Schema.migrate(fromV5, 99999)), true)
 	Check.eq(Schema.migrate(fromV5, 99999).lastSeenUnix, 4242)
 
-	local current = Schema.newProfile(20, "starter")
-	current.skills = { "h1" }
-	current.settings.sfx = 0.5
-	local fromV6 = Schema.migrate(current, 1)
-	Check.eq(fromV6.dataVersion, 6)
+	local offering = Schema.newProfile(20, "starter")
+	offering.dataVersion = 6
+	offering.skills = { "h1" }
+	offering.settings.sfx = 0.5
+	offering.onboarding.step = 8
+	offering.lastSeenUnix = 20
+	local fromV6 = Schema.migrate(offering, 1)
+	Check.eq(fromV6.dataVersion, 7)
 	Check.eq(fromV6.skills[1], "h1")
 	Check.eq(fromV6.settings.sfx, 0.5)
 	Check.eq(fromV6.lastSeenUnix, 20)
+	Check.eq(fromV6.onboarding.step, 8)
 	Check.eq(same(fromV6, Schema.migrate(fromV6)), true)
 
+	local rite = Schema.newProfile(20, "starter")
+	rite.dataVersion = 6
+	rite.onboarding.step = 4
+	rite.onboarding.playSeconds = 0
+	local recomputed = Schema.migrate(rite, 1)
+	Check.eq(recomputed.dataVersion, 7)
+	Check.eq(recomputed.onboarding.step, 2)
+	Check.eq(recomputed.onboarding.playSeconds, 5)
+
 	local future = Schema.newProfile(20, "starter")
-	future.dataVersion = 7
+	future.dataVersion = 8
 	Check.eq(Schema.migrate(future), nil)
 end)
 

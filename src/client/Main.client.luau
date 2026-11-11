@@ -7,6 +7,7 @@ local RunService = game:GetService("RunService")
 
 local CashPlaque = require(script.Parent:WaitForChild("CashPlaque"))
 local GoalBanner = require(script.Parent:WaitForChild("GoalBanner"))
+local RarityTease = require(script.Parent:WaitForChild("RarityTease"))
 local HaulPanel = require(script.Parent:WaitForChild("HaulPanel"))
 local OfferingPanel = require(script.Parent:WaitForChild("OfferingPanel"))
 local GuideArrow = require(script.Parent:WaitForChild("GuideArrow"))
@@ -133,10 +134,11 @@ local layout: () -> ()
 local haul = HaulPanel.mount(gui, isReduced, function()
 	fire(Names.CLAIM_HAUL)
 end)
+local tease = RarityTease.mount(gui, isReduced)
 local offering = OfferingPanel.mount(gui, isReduced, function()
 	fire(Names.CLAIM_DAILY)
 end, function()
-	return banner.isBusy()
+	return banner.isBusy() or tease.isBusy()
 end)
 
 local function applyAttributes()
@@ -170,6 +172,9 @@ local function applySnapshot(text: string)
 	if type(decoded.goal) == "table" then
 		banner.apply(decoded.goal)
 	end
+	if type(decoded.reveal) == "table" then
+		tease.show(decoded.reveal)
+	end
 	local credit = decoded.lastCredit
 	if type(credit) ~= "number" then
 		credit = 0
@@ -195,8 +200,9 @@ end
 layout = function()
 	local viewport = camera.ViewportSize
 	local mobile = viewport.X < UITheme.shape.mobileWidthBreakpoint
-	local plaqueHeight = plaque.layout(mobile)
-	banner.layout(mobile, plaqueHeight)
+	local bannerHeight = banner.layout(mobile)
+	plaque.layout(mobile, bannerHeight + UITheme.shape.plaqueGapPx)
+	tease.layout(mobile)
 	haul.layout(mobile)
 	offering.layout(mobile)
 end

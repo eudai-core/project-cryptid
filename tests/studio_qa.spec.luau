@@ -7,6 +7,7 @@ local Check = require("./check")
 local Save = require("../src/shared/Config/Save")
 local Schema = require("../src/shared/Logic/Schema")
 local QaArgs = require("../src/shared/Logic/QaArgs")
+local QaFresh = require("../src/shared/Logic/QaFresh")
 local StudioQa = require("../src/server/Dev/StudioQa")
 local WatchdogBudget = require("../src/server/Dev/WatchdogBudget")
 local Ledger = require("../src/server/Ledger")
@@ -141,4 +142,130 @@ Check.test("a fresh foreign lock kicks and a stale one is stolen without wiping 
 	end)
 	Check.eq(empty.seedForeignLock(4, false), false)
 	Check.eq(emptyStore:GetAsync(key(4)), nil)
+end)
+
+Check.test("qa fresh loads a different key at the opening rite and is a no-op outside Studio", function()
+	Check.eq(QaArgs.parse("qa:600:fresh").fresh, true)
+	Check.eq(QaArgs.parse("qa:600:offline:7200:fresh").offlineSeconds, 7200)
+	Check.eq(QaArgs.wantsFresh(false, "qa:600:fresh"), false)
+	Check.eq(QaArgs.wantsFresh(true, "qa:600:fresh"), true)
+	Check.eq(QaArgs.wantsFresh(true, "qa:600"), false)
+	Check.eq(WatchdogBudget.secondsFor("qa:600:fresh"), 600)
+	Check.eq(StudioQa.plan(true, "qa:600:fresh"), "load")
+
+	local userId = 9
+	local real = QaFresh.realKey(userId)
+	local guid = "aaaabbbb-cccc-4ddd-8eee-ffff00001111"
+	Check.eq(QaFresh.sessionKey(userId, false, "qa:600:fresh", "job-a", 10), real)
+	Check.eq(QaFresh.sessionKey(userId, true, "qa:600", "job-a", 10), real)
+	Check.eq(QaFresh.sessionKey(userId, true, "play", "job-a", 10), real)
+	local freshKey = QaFresh.sessionKey(userId, true, "qa:600:fresh", guid, 50)
+	Check.eq(freshKey, real .. "_qf_aaaabbbbcccc")
+	Check.eq(freshKey ~= real, true)
+	Check.eq(QaFresh.sessionKey(userId, true, "qa:600:fresh", "", 50), real .. "_qf_000000000000")
+
+	local store = MockDataStore.new()
+	local kept = Schema.newProfile(1, "starter")
+	kept.onboarding.step = 8
+	kept.onboarding.playSeconds = 200
+	kept.cash = 9999
+	store:SetAsync(real, {
+		lockJobId = "",
+		lockTimestamp = 0,
+		lockLeaseSeconds = 0,
+		lockExpiresAt = 0,
+		profile = kept,
+	})
+
+	local ledger = Ledger.open({
+		getStore = function()
+			return store
+		end,
+		createMock = function()
+			error("this ledger was given its store and must not install another")
+		end,
+		allowMock = function()
+			return false
+		end,
+		jobId = "studio-job",
+		now = function()
+			return 50
+		end,
+		waitFor = function() end,
+		warn = function() end,
+		profileKey = function(id: number)
+			return QaFresh.sessionKey(id, true, "qa:600:fresh", guid, 50)
+		end,
+	})
+	local blank = Schema.newProfile(50, "starter")
+	local opened = ledger.load(userId, blank)
+	Check.eq(opened.ok, true)
+	Check.eq(opened.profile.onboarding.playSeconds, 0)
+	Check.eq(opened.profile.onboarding.step, blank.onboarding.step)
+	Check.eq(opened.profile.cash, blank.cash)
+	Check.eq(opened.profile.onboarding.step < 8, true)
+	Check.eq(store:GetAsync(real).profile.cash, 9999)
+	Check.eq(store:GetAsync(real).profile.onboarding.step, 8)
+	Check.eq(store:GetAsync(real).lockJobId, "")
+	Check.eq(store:GetAsync(freshKey).lockJobId, "studio-job")
+	Check.eq(store:GetAsync(freshKey).profile.onboarding.playSeconds, 0)
+	Check.eq(store:GetAsync(freshKey).profile.onboarding.step, blank.onboarding.step)
+
+	opened.profile.cash = 1
+	Check.eq(ledger.save(userId, opened.profile), true)
+	Check.eq(store:GetAsync(real).profile.cash, 9999)
+	Check.eq(store:GetAsync(real).profile.onboarding.step, 8)
+	Check.eq(store:GetAsync(freshKey).profile.cash, 1)
+	Check.eq(store:GetAsync(freshKey).lockJobId, "studio-job")
+
+	local gateway = fs.readFile("src/server/DataStoreGateway.luau")
+	local keyAt = string.find(gateway, "local function profileKey", 1, true)
+	Check.truthy(keyAt)
+	local guardAt = string.find(gateway, "if not RunService:IsStudio() then", keyAt :: number, true)
+	local argsAt = string.find(gateway, "StudioQaHooks.args()", keyAt :: number, true)
+	Check.truthy(guardAt)
+	Check.truthy(argsAt)
+	Check.eq((guardAt :: number) < (argsAt :: number), true)
+	Check.eq(string.find(gateway, "RemoteEvent", 1, true), nil)
+	Check.eq(string.find(gateway, "FireServer", 1, true), nil)
+	local freshSource = fs.readFile("src/shared/Logic/QaFresh.luau")
+	Check.eq(string.find(freshSource, "RemoteEvent", 1, true), nil)
+	Check.eq(string.find(freshSource, "GetTestArgs", 1, true), nil)
+	Check.eq(string.find(freshSource, "FireServer", 1, true), nil)
+end)
+
+Check.test("a fresh key for a 16-digit user id stays within the datastore limit", function()
+	local DataStoreGateway = require("../src/server/DataStoreGateway")
+	local userId = 1000000000000000
+	Check.eq(#tostring(userId), 16)
+	local real = QaFresh.realKey(userId)
+	local fresh = QaFresh.sessionKey(userId, true, "qa:600:fresh", "deadbeef-cafe-4dad-8bad-0123456789ab", 1)
+	Check.eq(fresh, "player_1000000000000000_qf_deadbeefcafe")
+	Check.eq(#fresh <= Save.MAX_KEY_LENGTH, true)
+	Check.eq(fresh ~= real, true)
+	Check.eq(Save.MAX_KEY_LENGTH, 50)
+	Check.eq(DataStoreGateway.refuseLongKey(string.rep("k", 51)), "KeyNameLimit")
+	Check.eq(DataStoreGateway.refuseLongKey(string.rep("k", 50)), nil)
+	Check.eq(DataStoreGateway.refuseLongKey(fresh), nil)
+
+	local gateway = fs.readFile("src/server/DataStoreGateway.luau")
+	local loadAt = string.find(gateway, "function DataStoreGateway.load", 1, true)
+	local saveAt = string.find(gateway, "function DataStoreGateway.save", 1, true)
+	local renewAt = string.find(gateway, "function DataStoreGateway.renew", 1, true)
+	local releaseAt = string.find(gateway, "function DataStoreGateway.release", 1, true)
+	Check.truthy(loadAt)
+	Check.truthy(saveAt)
+	Check.truthy(renewAt)
+	Check.truthy(releaseAt)
+	local function beforeStore(fnAt: number, call: string)
+		local refuseAt = string.find(gateway, "refuseLongKey", fnAt, true)
+		local storeAt = string.find(gateway, call, fnAt, true)
+		Check.truthy(refuseAt)
+		Check.truthy(storeAt)
+		Check.eq((refuseAt :: number) < (storeAt :: number), true)
+	end
+	beforeStore(loadAt :: number, "ledger.load")
+	beforeStore(saveAt :: number, "ledger.save")
+	beforeStore(renewAt :: number, "ledger.renew")
+	beforeStore(releaseAt :: number, "ledger.release")
 end)
