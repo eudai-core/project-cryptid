@@ -543,7 +543,7 @@ local function buildStall(parent: Folder, spec: any, index: number)
 		true
 	)
 	banner(model)
-	local signCf = CFrame.new(0, Town.STALL_HEIGHT - 1.2, -Town.STALL_DEPTH / 2 - 0.2)
+	local signCf = CFrame.new(0, Town.STALL_HEIGHT - 1.9, -Town.STALL_DEPTH / 2 - 0.2)
 	if spec.status == "shuttered" then
 		part(
 			model,
@@ -563,7 +563,7 @@ local function buildStall(parent: Folder, spec: any, index: number)
 			model,
 			"PedlarLantern",
 			Vector3.new(0.9, 1.2, 0.9),
-			CFrame.new(0, Town.STALL_HEIGHT - 1.6, -Town.STALL_DEPTH / 2 - 1.1),
+			CFrame.new(-(Town.STALL_WIDTH * 0.62) / 2 - 0.85, Town.STALL_HEIGHT - 1.6, -Town.STALL_DEPTH / 2 - 0.35),
 			UITheme.materials[Lanterns.RIFT_MATERIAL],
 			Lanterns.RIFT_SURFACE,
 			false
@@ -1289,8 +1289,8 @@ local function buildHollowmere(town: Folder)
 		else
 			error("Unknown Hollowmere portal: " .. tostring(spec.kind), 2)
 		end
-		mythicSign(model, CFrame.new(0, 11.2, -0.5), portalLabel(spec), spec.color)
-		lockIcon(model, CFrame.new(3.8, 11.2, -0.7))
+		mythicSign(model, CFrame.new(0, 12.5, -0.5), portalLabel(spec), spec.color)
+		lockIcon(model, CFrame.new(5.05, 12.5, -0.5))
 		model.Parent = folder
 		placeModel(model, plazaCf(spec.angle, spec.radius))
 	end

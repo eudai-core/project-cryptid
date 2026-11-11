@@ -159,7 +159,27 @@ local function makeInstance(className: string): any
 	function inst:Destroy()
 		self.Parent = nil
 	end
-	function inst:PivotTo(_: any) end
+	function inst:GetPivot(): any
+		local primary = rawget(self, "PrimaryPart")
+		if primary ~= nil and primary.CFrame ~= nil then
+			return primary.CFrame
+		end
+		if rawget(self, "CFrame") ~= nil then
+			return self.CFrame
+		end
+		return newCFrame(0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1)
+	end
+	function inst:PivotTo(target: any)
+		local delta = target * self:GetPivot():Inverse()
+		if rawget(self, "CFrame") ~= nil then
+			self.CFrame = delta * self.CFrame
+		end
+		for _, desc in self:GetDescendants() do
+			if desc.CFrame ~= nil then
+				desc.CFrame = delta * desc.CFrame
+			end
+		end
+	end
 	function inst:AddTag(_: any, _tag: any) end
 	function inst:GetPropertyChangedSignal(_: string): any
 		return {
@@ -198,15 +218,30 @@ local function makeInstance(className: string): any
 	})
 end
 
-local function cf(): any
-	return setmetatable({}, {
-		__mul = function()
-			return cf()
-		end,
-	})
+local newCFrame: (number, number, number, number, number, number, number, number, number, number, number, number) -> any
+local vec: (number, number, number) -> any
+
+local function dot(a: any, b: any): number
+	return a.X * b.X + a.Y * b.Y + a.Z * b.Z
 end
 
-local function vec(x: number, y: number, z: number): any
+local function cross(a: any, b: any): any
+	return vec(a.Y * b.Z - a.Z * b.Y, a.Z * b.X - a.X * b.Z, a.X * b.Y - a.Y * b.X)
+end
+
+local function length(a: any): number
+	return math.sqrt(dot(a, a))
+end
+
+local function unit(a: any): any
+	local scale = length(a)
+	if scale < 1e-8 then
+		return vec(0, 0, 0)
+	end
+	return vec(a.X / scale, a.Y / scale, a.Z / scale)
+end
+
+function vec(x: number, y: number, z: number): any
 	return setmetatable({
 		X = x,
 		Y = y,
@@ -229,6 +264,101 @@ local function vec(x: number, y: number, z: number): any
 		end,
 		__unm = function(a)
 			return vec(-a.X, -a.Y, -a.Z)
+		end,
+	})
+end
+
+function newCFrame(
+	px: number,
+	py: number,
+	pz: number,
+	r00: number,
+	r01: number,
+	r02: number,
+	r10: number,
+	r11: number,
+	r12: number,
+	r20: number,
+	r21: number,
+	r22: number
+): any
+	local self = {
+		X = px,
+		Y = py,
+		Z = pz,
+		r00 = r00,
+		r01 = r01,
+		r02 = r02,
+		r10 = r10,
+		r11 = r11,
+		r12 = r12,
+		r20 = r20,
+		r21 = r21,
+		r22 = r22,
+	}
+	function self:Inverse(): any
+		local x = -(self.r00 * self.X + self.r10 * self.Y + self.r20 * self.Z)
+		local y = -(self.r01 * self.X + self.r11 * self.Y + self.r21 * self.Z)
+		local z = -(self.r02 * self.X + self.r12 * self.Y + self.r22 * self.Z)
+		return newCFrame(
+			x,
+			y,
+			z,
+			self.r00,
+			self.r10,
+			self.r20,
+			self.r01,
+			self.r11,
+			self.r21,
+			self.r02,
+			self.r12,
+			self.r22
+		)
+	end
+	function self:ToWorldSpace(point: any): any
+		return self * point
+	end
+	return setmetatable(self, {
+		__mul = function(a: any, b: any): any
+			if b.r00 == nil then
+				return vec(
+					a.X + a.r00 * b.X + a.r01 * b.Y + a.r02 * b.Z,
+					a.Y + a.r10 * b.X + a.r11 * b.Y + a.r12 * b.Z,
+					a.Z + a.r20 * b.X + a.r21 * b.Y + a.r22 * b.Z
+				)
+			end
+			return newCFrame(
+				a.X + a.r00 * b.X + a.r01 * b.Y + a.r02 * b.Z,
+				a.Y + a.r10 * b.X + a.r11 * b.Y + a.r12 * b.Z,
+				a.Z + a.r20 * b.X + a.r21 * b.Y + a.r22 * b.Z,
+				a.r00 * b.r00 + a.r01 * b.r10 + a.r02 * b.r20,
+				a.r00 * b.r01 + a.r01 * b.r11 + a.r02 * b.r21,
+				a.r00 * b.r02 + a.r01 * b.r12 + a.r02 * b.r22,
+				a.r10 * b.r00 + a.r11 * b.r10 + a.r12 * b.r20,
+				a.r10 * b.r01 + a.r11 * b.r11 + a.r12 * b.r21,
+				a.r10 * b.r02 + a.r11 * b.r12 + a.r12 * b.r22,
+				a.r20 * b.r00 + a.r21 * b.r10 + a.r22 * b.r20,
+				a.r20 * b.r01 + a.r21 * b.r11 + a.r22 * b.r21,
+				a.r20 * b.r02 + a.r21 * b.r12 + a.r22 * b.r22
+			)
+		end,
+		__index = function(frame: any, key: string): any
+			if key == "Position" then
+				return vec(frame.X, frame.Y, frame.Z)
+			end
+			if key == "RightVector" or key == "XVector" then
+				return vec(frame.r00, frame.r10, frame.r20)
+			end
+			if key == "UpVector" or key == "YVector" then
+				return vec(frame.r01, frame.r11, frame.r21)
+			end
+			if key == "ZVector" then
+				return vec(frame.r02, frame.r12, frame.r22)
+			end
+			if key == "LookVector" then
+				return vec(-frame.r02, -frame.r12, -frame.r22)
+			end
+			return nil
 		end,
 	})
 end
@@ -257,14 +387,65 @@ local function installRoblox(): any
 			end,
 		},
 		CFrame = {
-			new = function()
-				return cf()
+			new = function(x: any, y: number?, z: number?)
+				if x == nil then
+					return newCFrame(0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1)
+				end
+				if type(x) ~= "number" then
+					return newCFrame(x.X, x.Y, x.Z, 1, 0, 0, 0, 1, 0, 0, 0, 1)
+				end
+				return newCFrame(x, y or 0, z or 0, 1, 0, 0, 0, 1, 0, 0, 0, 1)
 			end,
-			lookAt = function()
-				return cf()
+			lookAt = function(eye: any, target: any, up: any?)
+				local forward = unit(vec(target.X - eye.X, target.Y - eye.Y, target.Z - eye.Z))
+				local worldUp = up or vec(0, 1, 0)
+				local right = cross(forward, worldUp)
+				if length(right) < 1e-6 then
+					right = cross(forward, vec(0, 0, 1))
+				end
+				right = unit(right)
+				local back = vec(-forward.X, -forward.Y, -forward.Z)
+				local raised = cross(back, right)
+				return newCFrame(
+					eye.X,
+					eye.Y,
+					eye.Z,
+					right.X,
+					raised.X,
+					back.X,
+					right.Y,
+					raised.Y,
+					back.Y,
+					right.Z,
+					raised.Z,
+					back.Z
+				)
 			end,
-			Angles = function()
-				return cf()
+			Angles = function(rx: number, ry: number, rz: number)
+				local cx, sx = math.cos(rx), math.sin(rx)
+				local cy, sy = math.cos(ry), math.sin(ry)
+				local cz, sz = math.cos(rz), math.sin(rz)
+				return newCFrame(
+					0,
+					0,
+					0,
+					cz * cy,
+					cz * sy * sx - sz * cx,
+					cz * sy * cx + sz * sx,
+					sz * cy,
+					sz * sy * sx + cz * cx,
+					sz * sy * cx - cz * sx,
+					-sy,
+					cy * sx,
+					cy * cx
+				)
+			end,
+			fromMatrix = function(pos: any, vx: any, vy: any, vz: any?)
+				local back = vz
+				if back == nil then
+					back = cross(vx, vy)
+				end
+				return newCFrame(pos.X, pos.Y, pos.Z, vx.X, vy.X, back.X, vx.Y, vy.Y, back.Y, vx.Z, vy.Z, back.Z)
 			end,
 		},
 		ColorSequence = {
@@ -851,4 +1032,88 @@ Check.test("town build yields so Play can admit a player", function()
 	Check.truthy(townAt)
 	Check.eq((spawnAt :: number) < (waitAt :: number), true)
 	Check.eq((waitAt :: number) < (townAt :: number), true)
+end)
+
+Check.test("no part covers a sign's front text", function()
+	local depth = 1.1
+	local root = townRoot()
+	local parts = {}
+	for _, inst in root:GetDescendants() do
+		if BASE_PART[inst.ClassName] == true and (inst.Transparency or 0) < 1 then
+			table.insert(parts, inst)
+		end
+	end
+	local function localPoint(frame: any, point: any): any
+		return frame:Inverse() * point
+	end
+	local function inside(partInst: any, point: any): boolean
+		local localPos = localPoint(partInst.CFrame, point)
+		local hx = partInst.Size.X / 2
+		local hy = partInst.Size.Y / 2
+		local hz = partInst.Size.Z / 2
+		local shape = if partInst.Shape ~= nil then partInst.Shape.Name else "Block"
+		if shape == "Ball" then
+			if hx < 1e-4 or hy < 1e-4 or hz < 1e-4 then
+				return false
+			end
+			local nx = localPos.X / hx
+			local ny = localPos.Y / hy
+			local nz = localPos.Z / hz
+			return nx * nx + ny * ny + nz * nz <= 1
+		end
+		if shape == "Cylinder" then
+			if math.abs(localPos.X) > hx then
+				return false
+			end
+			local radius = math.max(hy, hz)
+			return localPos.Y * localPos.Y + localPos.Z * localPos.Z <= radius * radius
+		end
+		return math.abs(localPos.X) <= hx and math.abs(localPos.Y) <= hy and math.abs(localPos.Z) <= hz
+	end
+	local function ownerName(inst: any): string
+		local cursor = inst
+		while cursor ~= nil and cursor.ClassName ~= "Model" do
+			cursor = cursor.Parent
+		end
+		if cursor == nil then
+			return inst.Name
+		end
+		return cursor.Name .. "/" .. inst.Name
+	end
+	local hits = {}
+	local signs = 0
+	for _, sign in parts do
+		local gui = sign:FindFirstChild("SignGui")
+		if gui == nil then
+			continue
+		end
+		signs += 1
+		local halfX = sign.Size.X / 2 - 0.15
+		local halfY = sign.Size.Y / 2 - 0.15
+		for row = 0, 4 do
+			for col = 0, 6 do
+				local x = -halfX + halfX * 2 * (col / 6)
+				local y = -halfY + halfY * 2 * (row / 4)
+				for layer = 0, 3 do
+					local z = -(sign.Size.Z / 2) - 0.05 - depth * (layer / 3)
+					local point = sign.CFrame * roblox.Vector3.new(x, y, z)
+					for _, other in parts do
+						if other ~= sign and inside(other, point) then
+							table.insert(hits, ownerName(sign) .. " covered by " .. ownerName(other))
+						end
+					end
+				end
+			end
+		end
+	end
+	local unique = {}
+	local listed = {}
+	for _, hit in hits do
+		if unique[hit] ~= true then
+			unique[hit] = true
+			table.insert(listed, hit)
+		end
+	end
+	Check.eq(signs >= 8, true)
+	Check.eq(#listed, 0, table.concat(listed, "; "))
 end)
