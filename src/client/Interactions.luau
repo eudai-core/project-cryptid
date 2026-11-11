@@ -1,6 +1,7 @@
 --!strict
 
 local CollectionService = game:GetService("CollectionService")
+local ProximityPromptService = game:GetService("ProximityPromptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local ThemeBind = require(script.Parent:WaitForChild("ThemeBind"))
@@ -8,6 +9,7 @@ local UiFactory = require(script.Parent:WaitForChild("UiFactory"))
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Economy = require(Shared:WaitForChild("Config"):WaitForChild("Economy")) :: any
 local Shop = require(Shared:WaitForChild("Config"):WaitForChild("Shop")) :: any
+local Town = require(Shared:WaitForChild("Config"):WaitForChild("Town")) :: any
 local UITheme = require(Shared:WaitForChild("UITheme")) :: any
 
 local Interactions = {}
@@ -32,28 +34,37 @@ local function send(remotes: Folder, names: any, prompt: ProximityPrompt)
 	end
 end
 
-local function plateFor(prompt: ProximityPrompt)
+local function plateFor(prompt: ProximityPrompt, playerGui: Instance)
 	local parent = prompt.Parent
 	if parent == nil or not parent:IsA("BasePart") then
 		return
 	end
+	local plate = UITheme.shape.promptPlate
 	local gui = Instance.new("BillboardGui")
 	gui.Name = "PromptPlate"
-	gui.Size = UDim2.fromOffset(200, 48)
-	gui.StudsOffset = Vector3.new(0, 3.2, 0)
+	gui.Size = UDim2.fromOffset(plate.w, plate.h)
+	gui.StudsOffset = Vector3.new(0, UITheme.shape.promptLift, 0)
 	gui.AlwaysOnTop = true
 	gui.LightInfluence = 0
 	gui.Enabled = false
 	gui.ResetOnSpawn = false
-	gui.Parent = parent
+	gui.Adornee = parent
+	gui.Parent = playerGui
 	local panel = UiFactory.panel(gui)
+	panel.Active = false
 	panel.Size = UDim2.fromScale(1, 1)
 	local label = UiFactory.label(panel, "body", UITheme.fonts.body.mobile, "Bone")
+	label.Active = false
 	label.Size = UDim2.fromScale(1, 1)
 	label.TextXAlignment = Enum.TextXAlignment.Center
 	ThemeBind.apply(label, "body", UITheme.fonts.body.mobile)
 	prompt.PromptShown:Connect(function()
-		label.Text = "E  " .. prompt.ActionText
+		local keyName = "E"
+		local code = prompt.KeyboardKeyCode
+		if typeof(code) == "EnumItem" then
+			keyName = code.Name
+		end
+		label.Text = keyName .. "  " .. prompt.ActionText
 		gui.Enabled = true
 	end)
 	prompt.PromptHidden:Connect(function()
@@ -64,6 +75,17 @@ end
 function Interactions.start(player: Player, remotes: Folder, names: any, beginCatch: () -> (), town: any)
 	local wired: { [Instance]: boolean } = {}
 	local refreshers: { [Instance]: () -> () } = {}
+	local playerGui = player:WaitForChild("PlayerGui")
+	local lastPedlarAsk = 0
+
+	local function askPedlar()
+		local now = os.clock()
+		if now - lastPedlarAsk < Economy.PURCHASE_DEBOUNCE_SECONDS then
+			return
+		end
+		lastPedlarAsk = now
+		fire(remotes, names.REQUEST_PEDLAR_OPEN)
+	end
 
 	local function hook(inst: Instance)
 		if not inst:IsA("ProximityPrompt") or wired[inst] then
@@ -98,13 +120,13 @@ function Interactions.start(player: Player, remotes: Folder, names: any, beginCa
 		if parent ~= nil then
 			parent:GetAttributeChangedSignal("Sealed"):Connect(refresh)
 		end
-		plateFor(inst)
+		plateFor(inst, playerGui)
 		inst.Triggered:Connect(function()
 			local kind = inst:GetAttribute("Kind")
 			if kind == "Catch" then
 				beginCatch()
-			elseif kind == "Pedlar" then
-				town.onPedlar()
+			elseif kind == Town.PEDLAR_PROMPT_NAME then
+				askPedlar()
 			elseif kind == "SkillShrine" then
 				town.onShrine()
 			elseif kind == "Rite" then
@@ -142,6 +164,11 @@ function Interactions.start(player: Player, remotes: Folder, names: any, beginCa
 	workspace.DescendantAdded:Connect(function(desc)
 		if desc:IsA("ProximityPrompt") then
 			hook(desc)
+		end
+	end)
+	ProximityPromptService.PromptTriggered:Connect(function(prompt)
+		if prompt:GetAttribute("Kind") == Town.PEDLAR_PROMPT_NAME then
+			askPedlar()
 		end
 	end)
 

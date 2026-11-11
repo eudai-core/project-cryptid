@@ -11,10 +11,8 @@ local Motion = require(script.Parent:WaitForChild("Motion"))
 local ThemeBind = require(script.Parent:WaitForChild("ThemeBind"))
 local UiFactory = require(script.Parent:WaitForChild("UiFactory"))
 local Shared = ReplicatedStorage:WaitForChild("Shared")
-local HudSlots = require(Shared:WaitForChild("Logic"):WaitForChild("HudSlots")) :: any
 local Names = require(Shared:WaitForChild("Config"):WaitForChild("Remotes")) :: any
 local NumberFormat = require(Shared:WaitForChild("Logic"):WaitForChild("NumberFormat")) :: any
-local Plots = require(Shared:WaitForChild("Config"):WaitForChild("Plots")) :: any
 local Shop = require(Shared:WaitForChild("Config"):WaitForChild("Shop")) :: any
 local SkillConfig = require(Shared:WaitForChild("Config"):WaitForChild("SkillConfig")) :: any
 local SkillRules = require(Shared:WaitForChild("Logic"):WaitForChild("SkillTree")) :: any
@@ -233,13 +231,10 @@ function SkillTree.mount(parent: Instance, player: Player, isReduced: () -> bool
 	needLabel.TextColor3 = UITheme.color("Soot")
 	needLabel.Visible = false
 
-	local hud = Plots.RETURN_BUTTON
 	local rites = UiFactory.button(parent, UITheme.text.minSize)
 	rites.Name = "Rites"
 	rites.Text = SkillConfig.OPEN_LABEL
-	rites.AnchorPoint = Vector2.new(0, 1)
-	rites.Position = UDim2.new(0, HudSlots.ritesOrigin(), 1, -hud.margin)
-	rites.Size = UDim2.fromOffset(hud.width, math.max(hud.height, ui.touchMin))
+	rites.Size = UDim2.fromOffset(UITheme.shape.hudMenu.sheetW, UITheme.shape.touchPx)
 	rites.BackgroundColor3 = UITheme.color("Soot")
 	rites.TextColor3 = UITheme.color("Bone")
 	rites.Visible = false
@@ -1331,6 +1326,7 @@ function SkillTree.mount(parent: Instance, player: Player, isReduced: () -> bool
 	return {
 		open = openTree,
 		apply = applySkills,
+		rites = rites,
 	}
 end
 

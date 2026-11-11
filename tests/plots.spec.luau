@@ -7,7 +7,6 @@ local serde = require("@lune/serde")
 
 local Check = require("./check")
 local Debounce = require("../src/shared/Logic/Debounce")
-local HudSlots = require("../src/shared/Logic/HudSlots")
 local SpawnSafety = require("../src/shared/Logic/SpawnSafety")
 local AltarTier = require("../src/shared/Logic/AltarTier")
 local Economy = require("../src/shared/Config/Economy")
@@ -523,14 +522,17 @@ Check.test("the home beam tip is inside the clear fog band under the live atmosp
 	Check.eq(across < UITheme.lighting.fogEnd, true)
 end)
 
-Check.test("the rites button uses the reserved slot to the right of both lair buttons", function()
+Check.test("the lair controls sit in the menu, clear of the thumbstick row", function()
 	local hud = Plots.RETURN_BUTTON
-	Check.eq(hud.occupiedSlots, 2)
-	Check.eq(HudSlots.origin(0), hud.margin)
-	Check.eq(HudSlots.origin(1), hud.margin + hud.width + hud.gap)
-	local rites = HudSlots.ritesOrigin()
-	Check.eq(rites, HudSlots.origin(2))
-	Check.eq(rites >= HudSlots.origin(1) + hud.width + hud.gap, true)
+	Check.eq(hud.height >= 44, true)
+	Check.eq(hud.steadyHeight >= 44, true)
+	local menu = fs.readFile("src/client/HudMenu.luau")
+	Check.contains(menu, "Menu")
+	Check.contains(menu, "offeringPip")
+	Check.contains(menu, "CalmReason")
+	local main = fs.readFile("src/client/Main.client.luau")
+	Check.contains(main, "HudMenu.mount")
+	Check.eq(string.find(main, "Steady gaze", 1, true), nil)
 	local files = {}
 	local function walk(dir: string)
 		for _, name in fs.readDir(dir) do
@@ -542,17 +544,12 @@ Check.test("the rites button uses the reserved slot to the right of both lair bu
 			end
 		end
 	end
-	walk("src/client")
-	local ritesFiles = 0
+	walk("src")
 	for _, path in files do
 		local text = fs.readFile(path)
-		Check.eq(string.find(text, "HudSlots.origin(2)", 1, true), nil, path)
-		if string.find(text, "HudSlots.ritesOrigin", 1, true) ~= nil then
-			ritesFiles += 1
-			Check.eq(string.find(path, "SkillTree.luau", 1, true) ~= nil, true, path)
-		end
+		Check.eq(string.find(text, "HudSlots", 1, true), nil, path)
+		Check.eq(string.find(text, "Steady gaze", 1, true), nil, path)
 	end
-	Check.eq(ritesFiles, 1)
 end)
 
 Check.test("lair stone stays the playtest colours and the live light follows v1.2", function()

@@ -278,8 +278,7 @@ end
 function Analytics.onboarded(profile: any): string
 	local state = if type(profile) == "table" then profile.onboarding else nil
 	local step = if type(state) == "table" then state.step else nil
-	local skipped = if type(state) == "table" then state.skipped else nil
-	if type(step) == "number" and step >= 8 and skipped ~= true then
+	if type(step) == "number" and step >= Analytics.GOAL_COUNT then
 		return "Onboarded - Yes"
 	end
 	return "Onboarded - No"

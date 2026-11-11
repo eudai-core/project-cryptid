@@ -27,6 +27,7 @@ local ProfileQuery = require(Shared:WaitForChild("Logic"):WaitForChild("ProfileQ
 local Shop = require(Shared:WaitForChild("Config"):WaitForChild("Shop")) :: any
 local ShopStock = require(Shared:WaitForChild("Logic"):WaitForChild("ShopStock")) :: any
 local Town = require(Shared:WaitForChild("Config"):WaitForChild("Town")) :: any
+local PedlarBrowse = require(Shared:WaitForChild("Logic"):WaitForChild("PedlarBrowse")) :: any
 local RemoteArgs = require(Shared:WaitForChild("Logic"):WaitForChild("RemoteArgs")) :: any
 local Autosave = require(Shared:WaitForChild("Logic"):WaitForChild("Autosave")) :: any
 local Bowl = require(Shared:WaitForChild("Logic"):WaitForChild("Bowl")) :: any
@@ -524,10 +525,47 @@ end
 local function pedlarDistance(player: Player): number?
 	local tagged = CollectionService:GetTagged("PedlarStall")
 	local model = tagged[1]
-	if model == nil or not model:IsA("Model") then
+	if model == nil then
 		return nil
 	end
-	return distanceTo(player, model.PrimaryPart)
+	local host = model:FindFirstChild(Town.PEDLAR_HOST)
+	if host ~= nil and host:IsA("BasePart") then
+		return distanceTo(player, host)
+	end
+	if model:IsA("Model") then
+		return distanceTo(player, model.PrimaryPart)
+	end
+	return nil
+end
+
+local function grantPedlarOpen(session: any): boolean
+	if not allowRequest(session) then
+		return false
+	end
+	local onboarding = session.profile.onboarding
+	local step = if type(onboarding) == "table" then onboarding.step else nil
+	local opened, at = PedlarBrowse.tryOpen(
+		pedlarDistance(session.player),
+		step,
+		Shop.GATE_STEP,
+		Town.PROMPT_DISTANCE,
+		os.clock(),
+		session.lastPedlarOpenAt,
+		Economy.PURCHASE_DEBOUNCE_SECONDS
+	)
+	if opened ~= true or at == nil then
+		return false
+	end
+	session.lastPedlarOpenAt = at
+	session.pedlarOpenToken += 1
+	session.player:SetAttribute(Shop.OPEN_TOKEN, session.pedlarOpenToken)
+	sink().pedlarOpen(
+		session.player,
+		session,
+		ShopStock.rotationId(os.time(), Shop.ROTATION_SECONDS),
+		HttpService:GenerateGUID(false)
+	)
+	return true
 end
 
 local function onPedlarBuy(session: any, rotationId: any, slot: any)
@@ -749,6 +787,9 @@ local function bind(folder: Folder)
 	listen(Names.REDUCED_MOTION, onReducedMotion)
 	listen(Names.RETURN_TO_LAIR, onReturn)
 	listen(Names.PEDLAR_BUY, onPedlarBuy)
+	listen(Names.REQUEST_PEDLAR_OPEN, function(session)
+		grantPedlarOpen(session)
+	end)
 	listen(Names.BIND_AT_ONCE, onBind)
 	listen(Names.CLAIM_HAUL, onClaimHaul)
 	listen(Names.CLAIM_DAILY, onClaimDaily)
@@ -1020,6 +1061,8 @@ function PlayerSession.onPlayer(player: Player): boolean
 		lastReturnAt = nil,
 		lastBindAt = nil,
 		pedlarToken = 0,
+		pedlarOpenToken = 0,
+		lastPedlarOpenAt = nil,
 		workers = 0,
 		plot = plot,
 		snapshot = snapshot,
@@ -1119,12 +1162,7 @@ function PlayerSession.onPedlarOpen(player: Player)
 	if session == nil or session.alive ~= true then
 		return
 	end
-	sink().pedlarOpen(
-		player,
-		session,
-		ShopStock.rotationId(os.time(), Shop.ROTATION_SECONDS),
-		HttpService:GenerateGUID(false)
-	)
+	grantPedlarOpen(session)
 end
 
 function PlayerSession.onPedlarRotation()

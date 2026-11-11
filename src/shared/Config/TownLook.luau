@@ -99,6 +99,19 @@ local TownLook = {
 		radius = 32,
 		color = "FlameCrimson",
 	}),
+	SKY_STAR_COUNT = 3000,
+	SKY_STAR_COUNT_LOW = 300,
+	SKY_SUN_ANGULAR_SIZE = 0,
+	SKY_MOON_ANGULAR_SIZE = 11,
+	SKY_CELESTIAL_BODIES_SHOWN = true,
+	SKYBOX_FACE = table.freeze({
+		bk = "rbxasset://textures/sky/sky512_bk.tex",
+		dn = "rbxasset://textures/sky/sky512_dn.tex",
+		ft = "rbxasset://textures/sky/sky512_ft.tex",
+		lf = "rbxasset://textures/sky/sky512_lf.tex",
+		rt = "rbxasset://textures/sky/sky512_rt.tex",
+		up = "rbxasset://textures/sky/sky512_up.tex",
+	}),
 }
 
 function TownLook.bloomEnabled(level: number, authored: boolean): boolean
@@ -113,6 +126,13 @@ function TownLook.flameTierEnabled(tier: string, level: number): boolean
 		return false
 	end
 	return true
+end
+
+function TownLook.starCount(level: number): number
+	if level >= 1 and level <= TownLook.LOW_QUALITY_MAX then
+		return TownLook.SKY_STAR_COUNT_LOW
+	end
+	return TownLook.SKY_STAR_COUNT
 end
 
 return table.freeze(TownLook)
