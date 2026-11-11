@@ -8,7 +8,7 @@
 
 The stall stops being a cryptid shop. It sells supplies that feed hunting, earn-only crates, and expedition eggs.
 
-**Ruling:** The Pale Pedlar stops selling cryptids. Cryptids come from hunting, crates, and expedition eggs. The Pedlar is a supplies shop priced in in-game cash only. Tools are the core stock ([spec 18](18-tools-capture-aptitudes.md)). Their effects are deterministic. They never change odds.
+**Ruling:** The Pale Pedlar stops selling cryptids. Cryptids come from hunting, crates, and expedition eggs. The Pedlar sells lures, cages, and cosmetics for in-game cash only. The Lanternwright is the tool shop: L2 through L5 and the UV Lamp ([spec 18](18-tools-capture-aptitudes.md)). L1 stays free. Tool effects are deterministic. They never change odds.
 
 Nothing in this note deletes a species id. `Species.luau` and `ShopPools.luau` stay intact, including `uncommon_01`, `rare_01`, `epic_01`, and the empty Legendary and Mythic pools.
 
@@ -41,9 +41,11 @@ Spec 09's wild interval is **45 s**. That interval is not a field on `Economy`. 
 
 Compare: `Economy.PAD_COST[5]` is $1,200, Pad 7 is $15,000, and skill `h1` (the same −10% hold as the Ember Lantern) costs $1,000. `Shop.RARITIES` payback stays the cryptid formula (`baseIncome × paybackSeconds`) and is not reused as a supply price.
 
-## Core stock: tools
+## Tools live at the Lanternwright
 
-Full numbers, gates, and code support are in [spec 18](18-tools-capture-aptitudes.md). Short catalogue:
+The Pedlar does not sell tools. L2 through L5 and the UV Lamp are the Lanternwright's counter. L1 stays free and is not a row there. Numbers, gates, and what the code can do today are in [spec 18](18-tools-capture-aptitudes.md). The Lanternwright shows no restock clock. Those tools are always in stock. `Town.luau` still marks the stall `shuttered`. The tool-shop PR sets it live and does not add town parts. A new mesh waits for the World Builder.
+
+Short catalogue, sold at the Lanternwright, not here:
 
 | Item | Effect | Duration / charges | Stack | Cash price | In code today | Sale |
 |---|---|---|---|---|---|---|
@@ -58,13 +60,13 @@ Until a row has a server effect, the card has no Buy button and charges nothing.
 
 ## Lures and bait
 
-An item that raises hunt odds or a rarity weight is **not sold**. Wild rarity weights in spec 09 are not implemented (the only wild spawn in code is the tutorial Hodag). `h5` Lure Craft (`spawnRate` +10%) and `h6` Blood Tracker (Uncommon-or-better ×1.05) stay sealed. A cash copy would be a paid probability modifier ([compliance audit](compliance-audit-cash-random.md) rows 6, 7, and 10; spec 16 §7.1 and §7.9; spec 15 §5).
+A lure that changes rarity odds or mutation odds is **not sold**. Two effects are allowed, each fixed and written on the card before cash is spent. One raises the encounter rate: the next wild spawn uses `Lure.ENCOUNTER_INTERVAL_SECONDS` instead of the spec 09 interval of 45 s, and the rarity table is unchanged. The other attracts a named species when that species' published condition is already true. Neither one edits a rarity weight or a mutation weight. Wild rarity weights are not in code (the only wild spawn is the tutorial Hodag). `h5` and `h6` stay sealed. The encounter-rate row stays off the counter until the wild-spawner PR sets `Lure.ENCOUNTER_INTERVAL_SECONDS`, because a lure with no working interval is not sold.
 
 | Item | Effect | Duration / charges | Stack | Cash price | Hooks into | In code | Sale |
 |---|---|---|---|---|---|---|---|
 | Reed Bait | When that species' published spawn condition is already true, the next wild spawn of that species appears at the bait. Interval stays 45 s. Rarity weights stay spec 09's table. | 1 charge, spent when that spawn is placed. | 3 | $787.50 (N = 1) | Spec 15 §10 bait. Wild spawner. | No. Only `Species.WILD_ID` (Hodag) at `Economy.WILD_SPAWN_STUDS` (20). | **Deferred. Not sold.** |
 | Fog Lamp | See through Fog Night. No spawn, rarity, or income change. | Permanent. | 1 | $1,575 (N = 2) | Spec 15 §10. Fog Night is atmosphere only (director ruling 15) and is not in `src/`. | No. | **Deferred. Not sold.** |
-| Odds lure | Would multiply a rarity weight or a spawn rate. | — | — | No price. | Would hook a wild table that does not exist, and the audit forbids the cash hook. | No. | **Not sold.** Not deferred into a later sale. |
+| Odds lure | Would change a rarity weight or a mutation weight. | — | — | No price. | Rarity and mutation tables. | No. | **Not sold.** |
 
 The Robux **Lure Totem** (spec 09, 49 R$, moves spawns, does not change odds) stays a Relics product. This stall does not sell it, and this note does not change that Robux price.
 
@@ -91,7 +93,7 @@ One free slot (spec 14 §3). The chosen cryptid leaves its pad. The card states 
 
 **Before Send, the card shows the whole manifest.** Return delivers that card once. A disconnect does not reroll it (spec 14).
 
-- **Cryptid or egg.** If the route returns a cryptid or an egg, the species, Courage, Instinct, Attunement, and trait are already written on the card (spec 14). There is no second reveal on the way home.
+- **Cryptid or egg.** A free egg is allowed only when the card already shows its species, Courage, Instinct, Attunement, and trait (spec 14). There is no second reveal on the way home. A cash egg ticket is not sold.
 - **Cash.** The sent cryptid's own pre-2x income per second, times 60, times that route's cash-minute constant. Pre-2x means before the 2x Cash pass (spec 06). The rate is `Income.contribution` (base × altar × skill) times `(1 + courageBonus)` from [spec 18](18-tools-capture-aptitudes.md). It is not the whole lair, and it is not Tithe. The code PR puts the six numbers in one config module. They are not literals in the send script. Worked check, Hodag base 5, altar I (`BoneAltar.multiplier(1)` = 1.25), Courage 0, no skill: 6.25/s. Lantern Wood is `6.25 × 60 × LANTERN_WOOD_CASH_MINUTES` = **$5,625**. Hollow Marsh is **$16,875**. Bell Quarry is **$56,250**.
 - **Relic.** Rolled when the card is built, not when the party returns (audit row 9, spec 12 §6.2). Details shows the table before the roll: Fog Lantern 50%, Cracked Bell 20%, Wisp Jar 20%, Blood Chalice 7%, Rift Shard 2%, Black Sun Coin 1% (100%). The card then names the relic that was rolled. Cap 5 of each (spec 12 §6.2).
 - **No tarot token** (spec 09 v3). No Essence.
@@ -130,9 +132,7 @@ No pumpkins, wreaths, or holiday names. Robux cosmetics in spec 09 (VIP Lair 299
 
 Cash only. No Robux button, no product id, no edit to `Monetisation.luau` or to spec 09's Robux figures. Server Luck and those Robux prices stay open (director ruling 5).
 
-Restock stays as it is. `Shop.ROTATION_SECONDS` is 300. `ShopStock.rotationId` is `floor(unix / 300)`. The label stays `Shop.RESTOCK_PREFIX` ("Restocks in ") plus `ShopStock.formatCountdown`. The note under Details stays "Buying never changes the stock." The lantern glow stays `Shop.GLOW_SECONDS` (10). No "last chance", "only N left", or "deal of the day" (spec 16 §7.3 and §7.4). Director ruling 20.
-
-Permanent tools are always on the counter. The clock still ticks, and a tick does not remove an unsold tool. That keeps the real timer without turning it into scarcity. Open question 3 records the alternative.
+Tools do not use a restock clock. The Lanternwright does not show `Shop.RESTOCK_PREFIX` or `ShopStock.formatCountdown`. L2 through L5 and the UV Lamp stay on the counter. Buying one does not remove the others. The Pedlar's lures, cages, and cosmetics are a standing list too. `Shop.ROTATION_SECONDS` (300) is not a countdown on either stall once cryptid cages are gone. Buying still does not reroll. No "last chance", "only N left", or "deal of the day" (spec 16 §7.3 and §7.4).
 
 **Cash and the policy gate.** Cash is paid currency because it is sold in Robux bundles (audit ruling, spec 09 §8). `PolicyGate.allows` reads `ArePaidRandomItemsRestricted` and fails closed: it returns true only when that field is explicitly false. `MonetisationService.paidRandomAllowed` calls it. Nothing in the Pedlar calls it today. This stall does not need the gate, because it sells no random item. A future random cash row would have to call it and hide the row when it returns false. That row is not in this catalogue.
 
@@ -173,28 +173,29 @@ Reuse the #25 Pedlar card. Do not invent a second panel.
 - Header stays `Shop.HEADER` ("The Pale Pedlar").
 - Prompt copy changes from "Browse the Pedlar's cages" to **"Browse the Pedlar's wares"** when the offers stop being cryptids.
 - Icon: scripted parts in a `ViewportFrame`, same path as `PedlarShop` portraits. No new image asset. Colours from `UITheme` tokens. Beam colours for the tools are the spec 15 identities (orange, green, blue, purple, silver). The UV Lamp's colour is unset (spec 18).
-- Chip: reuse `UiFactory.rarityChip` for layout only. The label is **Tool**, **Bait**, **Egg**, or **Look**. Colour is Gold when it can be bought, BoneDim when it cannot. Do not mark a lantern Common or Epic.
+- Chip: reuse `UiFactory.rarityChip` for layout only. On the Pedlar the label is **Bait**, **Cage**, or **Look**. On the Lanternwright it is **Tool**. Colour is Gold when it can be bought, BoneDim when it cannot. Do not mark a lantern Common or Epic.
 - A card that can be bought shows name, the numeric effect, and the price before cash is spent (spec 16 §6 and §8.5).
 - A deferred card shows the name and the line **"Not on the counter."** No price, no Buy.
 - Spec 16 rules this shop applies: §6 (say what it does), §7.1, §7.3, §7.4, §7.9, §8.5. §8.5 still says "caged cryptid". That sentence is stale once this ships. This note does not edit spec 16. The follow-up edit is: show the supply and its effect, not a caged cryptid.
 - No shop modal during a bind, reveal, haul, offering, or rite (spec 16 verification line). The gate stays `Shop.GATE_STEP` (8) and `Monetisation.GATE_PLAY_SECONDS` (300) before any cash row can be bought. L1 is already in the player's hands from the tutorial and is not a purchase.
 
-The Lanternwright stall stays shuttered. Stock is on the Pedlar. Opening the Lanternwright is town geometry and waits for the World Builder after #14.
+The Lanternwright is the tool shop. The Pedlar does not list L2 through L5 or the UV Lamp. A new building mesh is the World Builder's, after #14. This note does not edit `TownBuilder`.
 
 ## Implementation plan
 
 Docs only here. The code splits into the small PRs below. Shop and expedition PRs are this note. Tool, Dossier, Convergence, contract, and analytics PRs are [spec 18](18-tools-capture-aptitudes.md). None of them start ahead of #14, and none of them take `DATA_VERSION` 10.
 
-1. **Stop the cryptid counter.** Supply rows replace `ShopRoll` species. Buy spends cash only when a server effect exists. Until Update 1 the lantern row is owned and the other rows say "Not on the counter." Tests: a buy does not grant a species; `rotationId` does not change on buy.
+1. **Stop the cryptid counter.** The Pedlar lists lures, cages, and cosmetics. The Lanternwright lists L2 through L5 and the UV Lamp, with no restock countdown. L1 is not a paid row. Buy spends cash only when a server effect exists. Tests: a buy does not grant a species; neither stall shows `Shop.RESTOCK_PREFIX`.
 2. **Schema, after #15.** Version 11, chained after `migrateToV10`. `source = "pedlar"` becomes 5/5/5. Every other cryptid uses the spec 18 hash. Tests: a second migrate does not change the numbers; species id and cash stay put.
-3. **Expedition manifest (January).** One module holds the six route constants. The card shows cash from those constants before Send. One free slot. No third slot and no egg ticket.
+3. **Expedition manifest (January).** One module holds the six route constants. The card shows cash from those constants before Send. A free egg is on that card only when its species and aptitudes are already written there. One free slot. No third slot and no egg ticket.
+4. **Wild spawner.** Owns Reed Bait, `Lure.ENCOUNTER_INTERVAL_SECONDS`, and the 4 s and 5 s twist windows in spec 18. Until it lands, those rows are not sold and those windows are not live.
 
 ## QA
 
-1. Fresh profile: the stall shows the Rusty Lantern as owned. No cryptid name, no species price, no Buy that spends cash.
+1. Fresh profile: the Pedlar shows lures, cages, and cosmetics, and no tool. The Lanternwright shows L2 through L5 and the UV Lamp, and no countdown. L1 is already owned and is not priced. No cryptid name is for sale.
 2. A profile that already owns a Pedlar cryptid still owns that species after load, at Courage 5, Instinct 5, Attunement 5.
-3. Details on a tool says the odds are unchanged, with the before and after hold or range.
-4. The countdown uses the real 300 s boundary. Copy has no "last chance" or "only".
+3. Details on a Lanternwright tool says the odds are unchanged, with the before and after hold or range. A lure's Details shows the encounter interval or the named species, and the spec 09 rarity table unchanged.
+4. Neither stall shows "Restocks in". Copy has no "last chance" or "only".
 5. Touch targets are 44 px on a phone width (`UITheme.shape.mobileWidthBreakpoint` 700).
 6. No Marketplace prompt, and no new product id.
 7. Tutorial Hodag still completes with the free lantern (spec 01). The charge twist does not run on that spawn (spec 18).
@@ -207,10 +208,11 @@ Docs only here. The code splits into the small PRs below. Shop and expedition PR
 - Beam skins are not on the Pedlar. They belong on a separate Robux tab. Prices **PENDING EUDAI**. No figure is stored here.
 - An empty cash counter until Update 1 is accepted.
 - A Pedlar-sourced cryptid migrates to 5/5/5. The version bump is in the code PR, chained after #15.
+- Lures that change rarity or mutation odds stay off the stall. A lure may raise the encounter rate, or attract a named species, as a fixed effect shown before purchase.
+- A free expedition egg is allowed only when its contents are already on the send card.
+- Permanent tools have no 5-minute restock clock. They are always in stock at the Lanternwright.
+- The Lanternwright sells L2 through L5 and the UV Lamp. L1 stays free. The Pedlar sells lures, cages, and cosmetics only.
 
 ## Open questions for Eudai and Grok Bot
 
-1. The first supplies brief asked for lures that raise hunt odds. This note does not sell those. Confirm that withdrawal.
-2. Egg tickets stay off the counter. A free expedition egg is allowed only when its species and aptitudes are already on the send card. Confirm that split.
-3. Permanent tools never leave the counter, while the 5-minute clock still runs (ruling 20). Confirm, or say the clock should hide when the list cannot change.
-4. Stock stays on the Pedlar. The Lanternwright stays shuttered. Confirm.
+None in this note. `Lure.ENCOUNTER_INTERVAL_SECONDS` is set in the wild-spawner PR before that lure can be sold. It is not a second rarity table.
