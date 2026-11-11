@@ -12,6 +12,10 @@ local UITheme = import("../shared/UITheme", function()
 	return game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("UITheme")
 end) :: any
 
+local TownLook = import("../shared/Config/TownLook", function()
+	return game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("TownLook")
+end) :: any
+
 local LightingSetup = {}
 
 local function effect(lighting: Instance, className: string): any
@@ -59,6 +63,20 @@ function LightingSetup.apply()
 	grade.Contrast = lighting.colorContrast
 	grade.Brightness = lighting.colorBrightness
 	grade.TintColor = UITheme.color(lighting.colorTint)
+
+	local sky = effect(Lighting, "Sky")
+	sky.Name = "HollowmereSky"
+	local face = TownLook.SKYBOX_FACE
+	sky.SkyboxBk = face.bk
+	sky.SkyboxDn = face.dn
+	sky.SkyboxFt = face.ft
+	sky.SkyboxLf = face.lf
+	sky.SkyboxRt = face.rt
+	sky.SkyboxUp = face.up
+	sky.StarCount = TownLook.SKY_STAR_COUNT
+	sky.SunAngularSize = TownLook.SKY_SUN_ANGULAR_SIZE
+	sky.MoonAngularSize = TownLook.SKY_MOON_ANGULAR_SIZE
+	sky.CelestialBodiesShown = TownLook.SKY_CELESTIAL_BODIES_SHOWN
 
 	local baseplate = workspace:FindFirstChild("Baseplate")
 	if baseplate ~= nil then

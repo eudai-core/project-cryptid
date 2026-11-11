@@ -29,12 +29,21 @@ local function applyEmitter(inst: Instance, level: number)
 	inst.Enabled = TownLook.flameTierEnabled(tier, level)
 end
 
+local function applySky(level: number)
+	local sky = Lighting:FindFirstChildOfClass("Sky")
+	if sky == nil then
+		return
+	end
+	sky.StarCount = TownLook.starCount(level)
+end
+
 local function apply()
 	local level = qualityLevel()
 	local bloom = Lighting:FindFirstChildOfClass("BloomEffect")
 	if bloom ~= nil then
 		bloom.Enabled = TownLook.bloomEnabled(level, UITheme.lighting.bloomEnabled)
 	end
+	applySky(level)
 	for _, inst in workspace:GetDescendants() do
 		applyEmitter(inst, level)
 	end
@@ -44,6 +53,11 @@ function TownQuality.start()
 	apply()
 	workspace.DescendantAdded:Connect(function(inst)
 		applyEmitter(inst, qualityLevel())
+	end)
+	Lighting.ChildAdded:Connect(function(inst)
+		if inst:IsA("Sky") then
+			applySky(qualityLevel())
+		end
 	end)
 	local settings = UserSettings():GetService("UserGameSettings")
 	settings:GetPropertyChangedSignal("SavedQualityLevel"):Connect(apply)
