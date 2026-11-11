@@ -4,6 +4,21 @@
 -- Callers pass isStudio. A live server always gets the inert plan.
 -- Offline and offering suffixes are applied by StudioQaHooks.
 
+local function import(lunePath: string, getRoblox: () -> any): any
+	-- selene: allow(global_usage)
+	if _G.LUNE == true then
+		return require(lunePath)
+	end
+	return require(getRoblox())
+end
+
+local QaArgs = import("../../shared/Logic/QaArgs", function()
+	return game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Logic"):WaitForChild("QaArgs")
+end)
+local QaSeed = import("../../shared/Logic/QaSeed", function()
+	return game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Logic"):WaitForChild("QaSeed")
+end)
+
 local StudioQa = {}
 
 local HOOKS = {
@@ -44,6 +59,33 @@ function StudioQa.plan(isStudio: boolean, args: any): string
 	return "load"
 end
 
+function StudioQa.seedKind(isStudio: boolean, args: any): string?
+	if isStudio ~= true then
+		return nil
+	end
+	if QaArgs.seedV9(true, args) then
+		return "seedv9"
+	end
+	if QaArgs.rebirth6(true, args) then
+		return "rebirth6"
+	end
+	return nil
+end
+
+function StudioQa.seedDocument(kind: string, now: number): any?
+	if kind == "seedv9" then
+		return QaSeed.v9(now)
+	end
+	if kind == "rebirth6" then
+		return QaSeed.rebirth6(now)
+	end
+	return nil
+end
+
+function StudioQa.seedLine(kind: string, phase: string, profile: any): string
+	return QaSeed.line(kind, phase, profile)
+end
+
 function StudioQa.armRelics(profile: any)
 	-- selene: allow(global_usage)
 	if _G.LUNE == true or type(profile) ~= "table" or type(profile.onboarding) ~= "table" then
@@ -55,7 +97,6 @@ function StudioQa.armRelics(profile: any)
 	local ReplicatedStorage = game:GetService("ReplicatedStorage")
 	local Shared = ReplicatedStorage:WaitForChild("Shared")
 	local Monetisation = require(Shared:WaitForChild("Config"):WaitForChild("Monetisation"))
-	local QaArgs = require(Shared:WaitForChild("Logic"):WaitForChild("QaArgs"))
 	local StudioQaHooks = require(script.Parent:WaitForChild("StudioQaHooks"))
 	if QaArgs.parse(StudioQaHooks.args()).relics ~= true then
 		return
@@ -78,7 +119,6 @@ function StudioQa.armRebirth(profile: any): boolean
 	end
 	local ReplicatedStorage = game:GetService("ReplicatedStorage")
 	local Shared = ReplicatedStorage:WaitForChild("Shared")
-	local QaArgs = require(Shared:WaitForChild("Logic"):WaitForChild("QaArgs"))
 	local Rebirth = require(Shared:WaitForChild("Logic"):WaitForChild("Rebirth"))
 	local StudioQaHooks = require(script.Parent:WaitForChild("StudioQaHooks"))
 	if QaArgs.parse(StudioQaHooks.args()).rebirthReady ~= true then
@@ -95,9 +135,6 @@ function StudioQa.analytics(): boolean
 	if not game:GetService("RunService"):IsStudio() then
 		return false
 	end
-	local ReplicatedStorage = game:GetService("ReplicatedStorage")
-	local Shared = ReplicatedStorage:WaitForChild("Shared")
-	local QaArgs = require(Shared:WaitForChild("Logic"):WaitForChild("QaArgs"))
 	local StudioQaHooks = require(script.Parent:WaitForChild("StudioQaHooks"))
 	return QaArgs.parse(StudioQaHooks.args()).analytics == true
 end

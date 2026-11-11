@@ -8,6 +8,7 @@
 -- `fresh` asks Studio to load a throwaway key instead of the real save.
 -- `relics` opens the shop gate once the rite has reached it.
 -- `rebirthready` fills the tier-1 rite requirements. Studio only. No remote.
+-- `seedv9` writes a v9 save before load. `rebirth6` writes a v10 save at six rites.
 
 local QaArgs = {}
 
@@ -21,6 +22,8 @@ export type Tokens = {
 	relics: boolean,
 	analytics: boolean,
 	rebirthReady: boolean,
+	seedV9: boolean,
+	rebirth6: boolean,
 }
 
 local function empty(): Tokens
@@ -34,6 +37,8 @@ local function empty(): Tokens
 		relics = false,
 		analytics = false,
 		rebirthReady = false,
+		seedV9 = false,
+		rebirth6 = false,
 	}
 end
 
@@ -70,6 +75,12 @@ function QaArgs.parse(args: any): Tokens
 		elseif key == "rebirthready" then
 			tokens.rebirthReady = true
 			index += 1
+		elseif key == "seedv9" then
+			tokens.seedV9 = true
+			index += 1
+		elseif key == "rebirth6" then
+			tokens.rebirth6 = true
+			index += 1
 		elseif key == "opentree" or key == "fresh" then
 			if key == "fresh" then
 				tokens.fresh = true
@@ -102,6 +113,20 @@ function QaArgs.parse(args: any): Tokens
 		end
 	end
 	return tokens
+end
+
+function QaArgs.seedV9(isStudio: boolean, args: any): boolean
+	if isStudio ~= true then
+		return false
+	end
+	return QaArgs.parse(args).seedV9 == true
+end
+
+function QaArgs.rebirth6(isStudio: boolean, args: any): boolean
+	if isStudio ~= true then
+		return false
+	end
+	return QaArgs.parse(args).rebirth6 == true
 end
 
 function QaArgs.rebirthReady(isStudio: boolean, args: any): boolean

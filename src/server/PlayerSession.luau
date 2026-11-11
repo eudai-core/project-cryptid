@@ -915,8 +915,19 @@ function PlayerSession.onPlayer(player: Player): boolean
 	if plan == "seed-fresh" or plan == "seed-stale" then
 		DataStoreGateway.seedForeignLock(player.UserId, plan == "seed-stale")
 	end
+	local seedKind = StudioQa.seedKind(RunService:IsStudio(), StudioQaHooks.args())
+	if seedKind ~= nil then
+		local seeded = StudioQa.seedDocument(seedKind, os.time())
+		if seeded ~= nil then
+			print(StudioQa.seedLine(seedKind, "before", seeded))
+			DataStoreGateway.seedProfile(player.UserId, seeded)
+		end
+	end
 	local created = Schema.newProfile(os.time(), HttpService:GenerateGUID(false))
 	local loaded = DataStoreGateway.load(player.UserId, created)
+	if seedKind ~= nil and loaded.ok and loaded.profile ~= nil then
+		print(StudioQa.seedLine(seedKind, "after", loaded.profile))
+	end
 	if player.Parent == nil then
 		if loaded.ok and loaded.ephemeral ~= true and loaded.profile ~= nil then
 			DataStoreGateway.release(player.UserId, loaded.profile)

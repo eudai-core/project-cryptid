@@ -4,10 +4,13 @@ local DataStoreService = game:GetService("DataStoreService")
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Board = require(Shared:WaitForChild("Config"):WaitForChild("TitheBoard")) :: any
 local Logic = require(Shared:WaitForChild("Logic"):WaitForChild("TitheBoard")) :: any
+local MockDataStore = require(script.Parent:WaitForChild("MockDataStore"))
+local TitheStore = require(script.Parent:WaitForChild("TitheStore"))
 
 local TitheLedger = {}
 
@@ -21,9 +24,26 @@ local state = {
 	revision = 0,
 }
 local boardValue: StringValue? = nil
-local ordered: any = nil
 local running = false
 local lastReadAt = 0
+
+local board = TitheStore.open({
+	getStore = function()
+		return DataStoreService:GetOrderedDataStore(Board.STORE_NAME)
+	end,
+	createMock = function()
+		if not RunService:IsStudio() then
+			error("Mock DataStore is refused outside Studio")
+		end
+		return MockDataStore.newOrdered()
+	end,
+	allowMock = function()
+		return RunService:IsStudio()
+	end,
+	isStudio = RunService:IsStudio(),
+	placeId = game.PlaceId,
+	warn = warn,
+})
 
 local function columnFor(player: Player): StringValue
 	local stats = player:FindFirstChild("leaderstats")
@@ -70,24 +90,9 @@ local function onlineRows(): { any }
 	return updates
 end
 
-local function store(): any
-	if ordered ~= nil then
-		return ordered
-	end
-	local ok, result = pcall(function()
-		return DataStoreService:GetOrderedDataStore(Board.STORE_NAME)
-	end)
-	if ok then
-		ordered = result
-	end
-	return ordered
-end
-
-local function readBoard(dataStore: any): (boolean, { any })
-	local ok, pages = pcall(function()
-		return dataStore:GetSortedAsync(false, Board.TOP)
-	end)
-	if not ok or pages == nil then
+local function readBoard(): (boolean, { any })
+	local ok, pages = board.getSorted(false, Board.TOP)
+	if not ok or type(pages) ~= "table" or type(pages.GetCurrentPage) ~= "function" then
 		return false, {}
 	end
 	local pageOk, page = pcall(function()
@@ -114,14 +119,10 @@ local function readBoard(dataStore: any): (boolean, { any })
 	return true, incoming
 end
 
-local function writeDue(dataStore: any, now: number)
+local function writeDue(now: number)
 	for userId, score in scores do
 		if Logic.shouldWrite(lastWriteAt[userId], now, lastWritten[userId], score) then
-			local key = tostring(userId)
-			local ok = pcall(function()
-				dataStore:SetAsync(key, score)
-			end)
-			if ok then
+			if board.set(tostring(userId), score) then
 				lastWriteAt[userId] = now
 				lastWritten[userId] = score
 			end
@@ -147,24 +148,21 @@ local function publish()
 end
 
 local function cycle(now: number)
-	local dataStore = store()
 	local readOk = false
 	local incoming = nil
 	local attempted = false
-	if dataStore ~= nil and (lastReadAt == 0 or now - lastReadAt >= Board.READ_SECONDS) then
+	if lastReadAt == 0 or now - lastReadAt >= Board.READ_SECONDS then
 		attempted = true
-		readOk, incoming = readBoard(dataStore)
+		readOk, incoming = readBoard()
 		if readOk then
 			lastReadAt = now
 		end
 	end
-	if dataStore ~= nil then
-		writeDue(dataStore, now)
-	end
+	writeDue(now)
 	local live = onlineRows()
 	if readOk then
 		Logic.ingest(state, true, incoming, live)
-	elseif attempted or dataStore == nil then
+	elseif attempted then
 		Logic.ingest(state, false, nil, live)
 	else
 		Logic.ingest(state, state.message == "", state.rows, live)
