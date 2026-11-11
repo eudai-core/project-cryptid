@@ -3,6 +3,8 @@
 **Version:** v0.2 (2026-11-03, Master Controller decisions folded in) · **Owner:** Art · **Reads from:** Specs 01–04
 **Tags:** `[S01]`–`[S04]` = rule taken from that spec. **`[FIXED]`** = fixed art direction from the project brief. **`[PROPOSED]`** = **Proposed default (needs Eudai sign-off)**: the specs say nothing, so this is my suggestion. **`[DECIDED]`** = settled, see the decision log.
 
+> **Superseded (director ruling, 11 Nov 2026).** This whole file is style guide v0.2, kept on purpose and superseded by [`style-guide-v0.8.md`](style-guide-v0.8.md). Where its world-look rules conflict with spec 15, spec 15 wins: a purple night, coloured flames, and Neon on flames, portals, runes, signs, and eyes, within the budgets in [`docs/VISUAL_REFERENCES.md`](../docs/VISUAL_REFERENCES.md). Spec 01 A2 palette tokens still apply to UI. The Neon Rift conveyor trim in §2 of this file stays superseded as well: D38 and D41 removed it, and main uses RiftDim on the fissure. Spec 15 does not put that Neon trim back.
+
 ## Decision log
 
 | # | Date | By | Decision | Where |
@@ -23,7 +25,7 @@
 
 **One-line direction:** grim, weathered, occult. A **candle-lit ritual ledger** `[S01 A1]`, a **fog-drowned market town** `[S03 §1]`. Dark and heavy, but **always readable**.
 
-**Never:** bright purple, saturated blue, pastel, cartoony, toy-like, glossy, rounded "bubble" shapes `[FIXED] [S01 A2] [S03 §3]`.
+**Never:** bright purple, saturated blue, pastel, cartoony, toy-like, glossy, rounded "bubble" shapes `[FIXED] [S01 A2] [S03 §3]`. **World look superseded where it conflicts** with spec 15 (director ruling 1, 11 Nov 2026): purple night, coloured flames, and Neon on flames, portals, runes, signs, and eyes. The A2 ban still applies to UI.
 
 ---
 

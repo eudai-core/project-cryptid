@@ -1,0 +1,27 @@
+# Static checks for this Rojo project. No Studio, no Open Cloud, no API key.
+# Tool versions come from rokit.toml. Adapted from m4bwav/roblox-agent
+# skills/roblox-agent-checks/references/roblox-ci.yml (MIT). See
+# tools/rbx_check/LICENSE-THIRDPARTY.
+name: roblox-ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: CompeyDev/setup-rokit@v0.2.1
+      - name: build
+        run: rojo build -o "$RUNNER_TEMP/ProjectCryptid.rbxlx"
+      - name: lint
+        run: selene src
+      - name: format
+        run: stylua --check src tools/rbx_check
+      - name: lune
+        run: lune run tests/run.luau
+      - name: rbx_check
+        run: lune run tools/rbx_check

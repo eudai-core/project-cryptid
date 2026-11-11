@@ -3,6 +3,8 @@
 **Version:** v0.8 (2026-11-04, D41–D49 Master Controller rulings on the atmosphere pass: Neon/RiftDim, OutdoorAmbient fallback, Atmosphere `#282A30`, fog exception, smoke texture allowlist, lair fog, Epic beat in events, launch scope) · v0.7 (2026-11-04, D38 RiftDim, D39 light cap + Hodag lantern, D40 goal-3 pips) · v0.6 (2026-11-04, D34–D35 and D37 Master Controller rulings; D26/D29 amended: "bought" = Robux) · v0.5 (2026-11-04, D33 onboarding re-order, D36 gift banners) · v0.4 (2026-11-04, D27–D32 Master Controller rulings on the VFX plan §10 conflicts) · v0.3 (2026-11-04, D14–D26 + D8/D21 Highlight update) · v0.2 (2026-11-03) · **Owner:** Art · **Reads from:** Specs 01–04
 **Tags:** `[S01]`–`[S04]` = rule taken from that spec. **`[FIXED]`** = fixed art direction from the project brief. **`[PROPOSED]`** = **Proposed default (needs Eudai sign-off)**: the specs say nothing, so this is my suggestion. **`[DECIDED]`** = settled, see the decision log.
 
+> **World look superseded where it conflicts (director ruling, 11 Nov 2026).** This file stays the living guide for decisions that do not conflict. Spec 15 wins the world look: a purple night, coloured flames, and Neon on flames, portals, runes, signs, and eyes, within the budgets in [`docs/VISUAL_REFERENCES.md`](../docs/VISUAL_REFERENCES.md). Spec 01 A2 palette tokens still apply to UI. Sentences below that ban bright purple, saturated blue, or cartoony shapes in the world, or that limit Neon to the Mothman Hatchling's eyes and the Dover Demon's eyes, are superseded where they conflict with that. The fissure belt, the Great Rift pit, and the Pedlar lantern stay RiftDim, not Neon (D38, D41, ruling 9). D34 still wins for Mythic. The Highlight cap stays 31 until 255 is verified in Studio (ruling 7). Main's lighting values stay until visual pass #17 tunes them (ruling 8).
+
 ## Decision log
 
 | # | Date | By | Decision | Where |
@@ -59,7 +61,7 @@
 
 **One-line direction:** grim, weathered, occult. A **candle-lit ritual ledger** `[S01 A1]`, a **fog-drowned market town** `[S03 §1]`. Dark and heavy, but **always readable**.
 
-**Never:** bright purple, saturated blue, pastel, cartoony, toy-like, glossy, rounded "bubble" shapes `[FIXED] [S01 A2] [S03 §3]`.
+**Never:** bright purple, saturated blue, pastel, cartoony, toy-like, glossy, rounded "bubble" shapes `[FIXED] [S01 A2] [S03 §3]`. **World look superseded where it conflicts** with spec 15 (director ruling 1, 11 Nov 2026): purple night, coloured flames, and Neon on flames, portals, runes, signs, and eyes. The A2 ban still applies to UI. The fissure, pit, and Pedlar lantern stay non-Neon (ruling 9).
 
 ---
 
