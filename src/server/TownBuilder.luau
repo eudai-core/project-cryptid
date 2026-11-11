@@ -378,17 +378,17 @@ local function wall(town: Folder)
 		if open then
 			flush()
 			mergedPairs = 0
-			continue
-		end
-		local scale = 0.72 + 0.28 * ((index % 5) / 4)
-		if mergedPairs < 2 and held == nil then
-			held = { angle = angle, scale = scale }
-		elseif mergedPairs < 2 and held ~= nil then
-			place(held.angle + step / 2, math.max(held.scale, scale), 2)
-			held = nil
-			mergedPairs += 1
 		else
-			place(angle, scale, 1)
+			local scale = 0.72 + 0.28 * ((index % 5) / 4)
+			if mergedPairs < 2 and held == nil then
+				held = { angle = angle, scale = scale }
+			elseif mergedPairs < 2 and held ~= nil then
+				place(held.angle + step / 2, math.max(held.scale, scale), 2)
+				held = nil
+				mergedPairs += 1
+			else
+				place(angle, scale, 1)
+			end
 		end
 	end
 	flush()
