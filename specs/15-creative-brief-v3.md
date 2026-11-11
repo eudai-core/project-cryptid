@@ -57,10 +57,10 @@ Every cryptid = unique look + unique behaviour (how it moves/flees) + an optiona
 | Beast of Bray Road | R | stalks players, bipedal sprint | Woods, full moon phase (clock tower) |
 | Jersey Devil | E | flies a loop, screech telegraph | Quarry, Blood Moon only |
 | Loch Ness Serpent | E | rises from the lake for 30 s | Marsh lake, needs the Lure Totem + Fog Night |
-Set-ups (deterministic items): Lure Totem (pulls the next spawn), Bait (makes a species' spawn appear at your spot when its conditions are met), Fog Lamp (see through Fog Night). None change rarity odds.
+Set-ups (deterministic items): Lure Totem (moves the next already-rolled spawn closer), Reed Bait (the same move, for cash, in spec 17; it does not pick a species), Fog Lamp (see through Fog Night). None change rarity odds or the spawn interval.
 
-## 11. Shiny variants: monetisation (compliant)
-Eudai asked for shinies from Robux crates + a grind option. Paid random items are banned by Eudai's 4 Nov decision, so:
-- Grind: all variants earnable in-game (wild catches, earned readings, expeditions), odds shown.
-- Robux: (a) Server Luck (already approved, PolicyService-gated) raises variant odds server-wide; (b) fixed "Shiny Rite" bundles: a specific, pre-shown variant for a fixed price (e.g. Gilded Jackalope 149 R$; prices need my approval).
+## 11. Spectral variants: monetisation (compliant)
+Eudai asked for variant crates plus a grind option. Paid random items are banned by Eudai's 4 Nov decision, so:
+- Grind: Spectral and Shadow are earnable in-game (wild catches, earned readings, expeditions), odds shown. Gilded and Moonlit are look, odds, and source TBD (AD).
+- Robux: (a) Server Luck (already approved, PolicyService-gated) raises variant odds server-wide; (b) fixed Spectral Rite bundles: a specific, pre-shown variant for a fixed price (e.g. a shown Jackalope; prices need approval). The old name was "Shiny Rite".
 - NO paid crates with random variants.

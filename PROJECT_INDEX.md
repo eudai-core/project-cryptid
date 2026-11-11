@@ -133,13 +133,13 @@ Concept images, every file. Town name on the art is Hollowmere, and the apotheca
 | [`art/concepts/winter-town.jpg`](art/concepts/winter-town.jpg) | Snow on the well and roofs, holiday wreaths with red bows. |
 | [`art/concepts/case-reveal.jpg`](art/concepts/case-reveal.jpg) | "Veil & Vesper" rare tarot case, single card reveal. |
 | [`art/concepts/v2-case-spin.jpg`](art/concepts/v2-case-spin.jpg) | Spinning tarot reel with a gem cost on Open x3. |
-| [`art/concepts/stat-card.jpg`](art/concepts/stat-card.jpg) | Jackalope dossier card. |
+| [`art/concepts/stat-card.jpg`](art/concepts/stat-card.jpg) | Jackalope dossier card. Mood only. The layout is [`art/mocks/dossier-v1.png`](art/mocks/dossier-v1.png). |
 | [`art/concepts/v2-shops.jpg`](art/concepts/v2-shops.jpg) | Cauldron potion shop and jack-o'-lantern food shop. Retired by art direction v3. |
 | [`art/concepts/v2-town-portals.jpg`](art/concepts/v2-town-portals.jpg) | "Witchwood" plaza, three portals, gem HUD, pumpkins. |
 | [`art/concepts/v3-town.jpg`](art/concepts/v3-town.jpg) | Mythic plaza: Runeheart Apothecary, Howling Horn, Veil & Fate, Dusk & Dial, three portals, runestones, gem HUD. |
 | [`art/concepts/v3-shops.jpg`](art/concepts/v3-shops.jpg) | Tree apothecary and longship tavern with blue fire. |
 | [`art/concepts/v3-tools.jpg`](art/concepts/v3-tools.jpg) | Lanterns L1–L5: Rusty, Ember, Spirit Compass, Binding Chains, Silver Censer. The sheet's old "Moonlit Censer" label is the same tool. Moonlit is a variant name, not the tool. |
-| [`art/concepts/v3-variants.jpg`](art/concepts/v3-variants.jpg) | Jackalope as Normal, Spectral, Gilded, Shadow, Moonlit. Sheet says Legendary and tradeable. |
+| [`art/concepts/v3-variants.jpg`](art/concepts/v3-variants.jpg) | Jackalope as Normal, Spectral, Gilded, Shadow, Moonlit. Sheet says Legendary and tradeable. Gilded and Moonlit are look, odds, and source TBD (AD). |
 | [`art/concepts/v3-sigil-trace.jpg`](art/concepts/v3-sigil-trace.jpg) | Sigil Trace minigame over a Jackalope. |
 | [`art/concepts/v3-tug-of-war.jpg`](art/concepts/v3-tug-of-war.jpg) | Two lantern beams clashing on one cryptid. |
 | [`art/vfx/concepts/ATMOS_concept_lair-night_2026-11-04.png`](art/vfx/concepts/ATMOS_concept_lair-night_2026-11-04.png) | Lair at night. Labelled concept only, not Studio proof, never store art. |

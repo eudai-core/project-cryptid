@@ -80,7 +80,7 @@ A survey of concrete purchase reasons found **unobstructed play**, **social inte
 
 **Use in Cryptid**
 
-- Server banners for **real** Epic / Corrupted wild or Rift-belt catches, and thank-you banners for **server-wide** boosts, naming DisplayName only, with **no price and no buy link** (spec 08).
+- Server banners for **real** Epic / Shadow wild or Rift-belt catches, and thank-you banners for **server-wide** boosts, naming DisplayName only, with **no price and no buy link** (spec 08). The old word was Corrupted.
 - The **Ledger of Tithes** in the plaza is the always-on popularity signal. It must stay play-earned.
 - Cosmetics (Founder's Candle, nameplate, auras) should be readable in town, so social proof is the item itself, not a fake crowd.
 
@@ -127,7 +127,7 @@ Each rule is for a named screen. If a rule and a numbered gameplay spec conflict
 5. **Pedlar and cash offers.** The caged cryptid, variant badge and price are visible before purchase. Odds sit behind a button labelled **"Details"**. Buying never rerolls, restocks or plays a rarity reveal fanfare. No sky, no banner (not a free source).
 6. **Rite of Rebirth.** Show cost, Tithe gate bar, next multiplier, **"You keep"** / **"You lose"**, and the familiar's post-rite income before confirm. **Begin the Rite** then **Yes / Not yet**. No countdown, no shop card, no "act now". After the rite, a short toast: "You are reborn. Income ×{mult}."
 7. **Nightly Offering and welcome-back haul.** Seven cards in a row (two rows on mobile); current step pulses Gold; later rewards stay visible (endowed progress). Claim copy: **"Accept the offering."** Missed day: **"The offering waited for you."** Countdown is only the real time to 00:00 UTC ("Next offering in 7h 12m"). Haul title **"While you were gone…"** with count-up; close = claim. Neither panel links to the shop.
-8. **Social proof surfaces.** Epic/Corrupted banners and Blood Moon thank-yous fire only for server-authoritative events, use DisplayName, last 4 s, and never include a price or shop link. The Ledger of Tithes in the plaza is the standing social signal. No simulated player counts, no ghost avatars.
+8. **Social proof surfaces.** Epic/Shadow banners and Blood Moon thank-yous fire only for server-authoritative events, use DisplayName, last 4 s, and never include a price or shop link. The Ledger of Tithes in the plaza is the standing social signal. No simulated player counts, no ghost avatars.
 9. **Contested bind, lose side.** If another player finishes first, resolve their BOUND! in world, then toast the loser's **assist cash**. No "you almost had a Jersey Devil" unless that species was actually on the pad. No shop offer on the loss toast.
 10. **Bestiary / next-goal HUD.** Keep a compact **X of 12 bound** (or current roster size) and the next rebirth or pad remainder in view during play. Tapping the collection chip opens the Grimoire at the next unfound species and its published spawn condition. Never gate that information behind Relics.
 
