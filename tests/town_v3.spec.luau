@@ -101,6 +101,9 @@ local VISUAL_FILES = {
 	"src/client/TownQuality.luau",
 	"src/server/LightingSetup.luau",
 	"src/shared/UITheme.luau",
+	"src/server/TownKits/init.luau",
+	"src/server/TownKits/Kit.luau",
+	"src/server/TownKits/Longship.luau",
 }
 
 local function makeInstance(className: string): any
@@ -519,6 +522,9 @@ local function modulePath(fromFile: string, spec: string): string
 	if fs.isFile(path .. ".luau") then
 		return path .. ".luau"
 	end
+	if fs.isFile(path .. "/init.luau") then
+		return path .. "/init.luau"
+	end
 	if fs.isFile(path) then
 		return path
 	end
@@ -738,7 +744,7 @@ Check.test("v3 night is purple mist with budgeted bloom and a low-quality fallba
 	local lightingSource = fs.readFile("src/server/LightingSetup.luau")
 	Check.contains(lightingSource, "BloomEffect")
 	Check.contains(lightingSource, "ColorCorrectionEffect")
-	Check.contains(lightingSource, "lighting.atmosphereDensity")
+	Check.contains(lightingSource, "TownLook.SKY_ATMOSPHERE_DENSITY")
 	Check.contains(lightingSource, "TownLook.SKYBOX_FACE")
 	Check.eq(string.find(lightingSource, ".Technology", 1, true), nil)
 	Check.eq(string.find(lightingSource, "rbxassetid://", 1, true), nil)
@@ -755,25 +761,37 @@ Check.test("v3 night is purple mist with budgeted bloom and a low-quality fallba
 	local lighting = installRoblox().game:GetService("Lighting")
 	Check.eq(lighting.Technology, nil)
 	Check.eq(lighting.ClockTime, UITheme.lighting.clockTime)
-	Check.eq(lighting.Ambient.Hex, UITheme.palette.LightAmbient)
-	Check.eq(lighting.OutdoorAmbient.Hex, UITheme.palette.LightOutdoor)
+	Check.eq(lighting.Ambient.Hex, TownLook.SKY_AMBIENT)
+	Check.eq(lighting.OutdoorAmbient.Hex, TownLook.SKY_OUTDOOR_AMBIENT)
+	Check.eq(lighting.ColorShift_Top.Hex, TownLook.SKY_COLOR_SHIFT_TOP)
 	Check.eq(lighting.FogColor.Hex, UITheme.world.NightMist)
 	Check.eq(lighting.FogStart, 250)
 	Check.eq(lighting.FogEnd, 1100)
 	Check.eq(lighting.Brightness, 1.5)
 	local atmosphere = lighting:FindFirstChildOfClass("Atmosphere")
-	Check.eq(atmosphere.Density, 0.18)
-	Check.eq(atmosphere.Haze, 0.3)
-	Check.eq(atmosphere.Color.Hex, UITheme.world.NightMist)
-	Check.eq(atmosphere.Decay.Hex, UITheme.world.NightSky)
+	Check.eq(atmosphere.Density, TownLook.SKY_ATMOSPHERE_DENSITY)
+	Check.eq(atmosphere.Haze, TownLook.SKY_ATMOSPHERE_HAZE)
+	Check.eq(atmosphere.Glare, TownLook.SKY_ATMOSPHERE_GLARE)
+	Check.eq(atmosphere.Color.Hex, TownLook.SKY_ATMOSPHERE_COLOR)
+	Check.eq(atmosphere.Decay.Hex, TownLook.SKY_ATMOSPHERE_DECAY)
 	local bloom = lighting:FindFirstChildOfClass("BloomEffect")
 	Check.eq(bloom.Enabled, true)
 	Check.eq(bloom.Intensity, 0.45)
 	Check.eq(bloom.Size, 28)
 	Check.eq(bloom.Threshold, 1.5)
 	local grade = lighting:FindFirstChildOfClass("ColorCorrectionEffect")
-	Check.eq(grade.TintColor.Hex, UITheme.world.SkyTint)
-	Check.eq(grade.Saturation, UITheme.lighting.colorSaturation)
+	Check.eq(grade.TintColor.Hex, TownLook.SKY_GRADE_TINT)
+	Check.eq(grade.Saturation, TownLook.SKY_GRADE_SATURATION)
+	Check.eq(grade.Saturation < UITheme.lighting.colorSaturation, true)
+	local gradeRed, gradeGreen, gradeBlue = channels(TownLook.SKY_GRADE_TINT)
+	Check.eq(gradeGreen > 100, true, "grade tint stays pale")
+	Check.eq(gradeBlue - gradeRed < 20, true, "grade tint is not a bright violet")
+	local skyRed, skyGreen, skyBlue = channels(TownLook.SKY_ATMOSPHERE_COLOR)
+	Check.eq(skyRed > skyGreen and skyBlue > skyGreen, true, "horizon violet")
+	Check.eq(skyBlue < 140 and skyRed < 140, true, "horizon stays muted")
+	local shiftRed, shiftGreen, shiftBlue = channels(TownLook.SKY_COLOR_SHIFT_TOP)
+	Check.eq(shiftRed > shiftGreen and shiftBlue > shiftGreen, true, "zenith shift")
+	Check.eq(shiftBlue < 80, true, "zenith shift stays dark")
 	local sky = lighting:FindFirstChildOfClass("Sky")
 	Check.eq(sky.ClassName, "Sky")
 	Check.eq(sky.Name, "HollowmereSky")
@@ -789,7 +807,7 @@ Check.test("v3 night is purple mist with budgeted bloom and a low-quality fallba
 	Check.eq(sky.CelestialBodiesShown, true)
 end)
 
-Check.test("town part and light counts stay inside the mobile caps", function()
+Check.test("town part and light counts stay inside the sanity guard", function()
 	local root = townRoot()
 	Check.eq(root.Parent.ClassName, "Workspace")
 	Check.eq(named(root, "Ground") ~= nil, true)
@@ -822,6 +840,9 @@ Check.test("town part and light counts stay inside the mobile caps", function()
 	Check.eq(byName.Cobble.parts, 1)
 	Check.eq(byName.LanternGlass.lights, 4)
 	Check.eq(countClass(root, "Highlight"), 0)
+	-- Sanity guard only. There is no part budget.
+	Check.eq(TownLook.PART_CAP, 20000)
+	Check.eq(parts <= 20000, true, "parts " .. tostring(parts))
 	Check.eq(parts <= TownLook.PART_CAP, true, "parts " .. tostring(parts) .. " cap " .. tostring(TownLook.PART_CAP))
 	Check.eq(
 		lights <= TownLook.LIGHT_CAP,
@@ -1156,4 +1177,97 @@ Check.test("no part covers a sign's front text", function()
 	end
 	Check.eq(signs >= 8, true)
 	Check.eq(#listed, 0, table.concat(listed, "; "))
+end)
+
+Check.test("longship kit keeps the tavern anchors and stays inside the sanity guard", function()
+	local root = townRoot()
+	local horn = nil
+	for _, inst in descendants(root) do
+		if inst.Name == "HowlingHorn" and inst.ClassName == "Model" then
+			horn = inst
+		end
+	end
+	Check.truthy(horn, "HowlingHorn")
+	Check.eq(horn:GetAttribute("TownKit"), "Longship")
+	Check.eq(horn:GetAttribute("KitQuality"), 10)
+	Check.eq(horn:GetAttribute("KitDetail"), true)
+	Check.eq(horn:GetAttribute("KitBeforeLights"), horn:GetAttribute("KitAfterLights"))
+	Check.eq(horn:GetAttribute("KitAfterLights"), 0)
+	Check.eq(horn:GetAttribute("KitBeforeEmitters"), horn:GetAttribute("KitAfterEmitters"))
+	Check.eq(horn.PrimaryPart.Name, "Root")
+	local signText = nil
+	local door = nil
+	local prompts = 0
+	local serpentNeck = 0
+	local crow = 0
+	local lights = 0
+	local highlights = 0
+	local mesh = 0
+	local humanoids = 0
+	local emitters = 0
+	local particles = 0
+	local kitParts = 0
+	for _, inst in descendants(horn) do
+		if inst.Name == "SignText" then
+			signText = inst.Text
+		elseif inst.Name == "DoorAnchor" then
+			door = inst
+		elseif inst.Name == "SerpentNeck" then
+			serpentNeck += 1
+		elseif inst.Name == "CrowBody" then
+			crow += 1
+		end
+		if inst.ClassName == "ProximityPrompt" then
+			prompts += 1
+		elseif inst.ClassName == "PointLight" or inst.ClassName == "SpotLight" or inst.ClassName == "SurfaceLight" then
+			lights += 1
+		elseif inst.ClassName == "Highlight" then
+			highlights += 1
+		elseif inst.ClassName == "MeshPart" then
+			mesh += 1
+		elseif inst.ClassName == "Humanoid" then
+			humanoids += 1
+		elseif inst.ClassName == "ParticleEmitter" then
+			emitters += 1
+			local life = inst.Lifetime
+			particles += inst.Rate * life.Max
+		end
+		if inst:GetAttribute("TownKitPart") == true then
+			kitParts += 1
+			Check.eq(inst.Anchored, true, inst.Name)
+			if inst:GetAttribute("TownDecor") == true then
+				Check.eq(inst.CanCollide, false, inst.Name)
+				Check.eq(inst.CanTouch, false, inst.Name)
+				Check.eq(inst.CanQuery, false, inst.Name)
+			end
+		end
+	end
+	print(
+		string.format(
+			"howling beforeParts=%s afterParts=%s beforeLights=%s afterLights=%s emitters=%d particles=%.2f kitParts=%d",
+			tostring(horn:GetAttribute("KitBeforeParts")),
+			tostring(horn:GetAttribute("KitAfterParts")),
+			tostring(horn:GetAttribute("KitBeforeLights")),
+			tostring(horn:GetAttribute("KitAfterLights")),
+			emitters,
+			particles,
+			kitParts
+		)
+	)
+	Check.eq(signText, "The Howling Horn")
+	Check.truthy(door, "DoorAnchor")
+	Check.eq(door:GetAttribute("TownAnchor"), "Door")
+	Check.eq(prompts, 0)
+	Check.eq(serpentNeck, 0)
+	Check.eq(crow, 1)
+	Check.eq(lights, 0)
+	Check.eq(highlights, 0)
+	Check.eq(mesh, 0)
+	Check.eq(humanoids, 0)
+	Check.eq(emitters <= TownLook.VFX_MAX_EMITTERS, true, tostring(emitters))
+	Check.eq(particles <= TownLook.VFX_MAX_PARTICLES, true, tostring(particles))
+	Check.eq(kitParts > 0, true)
+	local builder = fs.readFile("src/server/TownBuilder.luau")
+	local _, hooks = string.gsub(builder, "TownKits.applyAll", "")
+	Check.eq(hooks, 1)
 end)
