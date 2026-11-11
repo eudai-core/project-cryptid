@@ -7,6 +7,7 @@
 -- Unknown suffixes (such as `plots3`) are ignored so the watchdog still arms.
 -- `fresh` asks Studio to load a throwaway key instead of the real save.
 -- `relics` opens the shop gate once the rite has reached it.
+-- `rebirthready` fills the tier-1 rite requirements. Studio only. No remote.
 
 local QaArgs = {}
 
@@ -19,6 +20,7 @@ export type Tokens = {
 	fresh: boolean,
 	relics: boolean,
 	analytics: boolean,
+	rebirthReady: boolean,
 }
 
 local function empty(): Tokens
@@ -31,6 +33,7 @@ local function empty(): Tokens
 		fresh = false,
 		relics = false,
 		analytics = false,
+		rebirthReady = false,
 	}
 end
 
@@ -64,6 +67,9 @@ function QaArgs.parse(args: any): Tokens
 		elseif key == "analytics" then
 			tokens.analytics = true
 			index += 1
+		elseif key == "rebirthready" then
+			tokens.rebirthReady = true
+			index += 1
 		elseif key == "opentree" or key == "fresh" then
 			if key == "fresh" then
 				tokens.fresh = true
@@ -96,6 +102,13 @@ function QaArgs.parse(args: any): Tokens
 		end
 	end
 	return tokens
+end
+
+function QaArgs.rebirthReady(isStudio: boolean, args: any): boolean
+	if isStudio ~= true then
+		return false
+	end
+	return QaArgs.parse(args).rebirthReady == true
 end
 
 function QaArgs.openTree(isStudio: boolean, args: any): boolean

@@ -68,6 +68,25 @@ function StudioQa.armRelics(profile: any)
 	end
 end
 
+function StudioQa.armRebirth(profile: any): boolean
+	-- selene: allow(global_usage)
+	if _G.LUNE == true or type(profile) ~= "table" or type(profile.onboarding) ~= "table" then
+		return false
+	end
+	if not game:GetService("RunService"):IsStudio() then
+		return false
+	end
+	local ReplicatedStorage = game:GetService("ReplicatedStorage")
+	local Shared = ReplicatedStorage:WaitForChild("Shared")
+	local QaArgs = require(Shared:WaitForChild("Logic"):WaitForChild("QaArgs"))
+	local Rebirth = require(Shared:WaitForChild("Logic"):WaitForChild("Rebirth"))
+	local StudioQaHooks = require(script.Parent:WaitForChild("StudioQaHooks"))
+	if QaArgs.parse(StudioQaHooks.args()).rebirthReady ~= true then
+		return false
+	end
+	return Rebirth.prepareQa(profile) == true
+end
+
 function StudioQa.analytics(): boolean
 	-- selene: allow(global_usage)
 	if _G.LUNE == true then

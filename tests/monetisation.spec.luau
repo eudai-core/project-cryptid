@@ -80,7 +80,7 @@ local BANNED = {
 }
 
 Check.test("no product id or catalog price ships enabled", function()
-	Check.eq(Save.DATA_VERSION, 9)
+	Check.eq(Save.DATA_VERSION, 10)
 	local sawBundle = false
 	local sawPass = false
 	for _, entry in Monetisation.items() do
@@ -537,7 +537,7 @@ Check.test("the shop copy stays inside the gate and the receipt path does not ro
 	Check.eq(UITheme.resolveMotion("relicsPip", true).allowScale, false)
 end)
 
-Check.test("v5 and v7 saves keep the ledger and gain shop defaults on the way to v9", function()
+Check.test("v5 and v7 saves keep the ledger and gain shop defaults on the way to v10", function()
 	local v5 = fresh()
 	v5.dataVersion = 5
 	v5.cash = 80
@@ -550,7 +550,7 @@ Check.test("v5 and v7 saves keep the ledger and gain shop defaults on the way to
 	v5.cashDouble = nil
 	v5.autoCollect = nil
 	local fromV5 = Schema.migrate(v5, 10)
-	Check.eq(fromV5.dataVersion, 9)
+	Check.eq(fromV5.dataVersion, 10)
 	Check.eq(fromV5.analytics.lastReturnDay, 0)
 	Check.eq(fromV5.analytics.funnelStep, 0)
 	Check.eq(fromV5.cash, 80)
@@ -579,7 +579,7 @@ Check.test("v5 and v7 saves keep the ledger and gain shop defaults on the way to
 	v7.autoCollect = nil
 	v7.passes = nil
 	local fromV7 = Schema.migrate(v7, 10)
-	Check.eq(fromV7.dataVersion, 9)
+	Check.eq(fromV7.dataVersion, 10)
 	Check.eq(fromV7.analytics.lastReturnDay, 0)
 	Check.eq(fromV7.analytics.funnelStep, 0)
 	Check.eq(fromV7.cash, 19)

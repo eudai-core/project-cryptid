@@ -9,6 +9,7 @@ local Lanterns = require(Shared:WaitForChild("Config"):WaitForChild("Lanterns"))
 local Plots = require(Shared:WaitForChild("Config"):WaitForChild("Plots")) :: any
 local Shop = require(Shared:WaitForChild("Config"):WaitForChild("Shop")) :: any
 local Town = require(Shared:WaitForChild("Config"):WaitForChild("Town")) :: any
+local TitheBoard = require(Shared:WaitForChild("Config"):WaitForChild("TitheBoard")) :: any
 local TownLayout = require(Shared:WaitForChild("Logic"):WaitForChild("TownLayout")) :: any
 local UITheme = require(Shared:WaitForChild("UITheme")) :: any
 local RiftGlow = require(script.Parent:WaitForChild("RiftGlow"))
@@ -204,6 +205,21 @@ local function well(town: Folder)
 	model.Parent = town
 	local baseY = Plots.FALLBACK_THICKNESS + Town.WELL_HEIGHT / 2
 	model:PivotTo(CFrame.new(Town.WELL_OFFSET, baseY, 0))
+end
+
+local function titheLedger(town: Folder)
+	local y = Plots.FALLBACK_THICKNESS + Town.LEDGER_HEIGHT / 2
+	local z = Town.WELL_DIAMETER / 2 + Town.LEDGER_GAP + Town.LEDGER_WIDTH / 2
+	local slab = part(
+		town,
+		"TitheLedger",
+		Vector3.new(Town.LEDGER_THICKNESS, Town.LEDGER_HEIGHT, Town.LEDGER_WIDTH),
+		CFrame.new(Town.WELL_OFFSET, y, z),
+		UITheme.materials.altar,
+		"Wall",
+		true
+	)
+	CollectionService:AddTag(slab, TitheBoard.TAG)
 end
 
 local function roads(town: Folder)
@@ -637,6 +653,7 @@ end
 function TownBuilder.build(town: Folder)
 	cobble(town)
 	well(town)
+	titheLedger(town)
 	roads(town)
 	wall(town)
 	wallWisps(town)

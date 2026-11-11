@@ -8,6 +8,7 @@ local RunService = game:GetService("RunService")
 local CashPlaque = require(script.Parent:WaitForChild("CashPlaque"))
 local GoalBanner = require(script.Parent:WaitForChild("GoalBanner"))
 local RarityTease = require(script.Parent:WaitForChild("RarityTease"))
+local RebirthPanel = require(script.Parent:WaitForChild("RebirthPanel"))
 local RelicsShop = require(script.Parent:WaitForChild("RelicsShop"))
 local HaulPanel = require(script.Parent:WaitForChild("HaulPanel"))
 local OfferingPanel = require(script.Parent:WaitForChild("OfferingPanel"))
@@ -20,6 +21,7 @@ local SkillTree = require(script.Parent:WaitForChild("SkillTree"))
 local TownDress = require(script.Parent:WaitForChild("TownDress"))
 local ReturnButton = require(script.Parent:WaitForChild("ReturnButton"))
 local SealToast = require(script.Parent:WaitForChild("SealToast"))
+local TitheSlab = require(script.Parent:WaitForChild("TitheSlab"))
 local ThemeBind = require(script.Parent:WaitForChild("ThemeBind"))
 local UiFactory = require(script.Parent:WaitForChild("UiFactory"))
 local WorldBoards = require(script.Parent:WaitForChild("WorldBoards"))
@@ -145,6 +147,9 @@ local relics = RelicsShop.mount(gui, isReduced, function()
 end, function(key: string)
 	fire(Names.BUY_RELIC, key)
 end)
+local rite = RebirthPanel.mount(gui, isReduced, function(familiarUid: string)
+	fire(Names.REBIRTH, familiarUid)
+end)
 
 local function applyAttributes()
 	reduced = player:GetAttribute("ReducedMotion") == true
@@ -199,6 +204,7 @@ local function applySnapshot(text: string)
 	haul.apply(decoded.haul)
 	offering.apply(decoded.daily, haul.isOpen())
 	relics.apply(decoded.relics)
+	rite.apply(decoded)
 	WorldBoards.refresh(decoded)
 	layout()
 end
@@ -212,6 +218,7 @@ layout = function()
 	haul.layout(mobile)
 	offering.layout(mobile)
 	relics.layout(mobile)
+	rite.layout(mobile)
 end
 
 camera:GetPropertyChangedSignal("ViewportSize"):Connect(layout)
@@ -278,6 +285,13 @@ if RunService:IsStudio() then
 	local ok, studioArgs = pcall(function()
 		return StudioTestService:GetTestArgs()
 	end)
+	if ok and QaArgs.rebirthReady(true, studioArgs) then
+		local function openRite()
+			rite.open()
+		end
+		player:GetAttributeChangedSignal("StateRevision"):Connect(openRite)
+		task.defer(openRite)
+	end
 	if ok and QaArgs.openTree(true, studioArgs) then
 		local function openWhenReady()
 			skill.open()
@@ -294,6 +308,7 @@ TownDress.start()
 Interactions.start(player, remotes :: Folder, Names, beginCatch, {
 	onPedlar = pedlar.open,
 	onShrine = skill.open,
+	onRite = rite.open,
 })
 GuideArrow.start(player)
 LairBanners.start(player)
@@ -301,6 +316,7 @@ HomeBeam.start(player)
 WorldBoards.start(function()
 	return latestSnapshot
 end)
+TitheSlab.start()
 
 if player:GetAttribute("StateRevision") ~= nil then
 	applyAttributes()

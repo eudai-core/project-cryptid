@@ -19,6 +19,7 @@ local Remotes = {
 	BUY_SKILL = "RequestBuySkill",
 	OPEN_RELICS = "RequestOpenRelics",
 	BUY_RELIC = "RequestRelic",
+	REBIRTH = "RequestRebirth",
 }
 
 return table.freeze(Remotes)

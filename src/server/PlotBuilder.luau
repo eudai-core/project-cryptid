@@ -161,12 +161,12 @@ local function candle(parent: Instance, origin: CFrame, localPos: Vector3, withL
 	return light, flame
 end
 
-local function prompt(parent: BasePart, kind: string): ProximityPrompt
+local function prompt(parent: BasePart, kind: string, key: Enum.KeyCode?, button: Enum.KeyCode?): ProximityPrompt
 	local plate = Instance.new("ProximityPrompt")
 	plate.Name = kind
 	plate.Style = Enum.ProximityPromptStyle.Custom
-	plate.KeyboardKeyCode = Enum.KeyCode.E
-	plate.GamepadKeyCode = Enum.KeyCode.ButtonX
+	plate.KeyboardKeyCode = if key ~= nil then key else Enum.KeyCode.E
+	plate.GamepadKeyCode = if button ~= nil then button else Enum.KeyCode.ButtonX
 	plate.HoldDuration = 0
 	plate.RequiresLineOfSight = false
 	plate.MaxActivationDistance = Lair.PURCHASE_PROMPT_DISTANCE
@@ -425,6 +425,7 @@ function PlotBuilder.buildPlot(parent: Folder, index: number): any
 		altarBase * CFrame.new(0, floorTop + Plots.ALTAR_SIZE.y / 2, 0)
 	)
 	local altarPrompt = prompt(altar, "UpgradeAltar")
+	local ritePrompt = prompt(altar, "Rite", Enum.KeyCode.R, Enum.KeyCode.ButtonY)
 	local altarModel = ArtAssets.clone(CryptidArt.folders.lair, CryptidArt.models.altar)
 	local altarTiers = {}
 	if altarModel ~= nil then
@@ -628,6 +629,7 @@ function PlotBuilder.buildPlot(parent: Folder, index: number): any
 		altarModel = altarModel,
 		altarTiers = altarTiers,
 		altarPrompt = altarPrompt,
+		ritePrompt = ritePrompt,
 		wildPad = wildPad,
 		wildStand = wildStand,
 		wildPrompt = wildPrompt,

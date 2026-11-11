@@ -17,6 +17,9 @@ end)
 local Income = import("./Income", function()
 	return script.Parent:WaitForChild("Income")
 end)
+local Rebirth = import("./Rebirth", function()
+	return script.Parent:WaitForChild("Rebirth")
+end)
 local Money = import("./Money", function()
 	return script.Parent:WaitForChild("Money")
 end)
@@ -26,7 +29,7 @@ local Ownership = {}
 function Ownership.layers(profile: any, forcedCash: number?): { skills: number, rebirth: number, cashPass: number }
 	return {
 		skills = 1,
-		rebirth = 1,
+		rebirth = Rebirth.multiplier(profile),
 		cashPass = Ownership.cashMultiplier(profile, forcedCash),
 	}
 end

@@ -2,7 +2,7 @@
 
 -- Bone Altar I–X. Levels I–II each add LINEAR_BONUS. Level L >= 3 adds
 -- TAIL_BASE × TAIL_DECAY^(L−TAIL_OFFSET). l3 multiplies that add. Every cost
--- is × REBIRTH_FACTOR^r. r stays 0 until a rebirth spec writes the field.
+-- is × REBIRTH_FACTOR^r. r is profile.rebirths.
 
 local MAX_LEVEL = 10
 local LINEAR_LEVELS = 2
