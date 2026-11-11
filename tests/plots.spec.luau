@@ -196,20 +196,30 @@ Check.test("QA12 return to lair refuses a second press inside 10 seconds", funct
 	Check.eq(Plots.RETURN_LABEL, "Return to Lair")
 end)
 
-Check.test("QA13 pads 7 through 12 are sealed and cannot be bought", function()
+Check.test("QA13 pads 11 and 12 stay sealed and 9 and 10 are not sold for cash", function()
+	Check.eq(Plots.SEALED_PAD_START, 11)
+	Check.eq(Economy.MAX_PADS, 10)
+	Check.eq(Economy.CASH_PAD_MAX, 8)
 	local profile = Schema.newProfile(1, "starter")
 	profile.padsUnlocked = Economy.MAX_PADS
 	profile.cash = 100000
 	for padIndex = Plots.SEALED_PAD_START, Plots.PAD_COUNT do
 		Check.eq(PlotRing.isSealedPad(padIndex), true)
 		Check.eq(Economy.PAD_COST[padIndex], nil)
+		Check.eq(Economy.padCost(padIndex, 0), nil)
 		local cash = profile.cash
 		Check.eq(Transactions.unlockPad(profile, padIndex), false)
 		Check.eq(profile.cash, cash)
 		Check.eq(profile.padsUnlocked, Economy.MAX_PADS)
 	end
-	Check.eq(RemoteArgs.pad(7), nil)
-	Check.eq(RemoteArgs.pad(6), 6)
+	profile.padsUnlocked = Economy.CASH_PAD_MAX
+	local before = profile.cash
+	Check.eq(Transactions.unlockPad(profile, 9), false)
+	Check.eq(profile.cash, before)
+	Check.eq(profile.padsUnlocked, Economy.CASH_PAD_MAX)
+	Check.eq(RemoteArgs.pad(8), 8)
+	Check.eq(RemoteArgs.pad(10), 10)
+	Check.eq(RemoteArgs.pad(11), nil)
 	Check.eq(Plots.SEALED_LABEL, "Sealed")
 end)
 
@@ -293,7 +303,7 @@ Check.test("reservation beats a nearby friend", function()
 end)
 
 Check.test("migration from v2 lands on the current data version and keeps the ledger", function()
-	Check.eq(Save.DATA_VERSION, 7)
+	Check.eq(Save.DATA_VERSION, 9)
 	local v2 = Schema.newProfile(9, "starter")
 	v2.dataVersion = 2
 	v2.totalEarned = 40

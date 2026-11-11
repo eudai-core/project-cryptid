@@ -6,12 +6,16 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Analytics = require(script.Parent:WaitForChild("Analytics"))
 local DataStoreGateway = require(script.Parent:WaitForChild("DataStoreGateway"))
 local StudioQa = require(script.Parent:WaitForChild("Dev"):WaitForChild("StudioQa"))
 local StudioQaHooks = require(script.Parent:WaitForChild("Dev"):WaitForChild("StudioQaHooks"))
 local Pedlar = require(script.Parent:WaitForChild("Pedlar"))
 local QaGrant = require(script.Parent:WaitForChild("Dev"):WaitForChild("QaGrant"))
+local MonetisationService = require(script.Parent:WaitForChild("MonetisationService"))
 local Plot = require(script.Parent:WaitForChild("Plot"))
+local RateLimiter = require(script.Parent:WaitForChild("RateLimiter"))
+local RemoteGuard = require(script.Parent:WaitForChild("RemoteGuard"))
 local Remotes = require(script.Parent:WaitForChild("Remotes"))
 local Debounce = require(Shared:WaitForChild("Logic"):WaitForChild("Debounce")) :: any
 local Economy = require(Shared:WaitForChild("Config"):WaitForChild("Economy")) :: any
@@ -46,8 +50,16 @@ local UITheme = require(Shared:WaitForChild("UITheme")) :: any
 local sessions: { [Player]: any } = {}
 local detaching: { [Player]: any } = {}
 local activeTally: { saved: number, released: number }? = nil
+local analytics: any = nil
 
 local PlayerSession = {}
+
+local function sink(): any
+	if analytics == nil then
+		analytics = Analytics.live()
+	end
+	return analytics
+end
 
 local function distanceTo(player: Player, part: BasePart?): number?
 	if part == nil then
@@ -158,6 +170,8 @@ local function publish(session: any, credit: number)
 		dailyAutoOpen = session.dailyAutoOpen == true,
 		silentNotice = session.silentNotice or 0,
 		revealSerial = session.revealSerial or 0,
+		relicsBought = session.relicsBought or 0,
+		relicsSpent = session.relicsSpent or 0,
 	})
 	local player = session.player
 	player:SetAttribute("Cash", profile.cash)
@@ -195,7 +209,7 @@ local function stampOnline(session: any)
 end
 
 local function settleDeparture(session: any)
-	Bowl.bank(session.profile)
+	sink().noteIncome(session, Bowl.bank(session.profile))
 	stampOnline(session)
 	session.dirty = true
 end
@@ -268,6 +282,7 @@ local function onCadence(session: any)
 	end
 	Autosave.apply(session.dirty == true, session.lockExpiresAt, os.time(), {
 		save = function()
+			sink().flushIncome(session.player, session, os.clock(), false)
 			return performSave(session)
 		end,
 		renew = function()
@@ -289,16 +304,7 @@ local function ownsPlot(session: any): boolean
 end
 
 local function allowRequest(session: any): boolean
-	if not ownsPlot(session) then
-		return false
-	end
-	local now = os.clock()
-	if now - session.windowStart >= 1 then
-		session.windowStart = now
-		session.windowCount = 0
-	end
-	session.windowCount += 1
-	return session.windowCount <= Economy.REMOTE_REQUESTS_PER_SECOND
+	return ownsPlot(session)
 end
 
 local function allowPurchase(session: any): boolean
@@ -327,7 +333,19 @@ local function onBuy(session: any, slot: any)
 	if parsed == nil or not allowPurchase(session) then
 		return
 	end
+	local offer = nil
+	for _, item in Transactions.currentOffers(session.profile) do
+		if item.slot == parsed then
+			offer = item
+		end
+	end
+	local beforeCash = session.profile.cash
+	local fromStep = session.profile.onboarding.step
 	local ok = Transactions.buyRift(session.profile, parsed, os.time(), HttpService:GenerateGUID(false))
+	if ok == true and offer ~= nil then
+		sink().rift(session.player, session, beforeCash, offer.speciesId)
+		sink().advanced(session.player, session, fromStep)
+	end
 	commit(session, ok)
 end
 
@@ -339,7 +357,13 @@ local function onUnlock(session: any, padIndex: any)
 	if parsed == nil or not allowPurchase(session) then
 		return
 	end
+	local beforeCash = session.profile.cash
+	local fromStep = session.profile.onboarding.step
 	local ok = Transactions.unlockPad(session.profile, parsed)
+	if ok == true then
+		sink().pad(session.player, session, parsed, beforeCash)
+		sink().advanced(session.player, session, fromStep)
+	end
 	commit(session, ok)
 end
 
@@ -350,7 +374,13 @@ local function onUpgrade(session: any, upgradeId: any)
 	if RemoteArgs.upgradeId(upgradeId) == nil or not allowPurchase(session) then
 		return
 	end
+	local beforeCash = session.profile.cash
+	local fromStep = session.profile.onboarding.step
 	local ok = Transactions.upgradeBoneAltar(session.profile)
+	if ok == true then
+		sink().altar(session.player, session, session.profile.upgrades.boneAltar, beforeCash)
+		sink().advanced(session.player, session, fromStep)
+	end
 	commit(session, ok)
 end
 
@@ -363,7 +393,11 @@ local function onPlace(session: any, instanceId: any, padIndex: any)
 	if id == nil or pad == nil or not allowPurchase(session) then
 		return
 	end
+	local fromStep = session.profile.onboarding.step
 	local ok = Transactions.place(session.profile, id, pad)
+	if ok == true then
+		sink().advanced(session.player, session, fromStep)
+	end
 	commit(session, ok)
 end
 
@@ -371,11 +405,15 @@ local function onSkip(session: any)
 	if not allowRequest(session) then
 		return
 	end
+	local fromStep = session.profile.onboarding.step
 	local serial = 0
 	local ok = Transactions.skip(session.profile, os.time(), function()
 		serial += 1
 		return HttpService:GenerateGUID(false) .. "-" .. tostring(serial)
 	end)
+	if ok == true then
+		sink().skipped(session.player, session, fromStep)
+	end
 	commit(session, ok)
 end
 
@@ -436,10 +474,13 @@ local function onCompleteCatch(session: any)
 	if not RemoteArgs.catchElapsed(elapsed, SkillEffects.catchSeconds(session.profile)) then
 		return
 	end
+	local fromStep = session.profile.onboarding.step
 	session.catchStart = nil
 	local ok = Transactions.grantWild(session.profile, os.time(), HttpService:GenerateGUID(false))
 	if ok == true then
 		session.revealSerial = (session.revealSerial or 0) + 1
+		sink().advanced(session.player, session, fromStep)
+		sink().catch(session.player, session, elapsed, fromStep == Onboarding.CATCH_STEP)
 	end
 	commit(session, ok)
 end
@@ -480,6 +521,7 @@ local function onPedlarBuy(session: any, rotationId: any, slot: any)
 	if not allowRequest(session) then
 		return
 	end
+	sink().pedlarPressed(session.player, session)
 	local parsedSlot = RemoteArgs.pedlarSlot(slot)
 	local parsedRotation = RemoteArgs.rotationId(rotationId)
 	if parsedSlot == nil or parsedRotation == nil then
@@ -503,6 +545,9 @@ local function onPedlarBuy(session: any, rotationId: any, slot: any)
 	if offers == nil then
 		return
 	end
+	local offer = offers[parsedSlot]
+	local speciesId = if type(offer) == "table" then offer.speciesId else nil
+	local beforeCash = session.profile.cash
 	local ok = Transactions.buyPedlar(
 		session.profile,
 		serverRotation,
@@ -512,6 +557,9 @@ local function onPedlarBuy(session: any, rotationId: any, slot: any)
 		os.time(),
 		HttpService:GenerateGUID(false)
 	)
+	if ok == true and type(speciesId) == "string" then
+		sink().pedlarPurchase(session.player, session, parsedSlot, speciesId, beforeCash)
+	end
 	commit(session, ok)
 end
 
@@ -637,7 +685,7 @@ end
 
 local function bind(folder: Folder)
 	local function listen(name: string, handler: (any, ...any) -> ())
-		Remotes.get(folder, name).OnServerEvent:Connect(function(player: Player, ...: any)
+		RemoteGuard.bindEvent(Remotes.get(folder, name), function(player: Player, ...: any)
 			local session = sessions[player]
 			if session == nil or not session.alive then
 				return
@@ -660,6 +708,18 @@ local function bind(folder: Folder)
 	listen(Names.CLAIM_DAILY, onClaimDaily)
 	listen(Names.SET_SETTINGS, onSettings)
 	listen(Names.BUY_SKILL, onBuySkill)
+	listen(Names.OPEN_RELICS, function(session)
+		if not allowRequest(session) then
+			return
+		end
+		MonetisationService.onOpen(session)
+	end)
+	listen(Names.BUY_RELIC, function(session, key)
+		if not allowRequest(session) or not allowPurchase(session) then
+			return
+		end
+		MonetisationService.onBuy(session, key)
+	end)
 end
 
 local function startLoops(session: any)
@@ -674,11 +734,13 @@ local function startLoops(session: any)
 			local inside = Plot.insideOwn(session.plot, session.player)
 			local floated = 0
 			local changed = false
+			local fromStep = session.profile.onboarding.step
 			if inside then
 				local banked = Bowl.bank(session.profile)
 				if banked > 0 then
 					floated += banked
 					changed = true
+					sink().noteIncome(session, banked)
 				end
 			end
 			acc += dt
@@ -691,7 +753,15 @@ local function startLoops(session: any)
 				local amount, incomeChanged =
 					Transactions.creditIncome(session.profile, ticks * Economy.INCOME_INTERVAL_SECONDS, inside, auto)
 				floated += amount
+				if amount > 0 then
+					sink().noteIncome(session, amount)
+				end
 				if incomeChanged then
+					changed = true
+				end
+				if
+					session.profile.onboarding.step ~= fromStep and sink().advanced(session.player, session, fromStep)
+				then
 					changed = true
 				end
 			end
@@ -746,6 +816,37 @@ end
 
 function PlayerSession.start(folder: Folder)
 	bind(folder)
+	MonetisationService.start({
+		now = os.time,
+		newId = function()
+			return HttpService:GenerateGUID(false)
+		end,
+		sessionFor = function(userId: number)
+			for player, session in sessions do
+				if player.UserId == userId then
+					return session
+				end
+			end
+			return nil
+		end,
+		save = function(session: any)
+			if session.saveBusy then
+				return false
+			end
+			local ok = performSave(session)
+			return ok == true
+		end,
+		queue = queueSave,
+		publish = function(session: any, credit: number)
+			publish(session, credit)
+		end,
+		spend = function(session: any, spent: number)
+			session.relicsBought = (session.relicsBought or 0) + 1
+			if type(spent) == "number" and spent > 0 then
+				session.relicsSpent = (session.relicsSpent or 0) + math.floor(spent)
+			end
+		end,
+	})
 	Plot.start(function(player: Player)
 		return sessions[player]
 	end)
@@ -776,11 +877,15 @@ function PlayerSession.onPlayer(player: Player)
 		return
 	end
 	if not loaded.ok or loaded.profile == nil then
+		sink().ledger(player, loaded.attempts, loaded.reason)
 		player:Kick(loaded.message or Save.KICK_LOAD_FAILED)
 		return
 	end
 	local profile = loaded.profile
 	local grantedStarter = Schema.ensureStarter(profile, os.time(), HttpService:GenerateGUID(false))
+	local playedBefore = profile.onboarding.playSeconds
+	StudioQa.armRelics(profile)
+	local armedShop = profile.onboarding.playSeconds ~= playedBefore
 	local silentNotice = 0
 	if type(profile.offline.notice) == "number" and profile.offline.notice > 0 then
 		silentNotice = profile.offline.notice
@@ -799,7 +904,7 @@ function PlayerSession.onPlayer(player: Player)
 	guide.Name = "GuideTarget"
 	guide.Parent = player
 
-	local plot, claimStatus = Plot.claim(player)
+	local plot, claimStatus, rule = Plot.claim(player)
 	if player.Parent == nil or claimStatus == "left" then
 		if plot ~= nil then
 			Plot.hold(player)
@@ -830,7 +935,7 @@ function PlayerSession.onPlayer(player: Player)
 		loaded = true,
 		alive = true,
 		leaving = false,
-		dirty = grantedStarter or silentNotice > 0,
+		dirty = grantedStarter or silentNotice > 0 or armedShop,
 		dailyAutoOpen = dailyAutoOpen,
 		silentNotice = silentNotice,
 		lockExpiresAt = lockExpiresAt,
@@ -839,12 +944,15 @@ function PlayerSession.onPlayer(player: Player)
 		lastSaveAt = 0,
 		lastPurchaseAt = nil,
 		lastSettingAt = nil,
-		windowStart = 0,
-		windowCount = 0,
 		revision = 0,
 		catchStart = nil,
 		catchToken = 0,
 		revealSerial = 0,
+		relicsBought = 0,
+		relicsSpent = 0,
+		bornAt = os.clock(),
+		pendingIncome = 0,
+		analyticsKey = HttpService:GenerateGUID(false),
 		lastReturnAt = nil,
 		lastBindAt = nil,
 		pedlarToken = 0,
@@ -854,8 +962,17 @@ function PlayerSession.onPlayer(player: Player)
 		guide = guide,
 	}
 	sessions[player] = session
+	local analyticsDirty = sink().bootstrap(player, session, {
+		fresh = loaded.fresh == true,
+		seenUnix = loaded.seenUnix,
+		now = os.time(),
+		rule = rule,
+	})
+	if analyticsDirty then
+		session.dirty = true
+	end
 	publish(session, 0)
-	if grantedStarter then
+	if grantedStarter or analyticsDirty then
 		queueSave(session)
 	end
 	startLoops(session)
@@ -866,9 +983,15 @@ function PlayerSession.onPlayer(player: Player)
 	if player.Character ~= nil then
 		pivot(session, player.Character)
 	end
+	task.spawn(function()
+		if session.alive then
+			MonetisationService.sync(session)
+		end
+	end)
 end
 
 local function closeOwned(player: Player, session: any, bounded: boolean): (boolean, boolean)
+	sink().beginExit(session)
 	local started = os.clock()
 	local budget = ShutdownFlush.budget(RunService:IsStudio())
 	while session.saveBusy or session.workers > 0 do
@@ -885,6 +1008,7 @@ local function closeOwned(player: Player, session: any, bounded: boolean): (bool
 		end
 	end
 	settleDeparture(session)
+	sink().finishExit(player, session, os.time(), os.clock())
 	local saved, released, state = SessionClose.persist(session, {
 		now = os.clock,
 		budgetSeconds = remaining,
@@ -916,11 +1040,33 @@ local function closeOwned(player: Player, session: any, bounded: boolean): (bool
 end
 
 function PlayerSession.onRemoving(player: Player)
+	RateLimiter.forget(player.UserId)
 	local role, session = SessionClose.begin(sessions, detaching, player)
 	if role ~= "owner" or session == nil then
 		return
 	end
 	closeOwned(player, session, false)
+end
+
+function PlayerSession.onPedlarOpen(player: Player)
+	local session = sessions[player]
+	if session == nil or session.alive ~= true then
+		return
+	end
+	sink().pedlarOpen(
+		player,
+		session,
+		ShopStock.rotationId(os.time(), Shop.ROTATION_SECONDS),
+		HttpService:GenerateGUID(false)
+	)
+end
+
+function PlayerSession.onPedlarRotation()
+	for _, session in sessions do
+		if session.alive == true then
+			sink().pedlarStale(session)
+		end
+	end
 end
 
 function PlayerSession.republish()
@@ -945,6 +1091,7 @@ function PlayerSession.shutdown()
 			task.spawn(body)
 		end,
 		persist = function(player: Player, session: any)
+			RateLimiter.forget(player.UserId)
 			closeOwned(player, session, true)
 		end,
 	})

@@ -44,4 +44,43 @@ function StudioQa.plan(isStudio: boolean, args: any): string
 	return "load"
 end
 
+function StudioQa.armRelics(profile: any)
+	-- selene: allow(global_usage)
+	if _G.LUNE == true or type(profile) ~= "table" or type(profile.onboarding) ~= "table" then
+		return
+	end
+	if not game:GetService("RunService"):IsStudio() then
+		return
+	end
+	local ReplicatedStorage = game:GetService("ReplicatedStorage")
+	local Shared = ReplicatedStorage:WaitForChild("Shared")
+	local Monetisation = require(Shared:WaitForChild("Config"):WaitForChild("Monetisation"))
+	local QaArgs = require(Shared:WaitForChild("Logic"):WaitForChild("QaArgs"))
+	local StudioQaHooks = require(script.Parent:WaitForChild("StudioQaHooks"))
+	if QaArgs.parse(StudioQaHooks.args()).relics ~= true then
+		return
+	end
+	if profile.onboarding.step < Monetisation.GATE_STEP then
+		return
+	end
+	if profile.onboarding.playSeconds < Monetisation.GATE_PLAY_SECONDS then
+		profile.onboarding.playSeconds = Monetisation.GATE_PLAY_SECONDS
+	end
+end
+
+function StudioQa.analytics(): boolean
+	-- selene: allow(global_usage)
+	if _G.LUNE == true then
+		return false
+	end
+	if not game:GetService("RunService"):IsStudio() then
+		return false
+	end
+	local ReplicatedStorage = game:GetService("ReplicatedStorage")
+	local Shared = ReplicatedStorage:WaitForChild("Shared")
+	local QaArgs = require(Shared:WaitForChild("Logic"):WaitForChild("QaArgs"))
+	local StudioQaHooks = require(script.Parent:WaitForChild("StudioQaHooks"))
+	return QaArgs.parse(StudioQaHooks.args()).analytics == true
+end
+
 return StudioQa

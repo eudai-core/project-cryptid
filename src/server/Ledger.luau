@@ -23,43 +23,30 @@ local SessionDocument = import("../shared/Logic/SessionDocument", function()
 		:WaitForChild("Logic")
 		:WaitForChild("SessionDocument")
 end)
+local StudioDataStore = import("../shared/Config/StudioDataStore", function()
+	return game:GetService("ReplicatedStorage")
+		:WaitForChild("Shared")
+		:WaitForChild("Config")
+		:WaitForChild("StudioDataStore")
+end)
+local StudioStore = import("../shared/Logic/StudioStore", function()
+	return game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Logic"):WaitForChild("StudioStore")
+end)
 
 local Ledger = {}
 
-Ledger.MOCK_WARNING =
-	"[Cryptid:DataStore] Studio has no DataStore API access. Using an in-memory mock store. This session is not saved to a live DataStore."
+Ledger.MOCK_WARNING = StudioDataStore.MOCK_WARNING
 
 function Ledger.studioApiDenied(message: string): boolean
-	local lower = string.lower(message)
-	local phrases = {
-		"studioaccesstoapisnotallowed",
-		"studio access to apis",
-		"api access is not",
-		"enable studio access",
-		"cannot write to datastore",
-		"not published",
-		"must be published",
-		"place has to be published",
-		"publish the place",
-	}
-	for _, phrase in phrases do
-		if string.find(lower, phrase, 1, true) ~= nil then
-			return true
-		end
-	end
-	if string.find(lower, "studio", 1, true) == nil then
-		return false
-	end
-	return string.find(lower, "datastore", 1, true) ~= nil
-		or string.find(lower, "api", 1, true) ~= nil
-		or string.find(lower, "publish", 1, true) ~= nil
-		or string.find(lower, "403", 1, true) ~= nil
+	return StudioStore.isAccessDenied(message)
 end
 
 function Ledger.open(options: {
 	getStore: () -> any,
 	createMock: () -> any,
 	allowMock: () -> boolean,
+	isStudio: boolean?,
+	placeId: number?,
 	jobId: string,
 	now: () -> number,
 	waitFor: (number) -> (),
@@ -75,6 +62,23 @@ function Ledger.open(options: {
 	local warned = false
 	local ready: { [number]: boolean } = {}
 
+	local function studioNow(): boolean
+		if options.allowMock() ~= true then
+			return false
+		end
+		if options.isStudio ~= nil then
+			return options.isStudio == true
+		end
+		return true
+	end
+
+	local function placeNow(): number?
+		if type(options.placeId) == "number" then
+			return options.placeId
+		end
+		return nil
+	end
+
 	local function store(): any
 		if mock ~= nil then
 			return mock
@@ -82,17 +86,26 @@ function Ledger.open(options: {
 		return options.getStore()
 	end
 
+	local function armMock()
+		if mock ~= nil then
+			return
+		end
+		if not warned then
+			warned = true
+			options.warn(Ledger.MOCK_WARNING)
+		end
+		mock = options.createMock()
+	end
+
+	if StudioStore.preferMock(studioNow(), placeNow(), nil) then
+		armMock()
+	end
+
 	local function installMockIfDenied(err: any): boolean
-		if not options.allowMock() or not Ledger.studioApiDenied(tostring(err)) then
+		if not StudioStore.preferMock(studioNow(), placeNow(), err) then
 			return false
 		end
-		if mock == nil then
-			if not warned then
-				warned = true
-				options.warn(Ledger.MOCK_WARNING)
-			end
-			mock = options.createMock()
-		end
+		armMock()
 		return mock ~= nil
 	end
 
@@ -138,7 +151,9 @@ function Ledger.open(options: {
 		transform: (any) -> (any?, string)
 	): (boolean, string, any?)
 		local lastStatus = "error"
+		local attempts = 0
 		for attempt = 1, Save.MAX_ATTEMPTS do
+			attempts = attempt
 			awaitBudget()
 			local why = "error"
 			local function call(): any
@@ -157,21 +172,21 @@ function Ledger.open(options: {
 					options.confirmLive()
 				end
 				if type(result) == "table" then
-					return true, why, result
+					return true, why, result, attempts
 				end
 				lastStatus = why
 				if why ~= "locked" then
 					if why == "wipe" or why == "downgrade" then
 						options.warn(string.format("[Cryptid:DataStore] refusing %s (%s) for %s", label, why, userKey))
 					end
-					return false, why, nil
+					return false, why, nil, attempts
 				end
 			else
 				lastStatus = "error"
 				local message = tostring(result)
 				options.warn("Ledger " .. label .. " failed: " .. message)
 				if Retry.classify(message) == "fatal" then
-					return false, "fatal", nil
+					return false, "fatal", nil, attempts
 				end
 			end
 			local pause = Retry.backoffSeconds(attempt)
@@ -182,14 +197,14 @@ function Ledger.open(options: {
 				options.waitFor(Retry.withJitter(pause, roll()))
 			end
 		end
-		return false, lastStatus, nil
+		return false, lastStatus, nil, attempts
 	end
 
 	local api = {}
 
 	function api.load(userId: number, createProfile: any): any
 		ready[userId] = false
-		local ok, status, result = runUpdate("read", key(userId), function(old)
+		local ok, status, result, attempts = runUpdate("read", key(userId), function(old)
 			return SessionDocument.buildWrite(
 				old,
 				options.jobId,
@@ -199,12 +214,18 @@ function Ledger.open(options: {
 				options.settle
 			)
 		end)
+		if type(attempts) ~= "number" or attempts < 1 then
+			attempts = 1
+		end
 		if ok and type(result) == "table" and result.lockJobId == options.jobId then
+			local seenUnix = result.seenUnix
 			local profile = Schema.migrate(result.profile, options.now())
 			if profile == nil then
 				return {
 					ok = false,
 					message = Save.KICK_LOAD_FAILED,
+					reason = "corrupt",
+					attempts = attempts,
 				}
 			end
 			ready[userId] = true
@@ -213,17 +234,28 @@ function Ledger.open(options: {
 				profile = profile,
 				ephemeral = false,
 				lockExpiresAt = result.lockExpiresAt,
+				fresh = status == "created",
+				seenUnix = if type(seenUnix) == "number" then seenUnix else nil,
+				attempts = attempts,
 			}
+		end
+		local reason = "read"
+		if status == "corrupt" then
+			reason = "corrupt"
 		end
 		if status == "locked" then
 			return {
 				ok = false,
 				message = Save.KICK_LOCKED,
+				reason = "locked",
+				attempts = attempts,
 			}
 		end
 		return {
 			ok = false,
 			message = Save.KICK_LOAD_FAILED,
+			reason = reason,
+			attempts = attempts,
 		}
 	end
 

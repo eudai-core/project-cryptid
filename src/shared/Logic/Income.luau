@@ -11,6 +11,9 @@ end
 local BoneAltar = import("../Config/BoneAltar", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("BoneAltar")
 end)
+local Monetisation = import("../Config/Monetisation", function()
+	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Monetisation")
+end)
 local Species = import("../Config/Species", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Species")
 end)
@@ -61,28 +64,42 @@ function Income.contribution(
 	return Money.round(species.baseIncome * altar * (1 + skill))
 end
 
-function Income.perSecond(profile: any): number
+local function accrue(profile: any, includeRelic: boolean): number
+	local unlocked = profile.padsUnlocked
+	if type(unlocked) ~= "number" then
+		return 0
+	end
 	local altar = Income.multiplier(profile.upgrades.boneAltar, BoneAltar.l3Owned(profile))
 	local skill = SkillEffects.skillIncome(profile)
 	local wild = SkillEffects.wildIncome(profile)
 	local total = 0
-	for index = 1, profile.padsUnlocked do
-		local instanceId = ProfileQuery.padAt(profile, index)
-		if instanceId ~= nil then
-			local record = profile.cryptids[instanceId]
-			if record ~= nil then
-				local species = Species.get(record.speciesId)
-				if species ~= nil then
-					local factor = 1 + skill
-					if record.source == "wild" then
-						factor += wild
+	for index = 1, unlocked do
+		if includeRelic or not Monetisation.isRelicPad(index) then
+			local instanceId = ProfileQuery.padAt(profile, index)
+			if instanceId ~= nil then
+				local record = profile.cryptids[instanceId]
+				if record ~= nil then
+					local species = Species.get(record.speciesId)
+					if species ~= nil then
+						local factor = 1 + skill
+						if record.source == "wild" then
+							factor += wild
+						end
+						total += species.baseIncome * altar * factor
 					end
-					total += species.baseIncome * altar * factor
 				end
 			end
 		end
 	end
 	return Money.round(total)
+end
+
+function Income.perSecond(profile: any): number
+	return accrue(profile, true)
+end
+
+function Income.tithePerSecond(profile: any): number
+	return accrue(profile, false)
 end
 
 return Income

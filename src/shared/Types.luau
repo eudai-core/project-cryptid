@@ -1,6 +1,6 @@
 --!strict
 
-export type CryptidSource = "starter" | "rift" | "wild" | "pedlar" | "offering"
+export type CryptidSource = "starter" | "rift" | "wild" | "pedlar" | "offering" | "relic"
 
 export type EffectsQuality = "High" | "Medium" | "Low"
 
@@ -63,6 +63,42 @@ export type Profile = {
 		defences: { [number]: string },
 	},
 	skills: { string },
+	purchases: {
+		ledger: { [string]: { productId: number, grantedAt: number, grants: { string } } },
+		ritesOwned: { [string]: boolean },
+		quotes: { [string]: { amount: number, expiresAt: number } },
+		firstPurchaseAt: number?,
+		starterPackClaimed: boolean,
+	},
+	cosmetics: {
+		owned: { [string]: boolean },
+	},
+	giftedPasses: { [string]: { fromUserId: number, purchaseId: string } },
+	giftsReceived: { [string]: boolean },
+	tarot: {
+		tokens: { pale: number, blood: number },
+		pity: { pale: number, blood: number },
+		marks: { [string]: number },
+		milestonesClaimed: { [string]: boolean },
+	},
+	bloodMoon: {
+		boughtToday: { utcDay: number, count: number },
+	},
+	ui: {
+		relicsPipShown: boolean,
+		relicsPipCleared: boolean,
+	},
+	cashDouble: boolean,
+	autoCollect: boolean,
+	passes: {
+		extraPads: boolean,
+		lairCosmetics: boolean,
+		sigilNameplate: boolean,
+	},
+	analytics: {
+		lastReturnDay: number,
+		funnelStep: number,
+	},
 }
 
 return {}

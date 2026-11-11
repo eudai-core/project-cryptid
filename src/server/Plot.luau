@@ -10,6 +10,7 @@ local LairVisual = require(script.Parent:WaitForChild("LairVisual"))
 local PlotBuilder = require(script.Parent:WaitForChild("PlotBuilder"))
 local PlotSignals = require(script.Parent:WaitForChild("PlotSignals"))
 local BoneAltar = require(Shared:WaitForChild("Config"):WaitForChild("BoneAltar")) :: any
+local Monetisation = require(Shared:WaitForChild("Config"):WaitForChild("Monetisation")) :: any
 local Onboarding = require(Shared:WaitForChild("Config"):WaitForChild("Onboarding")) :: any
 local NumberFormat = require(Shared:WaitForChild("Logic"):WaitForChild("NumberFormat")) :: any
 local OnboardingGoals = require(Shared:WaitForChild("Logic"):WaitForChild("OnboardingGoals")) :: any
@@ -301,9 +302,10 @@ function Plot.tryPlace(player: Player, character: Model): boolean
 	return hit ~= nil and hit.Instance.CanCollide
 end
 
-function Plot.claim(player: Player): (any?, string)
+function Plot.claim(player: Player): (any?, string, string?)
 	local claimed = nil
 	local why = "full"
+	local rule = nil
 	local ok, err = locked(function()
 		if player.Parent == nil then
 			why = "left"
@@ -319,7 +321,7 @@ function Plot.claim(player: Player): (any?, string)
 			end
 			state = snapshot()
 		end
-		local index = PlotAssign.choose(state, player.UserId, friends)
+		local index, chosen = PlotAssign.explain(state, player.UserId, friends)
 		if index == nil then
 			why = "full"
 			return
@@ -332,6 +334,7 @@ function Plot.claim(player: Player): (any?, string)
 		byPlayer[player] = plot
 		claimed = plot
 		why = "ok"
+		rule = chosen
 	end)
 	if not ok then
 		warn("Plot assignment failed: " .. tostring(err))
@@ -349,9 +352,9 @@ function Plot.claim(player: Player): (any?, string)
 	if player.Parent == nil then
 		byPlayer[player] = nil
 		clearPlot(claimed)
-		return nil, "left"
+		return nil, "left", nil
 	end
-	return claimed, "ok"
+	return claimed, "ok", rule
 end
 
 function Plot.hold(player: Player)
@@ -439,13 +442,15 @@ function Plot.sync(plot: any, profile: any, guideValue: ObjectValue)
 
 	for _, pad in plot.pads do
 		pad.center:SetAttribute("beingStolen", false)
+		pad.center:SetAttribute("RelicPad", Monetisation.isRelicPad(pad.index))
 		local mount = creatureMount(pad)
-		if PlotRing.isSealedPad(pad.index) then
+		if PlotRing.isSealedPad(pad.index) or Monetisation.relicLocked(profile, pad.index) then
 			replaceCreature(pad.center, nil, mount)
 			pad.prompt:SetAttribute("Available", false)
 			showPad(pad, CryptidArt.states.sealed, false)
 			continue
 		end
+		pad.center:SetAttribute("Sealed", false)
 		local instanceId = ProfileQuery.padAt(profile, pad.index)
 		local speciesId = nil
 		if instanceId ~= nil then

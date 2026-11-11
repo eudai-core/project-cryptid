@@ -8,6 +8,9 @@ local function import(lunePath: string, getRoblox: () -> any): any
 	return require(getRoblox())
 end
 
+local Monetisation = import("../Config/Monetisation", function()
+	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Monetisation")
+end)
 local Return = import("../Config/Return", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Return")
 end)
@@ -30,9 +33,10 @@ end
 
 function Ownership.leaveRates(profile: any, forcedCash: number?): (number, number)
 	local layers = Ownership.layers(profile, forcedCash)
-	local noPass = Money.round(Income.perSecond(profile) * layers.skills * layers.rebirth)
-	local withPass = Money.round(noPass * layers.cashPass)
-	return noPass, withPass
+	local scale = layers.skills * layers.rebirth
+	local titheRate = Money.round(Income.tithePerSecond(profile) * scale)
+	local cashRate = Money.round(Income.perSecond(profile) * scale * layers.cashPass)
+	return titheRate, cashRate
 end
 
 function Ownership.cryptidTick(profile: any, seconds: number, forcedCash: number?): { cash: number, tithe: number }
@@ -51,7 +55,7 @@ function Ownership.autoCollect(profile: any, forced: boolean?): boolean
 	if forced == true then
 		return true
 	end
-	if Return.AUTO_COLLECT_ENABLED ~= true or type(Return.AUTO_COLLECT_PASS_ID) ~= "number" then
+	if not Monetisation.passLive("autoCollect") then
 		return false
 	end
 	return type(profile) == "table" and profile.autoCollect == true
@@ -61,13 +65,13 @@ function Ownership.cashMultiplier(profile: any, forced: number?): number
 	if type(forced) == "number" and forced == forced and forced > 0 and forced < 1e6 and forced ~= math.huge then
 		return forced
 	end
-	if Return.CASH_DOUBLE_ENABLED ~= true or type(Return.CASH_DOUBLE_PASS_ID) ~= "number" then
+	if type(profile) ~= "table" or profile.cashDouble ~= true then
 		return 1
 	end
-	if type(profile) == "table" and profile.cashDouble == true then
-		return Return.CASH_DOUBLE_MULTIPLIER
+	if not Monetisation.passLive("cashDouble") then
+		return 1
 	end
-	return 1
+	return Return.CASH_DOUBLE_MULTIPLIER
 end
 
 return Ownership

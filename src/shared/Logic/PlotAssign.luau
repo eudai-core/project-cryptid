@@ -53,10 +53,10 @@ function PlotAssign.reservedIndex(state: AssignState, userId: number): number?
 	return nil
 end
 
-function PlotAssign.choose(state: AssignState, userId: number, friendPlots: { number }?): number?
+function PlotAssign.explain(state: AssignState, userId: number, friendPlots: { number }?): (number?, string?)
 	local reserved = PlotAssign.reservedIndex(state, userId)
 	if reserved ~= nil then
-		return reserved
+		return reserved, "reserved"
 	end
 	if type(friendPlots) == "table" and #friendPlots > 0 then
 		local bestIndex = nil
@@ -79,15 +79,20 @@ function PlotAssign.choose(state: AssignState, userId: number, friendPlots: { nu
 			end
 		end
 		if bestIndex ~= nil then
-			return bestIndex
+			return bestIndex, "friend"
 		end
 	end
 	for index = 1, state.count do
 		if state.plots[index].state == "free" then
-			return index
+			return index, "lowest"
 		end
 	end
-	return nil
+	return nil, nil
+end
+
+function PlotAssign.choose(state: AssignState, userId: number, friendPlots: { number }?): number?
+	local index = PlotAssign.explain(state, userId, friendPlots)
+	return index
 end
 
 function PlotAssign.take(state: AssignState, userId: number, friendPlots: { number }?): number?

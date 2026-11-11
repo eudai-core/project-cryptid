@@ -95,6 +95,8 @@ local ledger = Ledger.open({
 	allowMock = function()
 		return RunService:IsStudio()
 	end,
+	isStudio = RunService:IsStudio(),
+	placeId = game.PlaceId,
 	jobId = jobId,
 	now = os.time,
 	waitFor = function(seconds: number)
@@ -114,7 +116,12 @@ local ledger = Ledger.open({
 	end,
 	settle = function(profile: any, now: number)
 		StudioQaHooks.rewindLastSeen(profile)
+		local prior = profile.lastSeenUnix
 		Offline.fold(profile, now)
+		if type(prior) ~= "number" or prior ~= prior or prior < 0 or prior == math.huge then
+			return 0
+		end
+		return math.floor(prior)
 	end,
 	profileKey = profileKey,
 })
