@@ -28,7 +28,7 @@ local function watchCharacter(player: Player)
 	end)
 end
 
-local function beginPlayer(player: Player)
+local function beginPlayer(player: Player, site: string)
 	if not worldReady then
 		table.insert(waiting, player)
 		return
@@ -38,7 +38,7 @@ local function beginPlayer(player: Player)
 	end
 	starting[player] = true
 	task.spawn(function()
-		local opened = PlayerSession.onPlayer(player)
+		local opened = PlayerSession.onPlayer(player, site)
 		if opened == true and player.Parent ~= nil then
 			print("[diag] LoadCharacter " .. player.Name) -- TEMP diag
 			player:LoadCharacter()
@@ -49,7 +49,7 @@ end
 Players.PlayerAdded:Connect(function(player: Player)
 	print("[diag] PlayerAdded " .. player.Name) -- TEMP diag
 	watchCharacter(player)
-	beginPlayer(player)
+	beginPlayer(player, "added")
 end)
 for _, player in Players:GetPlayers() do
 	watchCharacter(player)
@@ -78,10 +78,10 @@ end)
 PlayerSession.start(folder)
 
 for _, player in waiting do
-	beginPlayer(player)
+	beginPlayer(player, "queue")
 end
 for _, player in Players:GetPlayers() do
-	beginPlayer(player)
+	beginPlayer(player, "players")
 end
 Players.PlayerRemoving:Connect(function(player: Player)
 	starting[player] = nil
