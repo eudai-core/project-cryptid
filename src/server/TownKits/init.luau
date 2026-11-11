@@ -8,14 +8,16 @@ local function import(lunePath: string, getRoblox: () -> any): any
 	return require(getRoblox())
 end
 
+-- This file is the TownKits module. Sibling kit modules are its children, not
+-- siblings under ServerScriptService.
 local Longship = import("./Longship", function()
-	return script.Parent:WaitForChild("Longship")
+	return script:WaitForChild("Longship")
 end)
 local WeepingWell = import("./WeepingWell", function()
-	return script.Parent:WaitForChild("WeepingWell")
+	return script:WaitForChild("WeepingWell")
 end)
 local ApothecaryTree = import("./ApothecaryTree", function()
-	return script.Parent:WaitForChild("ApothecaryTree")
+	return script:WaitForChild("ApothecaryTree")
 end)
 
 local TownKits = {}
