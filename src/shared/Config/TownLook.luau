@@ -1,7 +1,8 @@
 --!strict
 
 local TownLook = {
-	PART_CAP = 364,
+	-- Runaway sanity guard only. There is no part budget; do not thin a building to stay under it.
+	PART_CAP = 20000,
 	LIGHT_CAP = 24,
 	VFX_MAX_EMITTERS = 6,
 	VFX_MAX_PARTICLES = 120,
