@@ -8,6 +8,9 @@ local function import(lunePath: string, getRoblox: () -> any): any
 	return require(getRoblox())
 end
 
+local BoneAltar = import("../Config/BoneAltar", function()
+	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("BoneAltar")
+end)
 local Economy = import("../Config/Economy", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Economy")
 end)
@@ -77,7 +80,7 @@ function SkillEffects.catchRange(profile: any): number
 end
 
 function SkillEffects.padCost(profile: any, index: number): number?
-	local base = Economy.PAD_COST[index]
+	local base = Economy.padCost(index, BoneAltar.rebirths(profile))
 	if type(base) ~= "number" then
 		return nil
 	end

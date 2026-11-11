@@ -10,6 +10,7 @@ local LairVisual = require(script.Parent:WaitForChild("LairVisual"))
 local PlotBuilder = require(script.Parent:WaitForChild("PlotBuilder"))
 local PlotSignals = require(script.Parent:WaitForChild("PlotSignals"))
 local BoneAltar = require(Shared:WaitForChild("Config"):WaitForChild("BoneAltar")) :: any
+local Monetisation = require(Shared:WaitForChild("Config"):WaitForChild("Monetisation")) :: any
 local Onboarding = require(Shared:WaitForChild("Config"):WaitForChild("Onboarding")) :: any
 local NumberFormat = require(Shared:WaitForChild("Logic"):WaitForChild("NumberFormat")) :: any
 local OnboardingGoals = require(Shared:WaitForChild("Logic"):WaitForChild("OnboardingGoals")) :: any
@@ -439,13 +440,15 @@ function Plot.sync(plot: any, profile: any, guideValue: ObjectValue)
 
 	for _, pad in plot.pads do
 		pad.center:SetAttribute("beingStolen", false)
+		pad.center:SetAttribute("RelicPad", Monetisation.isRelicPad(pad.index))
 		local mount = creatureMount(pad)
-		if PlotRing.isSealedPad(pad.index) then
+		if PlotRing.isSealedPad(pad.index) or Monetisation.relicLocked(profile, pad.index) then
 			replaceCreature(pad.center, nil, mount)
 			pad.prompt:SetAttribute("Available", false)
 			showPad(pad, CryptidArt.states.sealed, false)
 			continue
 		end
+		pad.center:SetAttribute("Sealed", false)
 		local instanceId = ProfileQuery.padAt(profile, pad.index)
 		local speciesId = nil
 		if instanceId ~= nil then

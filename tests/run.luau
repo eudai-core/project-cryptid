@@ -16,6 +16,7 @@ require("./art_batch.spec")
 require("./save_hardening.spec")
 require("./studio_qa.spec")
 require("./return.spec")
+require("./monetisation.spec")
 
 local Check = require("./check")
 Check.finish()

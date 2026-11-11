@@ -668,15 +668,16 @@ end)
 
 Check.test("migrations run in order from every older dataVersion and are idempotent", function()
 	local targets = Schema.migrationTargets()
-	Check.eq(#targets, 6)
+	Check.eq(#targets, 7)
 	Check.eq(targets[1], 2)
 	Check.eq(targets[2], 3)
 	Check.eq(targets[3], 4)
 	Check.eq(targets[4], 5)
 	Check.eq(targets[5], 6)
 	Check.eq(targets[6], 7)
-	Check.eq(targets[5] < targets[6], true)
-	Check.eq(Save.DATA_VERSION, 7)
+	Check.eq(targets[7], 8)
+	Check.eq(targets[6] < targets[7], true)
+	Check.eq(Save.DATA_VERSION, 8)
 
 	local fromV1 = legacy(1)
 	local once = Schema.migrate(fromV1)
@@ -737,16 +738,33 @@ Check.test("migrations run in order from every older dataVersion and are idempot
 	skillsOnly.settings.sfx = nil
 	skillsOnly.settings.music = nil
 	skillsOnly.settings.effectsQuality = nil
+	skillsOnly.purchases = nil
+	skillsOnly.cosmetics = nil
+	skillsOnly.giftedPasses = nil
+	skillsOnly.giftsReceived = nil
+	skillsOnly.tarot = nil
+	skillsOnly.bloodMoon = nil
+	skillsOnly.ui = nil
+	skillsOnly.cashDouble = nil
+	skillsOnly.autoCollect = nil
+	skillsOnly.passes = nil
 	local fromV5 = Schema.migrate(skillsOnly, 4242)
-	Check.eq(fromV5.dataVersion, 7)
+	Check.eq(fromV5.dataVersion, 8)
 	Check.eq(fromV5.skills[1], "h1")
 	Check.eq(fromV5.daily.step, 1)
 	Check.eq(fromV5.daily.lastClaimDay, -1)
 	Check.eq(fromV5.bowl, 0)
 	Check.eq(fromV5.lastSeenUnix, 4242)
 	Check.eq(fromV5.settings.sfx, 1)
+	Check.eq(fromV5.passes.extraPads, false)
+	Check.eq(fromV5.cashDouble, false)
+	Check.eq(fromV5.autoCollect, false)
+	Check.eq(fromV5.purchases.starterPackClaimed, false)
+	Check.eq(next(fromV5.purchases.ledger), nil)
+	Check.eq(fromV5.ui.relicsPipShown, false)
 	Check.eq(same(fromV5, Schema.migrate(fromV5, 99999)), true)
 	Check.eq(Schema.migrate(fromV5, 99999).lastSeenUnix, 4242)
+	Check.eq(Schema.migrate(fromV5, 99999).skills[1], "h1")
 
 	local offering = Schema.newProfile(20, "starter")
 	offering.dataVersion = 6
@@ -755,7 +773,7 @@ Check.test("migrations run in order from every older dataVersion and are idempot
 	offering.onboarding.step = 8
 	offering.lastSeenUnix = 20
 	local fromV6 = Schema.migrate(offering, 1)
-	Check.eq(fromV6.dataVersion, 7)
+	Check.eq(fromV6.dataVersion, 8)
 	Check.eq(fromV6.skills[1], "h1")
 	Check.eq(fromV6.settings.sfx, 0.5)
 	Check.eq(fromV6.lastSeenUnix, 20)
@@ -767,12 +785,52 @@ Check.test("migrations run in order from every older dataVersion and are idempot
 	rite.onboarding.step = 4
 	rite.onboarding.playSeconds = 0
 	local recomputed = Schema.migrate(rite, 1)
-	Check.eq(recomputed.dataVersion, 7)
+	Check.eq(recomputed.dataVersion, 8)
 	Check.eq(recomputed.onboarding.step, 2)
 	Check.eq(recomputed.onboarding.playSeconds, 5)
 
+	local v7 = Schema.newProfile(20, "starter")
+	v7.dataVersion = 7
+	v7.cash = 45
+	v7.skills = { "h1" }
+	v7.onboarding.step = 3
+	v7.onboarding.playSeconds = 12
+	v7.lastSeenUnix = 20
+	v7.settings.sfx = 0.4
+	v7.purchases = nil
+	v7.cosmetics = nil
+	v7.giftedPasses = nil
+	v7.giftsReceived = nil
+	v7.tarot = nil
+	v7.bloodMoon = nil
+	v7.ui = nil
+	v7.cashDouble = nil
+	v7.autoCollect = nil
+	v7.passes = nil
+	local fromV7 = Schema.migrate(v7, 50)
+	Check.eq(fromV7.dataVersion, 8)
+	Check.eq(fromV7.cash, 45)
+	Check.eq(fromV7.skills[1], "h1")
+	Check.eq(#fromV7.skills, 1)
+	Check.eq(fromV7.onboarding.step, 3)
+	Check.eq(fromV7.onboarding.playSeconds, 12)
+	Check.eq(fromV7.lastSeenUnix, 20)
+	Check.eq(fromV7.settings.sfx, 0.4)
+	Check.eq(fromV7.passes.extraPads, false)
+	Check.eq(fromV7.passes.lairCosmetics, false)
+	Check.eq(fromV7.passes.sigilNameplate, false)
+	Check.eq(fromV7.cashDouble, false)
+	Check.eq(fromV7.autoCollect, false)
+	Check.eq(fromV7.purchases.starterPackClaimed, false)
+	Check.eq(next(fromV7.purchases.ledger), nil)
+	Check.eq(fromV7.ui.relicsPipShown, false)
+	Check.eq(fromV7.ui.relicsPipCleared, false)
+	Check.eq(same(fromV7, Schema.migrate(fromV7, 99999)), true)
+	Check.eq(Schema.migrate(fromV7, 99999).cash, 45)
+	Check.eq(Schema.migrate(fromV7, 99999).onboarding.step, 3)
+
 	local future = Schema.newProfile(20, "starter")
-	future.dataVersion = 8
+	future.dataVersion = 9
 	Check.eq(Schema.migrate(future), nil)
 end)
 

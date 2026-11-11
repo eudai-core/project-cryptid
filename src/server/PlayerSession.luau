@@ -11,6 +11,7 @@ local StudioQa = require(script.Parent:WaitForChild("Dev"):WaitForChild("StudioQ
 local StudioQaHooks = require(script.Parent:WaitForChild("Dev"):WaitForChild("StudioQaHooks"))
 local Pedlar = require(script.Parent:WaitForChild("Pedlar"))
 local QaGrant = require(script.Parent:WaitForChild("Dev"):WaitForChild("QaGrant"))
+local MonetisationService = require(script.Parent:WaitForChild("MonetisationService"))
 local Plot = require(script.Parent:WaitForChild("Plot"))
 local Remotes = require(script.Parent:WaitForChild("Remotes"))
 local Debounce = require(Shared:WaitForChild("Logic"):WaitForChild("Debounce")) :: any
@@ -158,6 +159,8 @@ local function publish(session: any, credit: number)
 		dailyAutoOpen = session.dailyAutoOpen == true,
 		silentNotice = session.silentNotice or 0,
 		revealSerial = session.revealSerial or 0,
+		relicsBought = session.relicsBought or 0,
+		relicsSpent = session.relicsSpent or 0,
 	})
 	local player = session.player
 	player:SetAttribute("Cash", profile.cash)
@@ -660,6 +663,18 @@ local function bind(folder: Folder)
 	listen(Names.CLAIM_DAILY, onClaimDaily)
 	listen(Names.SET_SETTINGS, onSettings)
 	listen(Names.BUY_SKILL, onBuySkill)
+	listen(Names.OPEN_RELICS, function(session)
+		if not allowRequest(session) then
+			return
+		end
+		MonetisationService.onOpen(session)
+	end)
+	listen(Names.BUY_RELIC, function(session, key)
+		if not allowRequest(session) or not allowPurchase(session) then
+			return
+		end
+		MonetisationService.onBuy(session, key)
+	end)
 end
 
 local function startLoops(session: any)
@@ -746,6 +761,37 @@ end
 
 function PlayerSession.start(folder: Folder)
 	bind(folder)
+	MonetisationService.start({
+		now = os.time,
+		newId = function()
+			return HttpService:GenerateGUID(false)
+		end,
+		sessionFor = function(userId: number)
+			for player, session in sessions do
+				if player.UserId == userId then
+					return session
+				end
+			end
+			return nil
+		end,
+		save = function(session: any)
+			if session.saveBusy then
+				return false
+			end
+			local ok = performSave(session)
+			return ok == true
+		end,
+		queue = queueSave,
+		publish = function(session: any, credit: number)
+			publish(session, credit)
+		end,
+		spend = function(session: any, spent: number)
+			session.relicsBought = (session.relicsBought or 0) + 1
+			if type(spent) == "number" and spent > 0 then
+				session.relicsSpent = (session.relicsSpent or 0) + math.floor(spent)
+			end
+		end,
+	})
 	Plot.start(function(player: Player)
 		return sessions[player]
 	end)
@@ -781,6 +827,9 @@ function PlayerSession.onPlayer(player: Player)
 	end
 	local profile = loaded.profile
 	local grantedStarter = Schema.ensureStarter(profile, os.time(), HttpService:GenerateGUID(false))
+	local playedBefore = profile.onboarding.playSeconds
+	StudioQa.armRelics(profile)
+	local armedShop = profile.onboarding.playSeconds ~= playedBefore
 	local silentNotice = 0
 	if type(profile.offline.notice) == "number" and profile.offline.notice > 0 then
 		silentNotice = profile.offline.notice
@@ -830,7 +879,7 @@ function PlayerSession.onPlayer(player: Player)
 		loaded = true,
 		alive = true,
 		leaving = false,
-		dirty = grantedStarter or silentNotice > 0,
+		dirty = grantedStarter or silentNotice > 0 or armedShop,
 		dailyAutoOpen = dailyAutoOpen,
 		silentNotice = silentNotice,
 		lockExpiresAt = lockExpiresAt,
@@ -845,6 +894,8 @@ function PlayerSession.onPlayer(player: Player)
 		catchStart = nil,
 		catchToken = 0,
 		revealSerial = 0,
+		relicsBought = 0,
+		relicsSpent = 0,
 		lastReturnAt = nil,
 		lastBindAt = nil,
 		pedlarToken = 0,
@@ -866,6 +917,11 @@ function PlayerSession.onPlayer(player: Player)
 	if player.Character ~= nil then
 		pivot(session, player.Character)
 	end
+	task.spawn(function()
+		if session.alive then
+			MonetisationService.sync(session)
+		end
+	end)
 end
 
 local function closeOwned(player: Player, session: any, bounded: boolean): (boolean, boolean)
