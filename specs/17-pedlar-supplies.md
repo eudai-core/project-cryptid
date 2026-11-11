@@ -54,7 +54,7 @@ Short catalogue, sold at the Lanternwright, not here:
 | Spirit Compass (L3) | Blue arrow to the nearest wild spawn. No spawn or rarity change. | Permanent. | 1 | $3,150 (N = 4) | No. `h3` Keen Eye is sealed. | **Deferred, Update 1. Not sold.** |
 | UV Lamp | Shows tracks and the variant the server already rolled. No new roll. | Permanent. | 1 | $4,725 (N = 6) | No tracks, no variants. | **Deferred, Update 1. Not sold.** |
 | Binding Chains (L4) | Purple tether. Range 12 → 16. | Permanent. | 1 | $6,300 (N = 8) | No. `h2` is +2 studs on a skill, not a tool. | **Deferred, Update 1. Not sold.** |
-| Moonlit Censer (L5) | Silver smoke. Grounds a flier into the bindable phase sooner. Can hold two cryptids that are already in a bindable phase. | Permanent. | 1 | $12,600 (N = 16) | No. `settings.bindAtOnce` places a bought cryptid on a pad. It is not a second bind. | **Deferred, Update 1. Not sold.** |
+| Silver Censer (L5) | Silver smoke. Grounds a flier into the bindable phase sooner. Can hold two cryptids that are already in a bindable phase. | Permanent. | 1 | $12,600 (N = 16) | No. `settings.bindAtOnce` places a bought cryptid on a pad. It is not a second bind. | **Deferred, Update 1. Not sold.** |
 
 Until a row has a server effect, the card has no Buy button and charges nothing. The price stays in this note for the strategist.
 
@@ -172,7 +172,7 @@ Reuse the #25 Pedlar card. Do not invent a second panel.
 - Targets: `UITheme.shape.touchPx` (44), including Buy, Details, and Leave.
 - Header stays `Shop.HEADER` ("The Pale Pedlar").
 - Prompt copy changes from "Browse the Pedlar's cages" to **"Browse the Pedlar's wares"** when the offers stop being cryptids.
-- Icon: scripted parts in a `ViewportFrame`, same path as `PedlarShop` portraits. No new image asset. Colours from `UITheme` tokens. Beam colours for the tools are the spec 15 identities (orange, green, blue, purple, silver). The UV Lamp's colour is unset (spec 18).
+- Icon: scripted parts in a `ViewportFrame`, same path as `PedlarShop` portraits. No new image asset. Tool beams use the concept colours: L1 orange, L2 green, L3 blue, L4 purple, Silver Censer silver, UV Lamp `#CC3F8A`. Those swatches are an allowed exception to spec 01 A2, because they come from the tool concept art. They sit in the `ViewportFrame` or as a dot no wider than 16 px. Flat UI chrome stays on A2 tokens. A variant shown by the lamp uses the variant's own colour, not the beam.
 - Chip: reuse `UiFactory.rarityChip` for layout only. On the Pedlar the label is **Bait**, **Cage**, or **Look**. On the Lanternwright it is **Tool**. Colour is Gold when it can be bought, BoneDim when it cannot. Do not mark a lantern Common or Epic.
 - A card that can be bought shows name, the numeric effect, and the price before cash is spent (spec 16 §6 and §8.5).
 - A deferred card shows the name and the line **"Not on the counter."** No price, no Buy.
@@ -211,7 +211,8 @@ Docs only here. The code splits into the small PRs below. Shop and expedition PR
 - Lures that change rarity or mutation odds stay off the stall. A lure may raise the encounter rate, or attract a named species, as a fixed effect shown before purchase.
 - A free expedition egg is allowed only when its contents are already on the send card.
 - Permanent tools have no 5-minute restock clock. They are always in stock at the Lanternwright.
-- The Lanternwright sells L2 through L5 and the UV Lamp. L1 stays free. The Pedlar sells lures, cages, and cosmetics only.
+- The Lanternwright sells L2 through L5 and the UV Lamp. L5 is the Silver Censer. L1 stays free. The Pedlar sells lures, cages, and cosmetics only.
+- The UV Lamp beam is `#CC3F8A`. Tool beam swatches, including L3 blue and L4 purple, are an allowed exception to spec 01 A2. The rest of the UI keeps A2.
 
 ## Open questions for Eudai and Grok Bot
 

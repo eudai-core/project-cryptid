@@ -13,7 +13,7 @@
 >
 > **v3.1 audit fix (4 Nov, compliance audit (`compliance-audit-cash-random.md` §4; Grok Bot approved, 4 Nov; cash = paid currency)):** §4 Pedlar/belt policy reason rewritten (global UTC seed, timed restock, belt spawns independent of purchases, DevForum #29 = Medium risk [A]); odds buttons say "Details"; free-source wording aligned (§rulings, §11).
 
-> **Spec 11 cross-spec edits (4 Nov, spec 11 v1 §11 (approved by Grok Bot as the design base, 4 Nov)):** §4 gains the **variant tables** (Shiny / Corrupted, Update 1; readings row is earn-only, not "free = paid"); §11 points to spec 11 §12's launch cut; §12 adds "Robux never buys Ward Candles, Sigils or steal immunity, and never buys Essence except the fixed, capped amount in Bound Rites" (decision B wins over spec 11's blanket "never Essence"). Stealing stays **Update 3, fresh review then**.
+> **Spec 11 cross-spec edits (4 Nov, spec 11 v1 §11 (approved by Grok Bot as the design base, 4 Nov)):** §4 gains the **variant tables** (Spectral / Shadow, Update 1; readings row is earn-only, not "free = paid"); §11 points to spec 11 §12's launch cut; §12 adds "Robux never buys Ward Candles, Sigils or steal immunity, and never buys Essence except the fixed, capped amount in Bound Rites" (decision B wins over spec 11's blanket "never Essence"). Stealing stays **Update 3, fresh review then**.
 
 > **Supersedes the v2 change note** (v2 was built on the earlier paid-crate approval, which decision B replaces). Kept from v2: the roster, launch odds, reading passes, Server Luck maths, Essence, the Bestiary NEW stamp, the Mythic sky and retention levers. **Overriding rule kept: no visual may imply a higher tier than the one rolled.**
 >
@@ -100,16 +100,16 @@ After rarity is rolled, species is **uniform within the rarity** (spec 03 §4.2)
 - **Why the Pedlar and Rift belt are not paid random items (v3.1):** cash is paid currency, so the reason is **not** the currency. Pedlar stock comes from a **global UTC seed** and **restocks on a fixed timer** (`floor(os.time()/300)`, spec 03); the Rift belt spawns on a fixed 10 s timer whose rolls **never depend on purchases** (no refill-on-buy, no faster respawn; spec 02 §3). You see the exact cryptid, variant and price before you pay, and buying never reveals, rerolls or brings forward what comes next. Both odds buttons say **"Details"**. Risk **Medium [A]**: Roblox staff said preview-before-buy is still a paid random item when "the only way to find out (or change) what comes next is to buy" ([DevForum #29](https://devforum.roblox.com/t/clarifying-requirements-for-paid-random-items/4654622/29)). So **never add** a cash-priced re-roll, restock skip, mystery cage, luck boost or tarot token. Roblox counts random items bought with "paid in-game currency" as paid random items ([policy](https://create.roblox.com/docs/production/monetization/paid-random-items)).
 
 
-**Variants (Update 1, spec 11 §3.2; verified by `verify_odds.py`).** Rolled by the server **after** rarity and species, independently. Cosmetic only (same income). **Luck never changes variant odds.** Rift belt and Pedlar offers show the variant before you pay.
+**Variants (Update 1, spec 11 §3.2; verified by `verify_odds.py`).** Rolled by the server **after** rarity and species, independently. Cosmetic only (same income). **Luck never changes variant odds.** Rift belt and Pedlar offers show the variant before you pay. The `mutation` field stores one of **Normal, Spectral, Gilded, Shadow, Moonlit** (spec 15 §6). This verified table keeps two non-Normal weights, on Spectral and Shadow. Gilded and Moonlit are legal values and do not have a separate percentage here.
 
-| Source | Normal | Shiny | Corrupted | Total |
+| Source | Normal | Spectral | Shadow | Total |
 |---|---|---|---|---|
 | Wild spawns | 98.6% | 1% | 0.4% | **100%** |
 | Rift belt | 99.3% | 0.5% | 0.2% | **100%** |
 | Pedlar (every slot) | 99.3% | 0.5% | 0.2% | **100%** |
 | Tarot readings (January, **earn-only**) | 99.3% | 0.5% | 0.2% | **100%** |
 | Daily ladder, Starter Pack, Bound Rites, Essence crafts | 100% | 0% | 0% | **100%** (fixed) |
-- Per species: multiply by the species odds (e.g. Corrupted Jersey Devil from the Wilds = 0.1% × 0.4% = **0.0004%**).
+- Per species: multiply by the species odds (e.g. Shadow Jersey Devil from the Wilds = 0.1% × 0.4% = **0.0004%**).
 
 ---
 

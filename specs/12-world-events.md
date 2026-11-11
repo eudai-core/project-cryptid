@@ -50,9 +50,9 @@
 - **If Server Luck ever ships** (ON HOLD, spec 10 §5), event luck × Server Luck stays capped at **×3 total** (spec 10 §5.3).
 
 ### 2.3 Event-only variants (Update 1)
-During an event, free Wild and Rift rolls can produce an **event variant**. Its odds come out of **Normal**. Spec 11's Shiny and Corrupted odds are untouched. All tables are verified to sum to 100%.
+During an event, free Wild and Rift rolls can produce an **event variant**. Its odds come out of **Normal**. Spec 11's Spectral and Shadow weights are untouched. The `mutation` set is Normal, Spectral, Gilded, Shadow, Moonlit (spec 15 §6). All tables are verified to sum to 100%.
 
-| Event | Variant | Source | Normal / Shiny / Corrupted / Event variant |
+| Event | Variant | Source | Normal / Spectral / Shadow / Event variant |
 |---|---|---|---|
 | Fog Night | **Fogbound** | Wilds | 96.6 / 1 / 0.4 / **2** |
 | Fog Night | Fogbound | Rift belt | 97.3 / 0.5 / 0.2 / **2** |
@@ -62,7 +62,7 @@ During an event, free Wild and Rift rolls can produce an **event variant**. Its 
 | Rift Storm | **Riftborn** | Rift belt | 95.3 / 0.5 / 0.2 / **4** |
 | Eclipse | **Umbral** | Wilds | 94.6 / 1 / 0.4 / **4** |
 
-- **Cosmetic only**, like spec 11 §3.2's Shiny and Corrupted: the same income as the normal cryptid, plus one Bestiary page per event variant. **Luck never changes variant odds** (spec 11 rule); Rift Storm and Eclipse luck moves rarity only.
+- **Cosmetic only**, like spec 11 §3.2's Spectral and Shadow: the same income as the normal cryptid, plus one Bestiary page per event variant. **Luck never changes variant odds** (spec 11 rule); Rift Storm and Eclipse luck moves rarity only.
 - **Only from free rolls** in a **free-started** event (§6). Never from the Pedlar, readings, cash or Robux.
 - **Fog Night at launch has no variant.** Fogbound arrives in Update 1, so the launch build needs no variant code.
 
@@ -301,7 +301,11 @@ Bump `dataVersion`. The migration adds `events = {witnessed = {}, firstNightDone
 - **Rates for economy maths use the pre-event rate:** `offline.rate` / `offline.rateNoPass` (spec 06), cash bundle quotes (spec 09 §8), daily ladder minutes, Pedlar relic prices and Tithe all **exclude** the event multiplier.
 - **Remotes:** `RequestLightRelic(relicId)` (Update 1). The server checks onboarding, Tithe, cooldowns, caps and cash, and that the player is within 12 studs of the Pedlar. Clients **can't** start, end or extend an event.
 
-## 12. Analytics (draft; the Analytics Lead owns the register)
+## 12. Analytics (draft)
+
+> **11 Nov 2026.** The Analytics Lead role is retired. New names for the Pedlar, tools, and Dossier are the v1.2 addendum in spec 18, owned by the Systems Architect. The stage events in this section stay as written.
+
+The register rule (`analytics-events-spec.md` §5): "new variants go in **custom fields**, not new event names". So the stages share **one event name** with the stage in a field. All events are server-side, ≤ 3 custom fields, string values, no PII.
 The Analytics Lead's rule (`analytics-events-spec.md` §5): "new variants go in **custom fields**, not new event names". So the stages share **one event name** with the stage in a field. All events are server-side, ≤ 3 custom fields, string values, no PII.
 
 | # | Name | When | CF01 | CF02 | CF03 | value | Ships |
