@@ -674,10 +674,19 @@ function PlotBuilder.build(): { any }
 	local plotsFolder = folder(workspace, "Plots")
 	local town = folder(workspace, "Town")
 	PlotBuilder.buildGround(town)
+	-- TownSpawn exists. Yield before the rest of the geometry so Play can join.
+	-- selene: allow(global_usage)
+	if _G.LUNE ~= true then
+		task.wait()
+	end
 	TownBuilder.build(town)
 	local plots = {}
 	for index = 1, Plots.COUNT do
 		plots[index] = PlotBuilder.buildPlot(plotsFolder, index)
+		-- selene: allow(global_usage)
+		if _G.LUNE ~= true then
+			task.wait()
+		end
 	end
 	return plots
 end

@@ -832,3 +832,23 @@ Check.test("player join is hooked before the town build, and TownSpawn is a Spaw
 	Check.eq(spawn.Neutral, true)
 	Check.eq(spawn.Parent, root)
 end)
+
+Check.test("town build yields so Play can admit a player", function()
+	local function body(source: string, header: string): string
+		local at = string.find(source, header, 1, true)
+		Check.truthy(at)
+		return string.sub(source, at :: number)
+	end
+	local townBuild = body(fs.readFile("src/server/TownBuilder.luau"), "function TownBuilder.build")
+	local plotBuild = body(fs.readFile("src/server/PlotBuilder.luau"), "function PlotBuilder.build(")
+	Check.eq(string.find(townBuild, "task.wait()", 1, true) ~= nil, true)
+	Check.eq(string.find(plotBuild, "task.wait()", 1, true) ~= nil, true)
+	local spawnAt = string.find(plotBuild, "PlotBuilder.buildGround", 1, true)
+	local waitAt = string.find(plotBuild, "task.wait()", 1, true)
+	local townAt = string.find(plotBuild, "TownBuilder.build", 1, true)
+	Check.truthy(spawnAt)
+	Check.truthy(waitAt)
+	Check.truthy(townAt)
+	Check.eq((spawnAt :: number) < (waitAt :: number), true)
+	Check.eq((waitAt :: number) < (townAt :: number), true)
+end)

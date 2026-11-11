@@ -1302,6 +1302,11 @@ local function buildHollowmere(town: Folder)
 end
 
 function TownBuilder.build(town: Folder)
+	-- The town is large enough to stall Play solo if the server never yields.
+	-- selene: allow(global_usage)
+	if _G.LUNE ~= true then
+		task.wait()
+	end
 	cobble(town)
 	well(town)
 	roads(town)
@@ -1321,6 +1326,10 @@ function TownBuilder.build(town: Folder)
 		end
 	end
 	buildHollowmere(town)
+	-- selene: allow(global_usage)
+	if _G.LUNE ~= true then
+		task.wait()
+	end
 end
 
 return TownBuilder
