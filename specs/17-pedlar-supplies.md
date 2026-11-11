@@ -1,6 +1,6 @@
 # Spec 17: Pale Pedlar supplies shop
 
-**Status:** Draft v1.1 (11 Nov 2026). Design note only. This file does not change `src/`.
+**Status:** Draft v1.2 (11 Nov 2026). Design note only. This file does not change `src/`. Rulings from this afternoon are in [Rulings applied](#rulings-applied-11-nov).
 **Owner:** Growth Strategist tunes every number marked **PROPOSAL**. Systems Architect builds it later, in the PRs named below.
 **Reads with:** [spec 18](18-tools-capture-aptitudes.md) (tool ladder, capture twists, aptitudes, Hollow Convergence, Dossier, Daily Contracts). Specs 01 B8, 03, 06, 09, 10, 12, 14 §3, 15 §5 and §10, 16 §6–§8, [compliance-audit-cash-random.md](compliance-audit-cash-random.md), and the research note [2026-11-roblox-retention-monetisation-research.md](research/2026-11-roblox-retention-monetisation-research.md). Where that note marks **[A]**, this spec uses the cited config or spec instead.
 
@@ -50,7 +50,7 @@ Full numbers, gates, and code support are in [spec 18](18-tools-capture-aptitude
 | Rusty Lantern (L1) | Orange beam. Hold 3 s, range 12. | Permanent. No charges. | 1 | $0 (N = 0) | Yes. Session tool `"Lantern"`. | Not sold. Already granted at the tutorial catch. |
 | Ember Lantern (L2) | Green beam. Hold 3.0 s → 2.7 s. Odds unchanged. | Permanent. | 1 | $1,575 (N = 2) | The −10% exists only as skill `h1`. No second tool. | **Deferred, Update 1. Not sold.** |
 | Spirit Compass (L3) | Blue arrow to the nearest wild spawn. No spawn or rarity change. | Permanent. | 1 | $3,150 (N = 4) | No. `h3` Keen Eye is sealed. | **Deferred, Update 1. Not sold.** |
-| Veil Lamp (UV) | Shows tracks and the variant the server already rolled. No new roll. | Permanent. | 1 | $4,725 (N = 6) | No tracks, no variants. | **Deferred, Update 1. Not sold.** |
+| UV Lamp | Shows tracks and the variant the server already rolled. No new roll. | Permanent. | 1 | $4,725 (N = 6) | No tracks, no variants. | **Deferred, Update 1. Not sold.** |
 | Binding Chains (L4) | Purple tether. Range 12 → 16. | Permanent. | 1 | $6,300 (N = 8) | No. `h2` is +2 studs on a skill, not a tool. | **Deferred, Update 1. Not sold.** |
 | Moonlit Censer (L5) | Silver smoke. Grounds a flier into the bindable phase sooner. Can hold two cryptids that are already in a bindable phase. | Permanent. | 1 | $12,600 (N = 16) | No. `settings.bindAtOnce` places a bought cryptid on a pad. It is not a second bind. | **Deferred, Update 1. Not sold.** |
 
@@ -79,20 +79,20 @@ The four names in `Shop.SLOTS` are cryptid offers, not these items. Implementati
 
 ## Expeditions: the yield is on the card before Send
 
-Research row 2 asked for expeditions whose haul is known when you send them. The guessed route lengths (30 min / 2 h / 8 h) and guessed yields (15 / 45 / 120 min of income) are **[A]** and are not used. The named routes are spec 14 §3. The Board is shuttered in `Town.luau` (`ExpeditionBoard`). This is January, not launch (spec 15 §9, spec 14 §3).
+Research row 2 asked for expeditions whose haul is known when you send them. Its route lengths (30 min / 2 h / 8 h) and its yields (15 / 45 / 120 minutes of the whole lair) are **[A]** and are not used. The routes keep spec 14 §3's lengths. Cash is that one cryptid's income for 15, 45, and 150 minutes (ruling, 11 Nov). The Board is shuttered in `Town.luau` (`ExpeditionBoard`). This is January, not launch (spec 15 §9, spec 14 §3).
 
-| Route | Duration | Source |
-|---|---|---|
-| Lantern Wood | 10 minutes | Spec 14 §3 |
-| Hollow Marsh | 1 hour | Spec 14 §3 |
-| Bell Quarry | 4 hours | Spec 14 §3 |
+| Route | Duration constant | Cash constant | Cash shown |
+|---|---|---|---|
+| Lantern Wood | `LANTERN_WOOD_DURATION_MINUTES` = 10 | `LANTERN_WOOD_CASH_MINUTES` = 15 | That cryptid's pre-2x income for 15 minutes |
+| Hollow Marsh | `HOLLOW_MARSH_DURATION_MINUTES` = 60 | `HOLLOW_MARSH_CASH_MINUTES` = 45 | That cryptid's pre-2x income for 45 minutes |
+| Bell Quarry | `BELL_QUARRY_DURATION_MINUTES` = 240 | `BELL_QUARRY_CASH_MINUTES` = 150 | That cryptid's pre-2x income for 150 minutes |
 
 One free slot (spec 14 §3). The chosen cryptid leaves its pad. The card states that income trade-off before Send. Server time advances while you are offline (spec 14). Skill `h7` Expedition Lore (−10% time) is sealed in `SkillConfig` and does not apply until it is unsealed. Aptitude time stays inside the 5% cap in [spec 18](18-tools-capture-aptitudes.md) and does nothing until expeditions exist.
 
 **Before Send, the card shows the whole manifest.** Return delivers that card once. A disconnect does not reroll it (spec 14).
 
 - **Cryptid or egg.** If the route returns a cryptid or an egg, the species, Courage, Instinct, Attunement, and trait are already written on the card (spec 14). There is no second reveal on the way home.
-- **Cash.** A disclosed amount at the pre-2x rate (spec 06: income per second before the 2x Cash pass). No config stores an expedition minute count. The research's 15 / 45 / 120 minutes are not adopted. The minute count is open question 6.
+- **Cash.** The sent cryptid's own pre-2x income per second, times 60, times that route's cash-minute constant. Pre-2x means before the 2x Cash pass (spec 06). The rate is `Income.contribution` (base × altar × skill) times `(1 + courageBonus)` from [spec 18](18-tools-capture-aptitudes.md). It is not the whole lair, and it is not Tithe. The code PR puts the six numbers in one config module. They are not literals in the send script. Worked check, Hodag base 5, altar I (`BoneAltar.multiplier(1)` = 1.25), Courage 0, no skill: 6.25/s. Lantern Wood is `6.25 × 60 × LANTERN_WOOD_CASH_MINUTES` = **$5,625**. Hollow Marsh is **$16,875**. Bell Quarry is **$56,250**.
 - **Relic.** Rolled when the card is built, not when the party returns (audit row 9, spec 12 §6.2). Details shows the table before the roll: Fog Lantern 50%, Cracked Bell 20%, Wisp Jar 20%, Blood Chalice 7%, Rift Shard 2%, Black Sun Coin 1% (100%). The card then names the relic that was rolled. Cap 5 of each (spec 12 §6.2).
 - **No tarot token** (spec 09 v3). No Essence.
 
@@ -132,11 +132,11 @@ Cash only. No Robux button, no product id, no edit to `Monetisation.luau` or to 
 
 Restock stays as it is. `Shop.ROTATION_SECONDS` is 300. `ShopStock.rotationId` is `floor(unix / 300)`. The label stays `Shop.RESTOCK_PREFIX` ("Restocks in ") plus `ShopStock.formatCountdown`. The note under Details stays "Buying never changes the stock." The lantern glow stays `Shop.GLOW_SECONDS` (10). No "last chance", "only N left", or "deal of the day" (spec 16 §7.3 and §7.4). Director ruling 20.
 
-Permanent tools are always on the counter. The clock still ticks, and a tick does not remove an unsold tool. That keeps the real timer without turning it into scarcity. Open question 4 records the alternative.
+Permanent tools are always on the counter. The clock still ticks, and a tick does not remove an unsold tool. That keeps the real timer without turning it into scarcity. Open question 3 records the alternative.
 
 **Cash and the policy gate.** Cash is paid currency because it is sold in Robux bundles (audit ruling, spec 09 §8). `PolicyGate.allows` reads `ArePaidRandomItemsRestricted` and fails closed: it returns true only when that field is explicitly false. `MonetisationService.paidRandomAllowed` calls it. Nothing in the Pedlar calls it today. This stall does not need the gate, because it sells no random item. A future random cash row would have to call it and hide the row when it returns false. That row is not in this catalogue.
 
-No paid random item ships from this stall at launch. The launch counter charges cash for nothing, because no supply effect beyond the free lantern exists yet.
+No paid random item ships from this stall. Until Update 1 the counter shows the free lantern as already owned and charges nothing. That empty cash counter is accepted.
 
 **Not sold, from the 11 Nov research as well as the earlier rulings.** No luck boost. No paid restock and no paid reroll (`Shop.ROTATION_SECONDS` stays 300, and buying does not change `rotationId`). No cash crate, case, or other random-for-currency row. Reed Bait, when it eventually exists, still does not change the spec 09 wild weights, and it is not sold now.
 
@@ -145,7 +145,7 @@ No paid random item ships from this stall at launch. The launch counter charges 
 | Research row | What it priced | This note |
 |---|---|---|
 | 2 | A third expedition slot | **PENDING EUDAI.** One free slot only. The figure is not recorded here. |
-| 13 | A lantern or UV beam skin | **PENDING EUDAI.** Not a Pedlar row. The figure is not recorded here. |
+| 13 | A lantern or UV beam skin | **PENDING EUDAI.** Not a Pedlar row. A later Robux tab, separate from this stall. The figure is not recorded here. |
 
 Moon Pass, Bound Rites, and Instant Expedition Return stay in spec 09. Ruling 5 leaves those Robux prices open. This note does not copy them into a new field.
 
@@ -163,7 +163,7 @@ The next free version after #15 merges is **11**. One migration, chained after v
 
 A save still at 9 runs v10, then v11. Do not merge the schema PR before #15. If the tool fields and the aptitude fields ship in two PRs, the second takes **12**. Prefer one PR so there is one step.
 
-A cryptid with `source = "pedlar"` keeps its `speciesId`, instance id, `mutation`, `source`, and `acquiredAt`. It is not deleted or replaced. The migration only fills the new fields. See spec 18 open question 5 if that fill must not move income.
+A cryptid with `source = "pedlar"` keeps its `speciesId`, instance id, `mutation`, `source`, and `acquiredAt`. It is not deleted. The migration writes Courage, Instinct, and Attunement to **5 / 5 / 5** (`Aptitude.PAID_GRANT`). That is a +5% Courage bonus, not a hash, and it cannot be Prime (spec 18). Other cryptids still use the hash. The version bump is in the code PR, chained after #15's v10. This note does not edit `Save.DATA_VERSION`.
 
 ## UI
 
@@ -172,7 +172,7 @@ Reuse the #25 Pedlar card. Do not invent a second panel.
 - Targets: `UITheme.shape.touchPx` (44), including Buy, Details, and Leave.
 - Header stays `Shop.HEADER` ("The Pale Pedlar").
 - Prompt copy changes from "Browse the Pedlar's cages" to **"Browse the Pedlar's wares"** when the offers stop being cryptids.
-- Icon: scripted parts in a `ViewportFrame`, same path as `PedlarShop` portraits. No new image asset. Colours from `UITheme` tokens. Beam colours for the tools are the spec 15 identities (orange, green, blue, purple, silver). The Veil Lamp's colour is unset (spec 18).
+- Icon: scripted parts in a `ViewportFrame`, same path as `PedlarShop` portraits. No new image asset. Colours from `UITheme` tokens. Beam colours for the tools are the spec 15 identities (orange, green, blue, purple, silver). The UV Lamp's colour is unset (spec 18).
 - Chip: reuse `UiFactory.rarityChip` for layout only. The label is **Tool**, **Bait**, **Egg**, or **Look**. Colour is Gold when it can be bought, BoneDim when it cannot. Do not mark a lantern Common or Epic.
 - A card that can be bought shows name, the numeric effect, and the price before cash is spent (spec 16 §6 and §8.5).
 - A deferred card shows the name and the line **"Not on the counter."** No price, no Buy.
@@ -183,17 +183,16 @@ The Lanternwright stall stays shuttered. Stock is on the Pedlar. Opening the Lan
 
 ## Implementation plan
 
-This note is not one of these PRs.
+Docs only here. The code splits into the small PRs below. Shop and expedition PRs are this note. Tool, Dossier, Convergence, contract, and analytics PRs are [spec 18](18-tools-capture-aptitudes.md). None of them start ahead of #14, and none of them take `DATA_VERSION` 10.
 
-1. **Stop the cryptid counter.** `Pedlar` publishes supply rows instead of `ShopRoll` species. Buy is enabled only when the server has an effect. L1's card says it is already yours and does not charge. `Species` ids are untouched. Tests: a buy request for a slot no longer grants a species; rotation id does not change on buy; existing `source = "pedlar"` records still load.
-2. **Schema, after #15.** Version 11 as above. Tests: the same instance id fills the same aptitudes twice; species id and `source` stay put; cash is unchanged; L2 is not granted.
-3. **Update 1 tools.** Spec 18 PRs. Prices live in config, not literals in the shop script. Details shows before and after. A grep test rejects `luck`, `spawnRate`, `rarityMult`, `variant`, and `mutation` on any supply SKU.
-4. **Deferred rows stay unwired.** No egg ticket. An expedition PR, when scheduled, shows the manifest before Send and refuses a send whose card is missing a line. A paid extra slot stays out until Eudai records an approval.
+1. **Stop the cryptid counter.** Supply rows replace `ShopRoll` species. Buy spends cash only when a server effect exists. Until Update 1 the lantern row is owned and the other rows say "Not on the counter." Tests: a buy does not grant a species; `rotationId` does not change on buy.
+2. **Schema, after #15.** Version 11, chained after `migrateToV10`. `source = "pedlar"` becomes 5/5/5. Every other cryptid uses the spec 18 hash. Tests: a second migrate does not change the numbers; species id and cash stay put.
+3. **Expedition manifest (January).** One module holds the six route constants. The card shows cash from those constants before Send. One free slot. No third slot and no egg ticket.
 
 ## QA
 
 1. Fresh profile: the stall shows the Rusty Lantern as owned. No cryptid name, no species price, no Buy that spends cash.
-2. A profile that already owns a Pedlar cryptid still owns that species after load.
+2. A profile that already owns a Pedlar cryptid still owns that species after load, at Courage 5, Instinct 5, Attunement 5.
 3. Details on a tool says the odds are unchanged, with the before and after hold or range.
 4. The countdown uses the real 300 s boundary. Copy has no "last chance" or "only".
 5. Touch targets are 44 px on a phone width (`UITheme.shape.mobileWidthBreakpoint` 700).
@@ -201,14 +200,17 @@ This note is not one of these PRs.
 7. Tutorial Hodag still completes with the free lantern (spec 01). The charge twist does not run on that spawn (spec 18).
 8. The counter has no luck row, no restock skip, no crate, and no egg ticket. An expedition card, when that system exists, lists species, aptitudes, cash, and relic before Send, and a second send with the same id does not reroll.
 
+## Rulings applied (11 Nov)
+
+- Expedition cash is the sent cryptid's pre-2x income for 15, 45, and 150 minutes on the 10 min, 1 h, and 4 h routes. Those six numbers are named constants.
+- The third expedition slot stays **PENDING EUDAI**. One free slot.
+- Beam skins are not on the Pedlar. They belong on a separate Robux tab. Prices **PENDING EUDAI**. No figure is stored here.
+- An empty cash counter until Update 1 is accepted.
+- A Pedlar-sourced cryptid migrates to 5/5/5. The version bump is in the code PR, chained after #15.
+
 ## Open questions for Eudai and Grok Bot
 
-1. The first supplies brief asked for lures that raise hunt odds. This note does not sell those, because the later tools ruling and the cash-random audit forbid them. Confirm that withdrawal.
-2. Launch then has a stall that charges nothing until Update 1. Confirm the cryptid counter still closes on that day, rather than staying until one supply can be charged.
-3. Egg tickets stay off the counter. A free expedition egg is allowed only when its species and aptitudes are already on the send card. Confirm that split.
-4. Permanent tools never leave the counter, while the 5-minute clock still runs (ruling 20). Confirm, or say the clock should hide when the list cannot change.
-5. Stock stays on the Pedlar. The Lanternwright stays shuttered. Confirm.
-6. Expedition cash has no minute count in config. The research's 15 / 45 / 120 minutes are not used. What should the manifest show?
-7. A third expedition slot was priced in the research. It is **PENDING EUDAI**, with no figure stored here, and the design keeps one free slot. Confirm.
-8. A Robux price for a lantern or UV beam skin is **PENDING EUDAI** and is not a stall row. Confirm it stays out.
-9. Analytics stays the frozen v1.1 list in `Analytics.CUSTOM_ORDER` (eight names, cap `MAX_CUSTOM_NAMES` 15). An expedition send is not one of them. May a name be added later, and if so which? This note adds none. See spec 18 for the same question on the other new systems.
+1. The first supplies brief asked for lures that raise hunt odds. This note does not sell those. Confirm that withdrawal.
+2. Egg tickets stay off the counter. A free expedition egg is allowed only when its species and aptitudes are already on the send card. Confirm that split.
+3. Permanent tools never leave the counter, while the 5-minute clock still runs (ruling 20). Confirm, or say the clock should hide when the list cannot change.
+4. Stock stays on the Pedlar. The Lanternwright stays shuttered. Confirm.
