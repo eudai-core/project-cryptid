@@ -79,6 +79,19 @@ function LightingSetup.apply()
 	sky.MoonAngularSize = TownLook.SKY_MOON_ANGULAR_SIZE
 	sky.CelestialBodiesShown = TownLook.SKY_CELESTIAL_BODIES_SHOWN
 
+	local terrain = workspace:FindFirstChild("Terrain")
+	if terrain ~= nil then
+		local clouds = terrain:FindFirstChild("Clouds")
+		if clouds == nil then
+			clouds = Instance.new("Clouds")
+			clouds.Name = "Clouds"
+			clouds.Parent = terrain
+		end
+		clouds.Cover = TownLook.CLOUD_COVER
+		clouds.Density = TownLook.CLOUD_DENSITY
+		clouds.Color = Color3.fromHex(TownLook.CLOUD_COLOR)
+	end
+
 	local baseplate = workspace:FindFirstChild("Baseplate")
 	if baseplate ~= nil then
 		baseplate:Destroy()
