@@ -292,7 +292,7 @@ Check.test("reservation beats a nearby friend", function()
 end)
 
 Check.test("migration from v2 lands on the current data version and keeps the ledger", function()
-	Check.eq(Save.DATA_VERSION, 5)
+	Check.eq(Save.DATA_VERSION, 6)
 	local v2 = Schema.newProfile(9, "starter")
 	v2.dataVersion = 2
 	v2.totalEarned = 40

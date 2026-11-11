@@ -1,7 +1,8 @@
 --!strict
 
--- Parses the save-debug suffix on a bot playtest arg `qa:<seconds>[:suffix]`.
--- Callers must pass isStudio from RunService. A live server always gets nil.
+-- Save-debug suffixes on a bot playtest arg `qa:<seconds>[:suffix]`.
+-- Callers pass isStudio. A live server always gets the inert plan.
+-- Offline and offering suffixes are applied by StudioQaHooks.
 
 local StudioQa = {}
 
