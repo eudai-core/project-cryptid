@@ -6,7 +6,7 @@
 
 ## Goal
 
-Tools are the backbone of the Pedlar's supplies ([spec 17](17-pedlar-supplies.md)). Each launch species has a capture twist so the tool matters, and a hold with the free lantern still works. Aptitudes are visible and small. They never move Tithe.
+L2 through L5 and the UV Lamp are the Lanternwright's stock ([spec 17](17-pedlar-supplies.md)). L1 stays free. The Pedlar does not sell these tools. Each launch species has a capture twist so the tool matters, and a hold with the free lantern still works. Aptitudes are visible and small. They never move Tithe.
 
 **Ruling:** L1–L5 and the UV lamp are deterministic (range, reveal, hold time, tether). They never change catch odds, rarity weights, spawn odds, or variant odds. No paid success boost. The server validates the catch.
 
@@ -74,9 +74,9 @@ On top of hold-to-bind. One twist per launch species (spec 09 §3). Ids are the 
 
 ## Hollow Convergence and the Moon Almanac
 
-Research row 1 asked for a free weekly gathering and a calendar. Its Saturday 17:00 UTC slot, 30-minute length, luck ×2, spawn change (45 s → 30 s), and max-alive change (3 → 4) are **[A]**. They are not added. This note does not add a luck boost.
+Research row 1 asked for a free weekly gathering and a calendar. Its guessed start, its guessed length, its luck ×2, and its spawn changes are **[A]** and are not used. Hollow Convergence is Saturday 18:00–20:00 UTC and adds no luck of its own.
 
-**Two events, both kept.** Rift Tide stays Saturday 18:00–20:00 UTC and keeps its free ×1.5 luck (spec 09 §9.4). Hollow Convergence is not that event and adds no luck. `Convergence.LUCK_MULTIPLIER` is 1. It does not change rarity weights, spawn interval, or max alive. Launch still ships Fog Night only, and Fog Night is atmosphere only (spec 12 §0, director ruling 15). Convergence is Update 1. `Convergence.WEEKDAY` is Sunday, `Convergence.START_HOUR_UTC` is 18, and `Convergence.DURATION_MINUTES` is 30, so the hour does not sit inside Rift Tide.
+**Two effects, one window.** Hollow Convergence is Saturday 18:00–20:00 UTC. The constants are `Convergence.WEEKDAY` = Saturday, `Convergence.START_HOUR_UTC` = 18, and `Convergence.END_HOUR_UTC` = 20. It adds no luck of its own: `Convergence.LUCK_MULTIPLIER` is 1. It does not change rarity weights, spawn interval, or max alive. Rift Tide is the separate spec 09 §9.4 luck of ×1.5 on that same Saturday window. Convergence does not add a second multiplier and does not remove the ×1.5. Launch still ships Fog Night only, and Fog Night is atmosphere only (spec 12 §0, director ruling 15). Convergence is Update 1.
 
 **What it does.** It does not change rarity weights, spawn interval, or max alive. The shared goal during the window, once the rite exists, is the Hollow Rite (spec 11 §4.2, Update 1): server totals Ember 25, Flame 40, Inferno 60, in a 10-minute rite. Rewards are 5, 10, and 15 minutes of each contributor's own pre-2x income. Inferno also grants the Rite Candle once per tier per week. A player needs 3 catches. AFK players get nothing. Assists count one half. Those rewards are the rite's, not a new Convergence multiplier. Spec 12's rule stands: event income stays out of Tithe.
 
@@ -87,7 +87,7 @@ Rift Tide keeps that ×1.5. Convergence does not. Nobody can buy a start, a rest
 | Row on the board | Time | What the player reads |
 |---|---|---|
 | Rift Tide | Saturday 18:00–20:00 UTC | Spec 09 §9.4. Free luck ×1.5. This row is not Convergence. |
-| Hollow Convergence | Sunday 18:00 UTC for `Convergence.DURATION_MINUTES` (30) | No luck bonus. Next Sunday is listed if this one was missed. |
+| Hollow Convergence | Saturday 18:00–20:00 UTC (`START_HOUR_UTC` 18, `END_HOUR_UTC` 20) | No luck bonus of its own. Next Saturday is listed if this one was missed. |
 | Witching Hour | 19:00–20:00 UTC and 01:00–02:00 UTC daily | Update 1. Spec 12 §7.1. |
 | Blood Moon Night | First Friday, 19:00–21:00 UTC | Update 1. Spec 09 §9.4. |
 | Fog Night | Whenever the director rolls it | Launch. Atmosphere only (ruling 15). Odds stay the spec 12 §3 table, behind **Details**. |
@@ -126,11 +126,11 @@ At the post-rite **$17.50/s** (spec 17), the first mark is 5 × 60 × 17.50 = **
 |---|---|---|
 | `Contract.WEEKLY_QUALIFYING_DAYS` | 5 | The ruling. |
 | `Contract.WEEKLY_SPAN_DAYS` | 7 | The ruling. |
-| `Contract.WEEKLY_CASH_MINUTES` | 30 | Same minute count as Offering step 6 (`Return.STEPS`). **PROPOSAL.** |
-| `Contract.WEEKLY_CASH_FLOOR` | 3000 | The floor on that same Offering step. **PROPOSAL.** |
+| `Contract.WEEKLY_CASH_MINUTES` | 30 | Approved. Same minute count as Offering step 6 (`Return.STEPS`). Pre-2x income. |
+| `Contract.WEEKLY_CASH_FLOOR` | 3000 | Approved. The floor on that same Offering step. |
 | `Contract.WEEKLY_COSMETIC` | `vigil_wick` | One fixed cosmetic, disclosed. Not a tarot token and not a random draw. |
 
-The cash is minutes of pre-2x income, with that floor, the same shape as the Offering. The Growth Strategist can change the two proposed numbers without renaming them. The Rite Candle stays the Inferno grant in spec 11 §4.2 and is not this cosmetic.
+The cash is 30 minutes of pre-2x income, and the grant is at least $3,000. Both numbers are the named constants above. The Rite Candle stays the Inferno grant in spec 11 §4.2 and is not this cosmetic.
 
 Roster incomes for the twist table, unchanged by this note: Commons 2 / 3 / 4 / 5; `uncommon_01` and `uncommon_02` and `loveland_frogman` are 15 (spec 09 writes Jackalope $12/s and Dover Demon $14/s; the file on this branch says 15); `snallygaster` uses `Return.SNALLYGASTER_INCOME` (16); `flatwoods_monster` uses `Return.FLATWOODS_INCOME` (40); `rare_01` / `rare_02` are 45; `epic_01` / `epic_02` are 160. Spec 09's $150/s and $170/s Epics are not what `Species.luau` stores. Do not "fix" that in a tools PR.
 
@@ -143,9 +143,9 @@ Spec 14 §1 recommended Courage, Instinct, and Attunement at 0–10, and said th
 - `courageBonus = courage / 10 * 0.10`. Courage 0 is +0%. Courage 10 is +10%. Instinct and Attunement add no income, so the cap cannot be exceeded by summing stats.
 - Placed income, in `Income.perSecond` only: the current product (`baseIncome × altar × skill/wild factor`) **× (1 + courageBonus)**, then `Money.round`.
 - `Income.tithePerSecond` does **not** multiply by `(1 + courageBonus)`. Cash-bundle quotes stay on the pre-2x rate and also ignore this factor.
-- Instinct: expedition duration × (1 − 0.05 × instinct / 10). Instinct 10 is −5%. No effect on catch time.
-- Attunement does not add a second reduction. It picks the route family (woods, marsh, quarry) that receives the Instinct reduction. Other routes get half of that reduction, still inside the 5% cap. Attunement 0 means the Instinct reduction applies equally on every route.
-- Expeditions are not in code (January, spec 15 §9). Instinct and Attunement are stored and shown. Their duration effect waits for the expedition system. The card says so, in plain words, until then. Courage's income effect is live when the field ships.
+- Instinct drives expedition speed and route fit. Speed is `duration × (1 − Aptitude.EXPEDITION_SPEED_CAP × instinct / 10)` with `EXPEDITION_SPEED_CAP` = 0.05. Instinct 10 is −5% time. Route fit uses the species' spec 15 §10 place: Woods (Fresno Nightcrawler, Hidebehind, Jackalope, Beast of Bray Road), Marsh (Loveland Frogman, Flatwoods Monster, Loch Ness Serpent), Quarry (Dover Demon, Snallygaster, Jersey Devil). On that route the full speed applies. On the other routes it is half, and the half still sits inside the 5% cap. Mothman Hatchling and Hodag are "any" in spec 15, so the full speed applies on every route, still capped at 5%. Instinct does not change catch time or income.
+- Attunement drives bind and trait utility. It does not change income or expedition time. Bind utility lengthens the bindable phase by `attunement / 10 × Aptitude.BIND_PHASE_BONUS_AT_10_SECONDS`, and that constant is 1, so Attunement 10 adds 1 s of slack. It does not shorten the hold and it does not move `BIND_TIME_MIN_SECONDS`. Trait utility scales the trait's existing information effect by `attunement / 10`. A trait still reveals nothing the player has not already earned, and it still adds no income.
+- Expeditions are not in code (January, spec 15 §9). The 4 s and 5 s twist windows, and the Attunement phase bonus on those windows, wait for the wild-spawner PR. Courage's income effect is live when the field ships. The Dossier still shows Instinct and Attunement before those systems exist.
 
 **One trait** per cryptid, independent of species rarity. Rates sum to 100%. No income, no catch chance, no Tithe, no rarity.
 
@@ -196,11 +196,12 @@ Small code PRs. Shop, schema, and expedition manifest are [spec 17](17-pedlar-su
 
 1. **Tool config.** Six rows, ids, prices, and `BIND_TIME_MIN_SECONDS` = 1.5. L2–L5 and the UV Lamp stay `forSale = false` until the effect PR. No odds field on a supply.
 2. **Hold, tether, lamp (Update 1).** Hold is `CATCH_SECONDS × h1Factor × l2Factor × otherFactor`, then the 1.5 s floor. Chains change range and tether only. The UV Lamp reads tracks and the spec 15 variant name. Odds tables match with the lamp on and off.
-3. **Phases (Update 1).** Each species has a bindable phase of at least 4 s inside 12 studs on L1. The tutorial Hodag does not charge.
+3. **Wild spawner.** Owns the 4 s and 5 s twist windows, Reed Bait, and `Lure.ENCOUNTER_INTERVAL_SECONDS`. Each species still has a bindable phase of at least 4 s inside 12 studs on L1. The tutorial Hodag does not charge. Those windows are not live before this PR.
 4. **Dossier and Prime.** Courage changes `Income.perSecond` only, cap +10%. Prime is a highlight when all three stats are ≥ 9. `tithePerSecond` ignores Courage. A `source = "pedlar"` migrate writes 5/5/5. A paid grant writes 5/5/5 and `marshwise` and has no reroll.
-5. **Almanac.** Rift Tide and Hollow Convergence are separate rows. Convergence's luck constant is 1. Rift Tide's ×1.5 is unchanged.
-6. **Contracts.** Daily 5/10/15 minute steps. Weekly bonus reads `Contract.WEEKLY_CASH_MINUTES`, `Contract.WEEKLY_CASH_FLOOR`, and `Contract.WEEKLY_COSMETIC`. A missed day does not move `daily.step`.
-7. **Analytics v1.2, only after the Analytics Lead.** Proposed names, not added to v1.1: `ConvergenceWitnessed`, `AlmanacOpened`, `ContractClaimed`, `WeeklyBonusClaimed`, `ExpeditionSent`, `DossierOpened`, `PrimeAwarded`. v1.1 stays `OnboardingSkipped`, `OnboardingStepTime`, `SessionEnded`, `PlayerReturned`, `LedgerLoadFailed`, `PedlarOddsViewed`, `CatchCompleted`, `PlotAssigned`.
+5. **Lanternwright counter.** L2 through L5 and the UV Lamp, no restock countdown, L1 not priced. The Pedlar does not list them. No new town mesh in this PR.
+6. **Almanac.** Hollow Convergence is Saturday 18:00–20:00 UTC. Its luck constant is 1. Rift Tide's ×1.5 on that window stays spec 09 and is not a second Convergence bonus.
+7. **Contracts.** Daily 5/10/15 minute steps. The weekly bonus is `Contract.WEEKLY_CASH_MINUTES` = 30 and `Contract.WEEKLY_CASH_FLOOR` = 3000, plus `vigil_wick`. A missed day does not move `daily.step`.
+8. **Analytics v1.2, pending with the Analytics Lead.** Not in v1.1, and not final: `ConvergenceWitnessed`, `AlmanacOpened`, `ContractClaimed`, `WeeklyBonusClaimed`, `ExpeditionSent`, `DossierOpened`, `PrimeAwarded`. v1.1 stays `OnboardingSkipped`, `OnboardingStepTime`, `SessionEnded`, `PlayerReturned`, `LedgerLoadFailed`, `PedlarOddsViewed`, `CatchCompleted`, `PlotAssigned`.
 
 ## QA
 
@@ -211,7 +212,7 @@ Small code PRs. Shop, schema, and expedition manifest are [spec 17](17-pedlar-su
 5. A save with `source = "pedlar"` loads the same species at 5/5/5. Cash is unchanged. A wild cryptid gets the hash, and a second load does not change it.
 6. Phone width: Bind and Details are at least 44 px. No shop card on the catch.
 7. The UV Lamp, if previewed, uses a colour the Art Director has set, and it is not one of the five tool beams. The variant word is one of Normal, Spectral, Gilded, Shadow, Moonlit. With the lamp off, the same spawn is still there.
-8. The Almanac lists Rift Tide (Saturday 18:00–20:00 UTC, luck ×1.5) and Hollow Convergence (Sunday, luck ×1) as different rows. Copy has no "last chance".
+8. The Almanac lists Hollow Convergence as Saturday 18:00–20:00 UTC with no luck of its own. Rift Tide's ×1.5 on that window is still spec 09. Copy has no "last chance". The Lanternwright tool list has no "Restocks in".
 9. Three contract marks can be finished with a hold, a place, and a return home. Skipping a UTC day leaves the Offering step where it was. Five days in a Monday–Sunday week grant the named cash minutes, the named floor, and `vigil_wick`, and a fourth day does not.
 10. With Steady Hand and the Ember Lantern both owned, and no other catch-time skill, the server hold is 2.43 s. A client that claims 1.4 s is rejected.
 
@@ -222,15 +223,17 @@ Small code PRs. Shop, schema, and expedition manifest are [spec 17](17-pedlar-su
 - Chains do not grant a steal bonus.
 - Variant names on the lamp and the Dossier are Normal, Spectral, Gilded, Shadow, and Moonlit (spec 15 §6).
 - Rolls stay uniform, 1/11. Prime is a highlight when all three stats are ≥ 9. The faces ≥ 9 are 9 and 10, so the odds are (2/11)³ = 8/1331 (about 0.60%). (3/11)³ = 27/1331 would be every stat ≥ 8, and that is not this mark. A 5/5/5 grant cannot be Prime.
-- Rift Tide keeps free ×1.5 luck. Hollow Convergence is a separate event with `Convergence.LUCK_MULTIPLIER` = 1.
-- Contracts pay 5/10/15 minute steps. Any 5 of 7 days pays a fixed cash amount plus `vigil_wick`. The minute count and floor are named constants, proposed at the Offering's 30-minute step.
-- Analytics names for the new actions are a v1.2 proposal for the Analytics Lead. They are not in v1.1.
+- Rift Tide keeps free ×1.5 luck on Saturday 18:00–20:00 UTC. Hollow Convergence is that same window and adds no luck of its own (`Convergence.LUCK_MULTIPLIER` = 1).
+- Contracts pay 5/10/15 minute steps. Any 5 of 7 days pays 30 minutes of pre-2x income, floor $3,000, plus `vigil_wick`. The minute count and the floor are `Contract.WEEKLY_CASH_MINUTES` and `Contract.WEEKLY_CASH_FLOOR`.
+- Analytics names for the new actions are a v1.2 list pending with the Analytics Lead. They are not in v1.1 and they are not final.
 - Pedlar-sourced cryptids migrate to 5/5/5. See spec 17 for the empty counter, the expedition constants, the single slot, and the Robux skin tab.
+- Courage carries the placed-income bonus, capped at +10%. Instinct drives expedition speed and route fit, capped at 5% time. Attunement drives bind slack and trait utility, and it does not change income.
+- The 4 s and 5 s twist windows wait for the wild-spawner PR.
+- Hollow Convergence is Saturday 18:00–20:00 UTC. `Convergence.WEEKDAY` is Saturday, `START_HOUR_UTC` is 18, and `END_HOUR_UTC` is 20.
+- The weekly bonus is 30 minutes of pre-2x income, floor $3,000 (`Contract.WEEKLY_CASH_MINUTES`, `Contract.WEEKLY_CASH_FLOOR`).
+- The v1.2 analytics names are pending with the Analytics Lead. They are not in the v1.1 catalogue.
+- L2 through L5 and the UV Lamp are sold at the Lanternwright. They have no restock clock. L1 stays free.
 
 ## Open questions for Eudai and Grok Bot
 
-1. Spec 14 said these three stats do not change pad income. Courage still carries the whole +10% cap, and Instinct and Attunement stay off income. Confirm that split.
-2. Twist timings (the 4 s and 5 s windows) are proposals. They wait on a wild spawner for all 12 species, which is not in code.
-3. `Convergence.WEEKDAY`, `START_HOUR_UTC`, and `DURATION_MINUTES` are proposed as Sunday 18:00 UTC for 30 minutes so the hour misses Rift Tide. Move the constants if you want a different clock.
-4. `Contract.WEEKLY_CASH_MINUTES` (30) and `Contract.WEEKLY_CASH_FLOOR` (3000) match Offering step 6 and are still a proposal. The Growth Strategist can retune those two names.
-5. The v1.2 event names above are a proposal until the Analytics Lead accepts them.
+None. The v1.2 names stay pending with the Analytics Lead, and `Lure.ENCOUNTER_INTERVAL_SECONDS` is filled in by the wild-spawner PR before that lure is sold.
