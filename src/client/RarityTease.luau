@@ -45,9 +45,8 @@ function RarityTease.mount(parent: Instance, isReduced: () -> boolean)
 	nameLabel.TextXAlignment = Enum.TextXAlignment.Center
 	nameLabel.TextYAlignment = Enum.TextYAlignment.Center
 
-	local rarityLabel = UiFactory.label(group, "body", UITheme.fonts.body.desktop, "BoneDim")
-	rarityLabel.Name = "Rarity"
-	rarityLabel.TextXAlignment = Enum.TextXAlignment.Center
+	local rarityChip, rarityLabel = UiFactory.rarityChip(group, "Common")
+	rarityChip.AnchorPoint = Vector2.new(0.5, 0)
 
 	local pipRow = Instance.new("Frame")
 	pipRow.Name = "Pips"
@@ -129,8 +128,8 @@ function RarityTease.mount(parent: Instance, isReduced: () -> boolean)
 		group.Size = UDim2.fromOffset(metrics.w, metrics.h)
 		nameLabel.Position = UDim2.fromOffset(16, 28)
 		nameLabel.Size = UDim2.new(1, -32, 0, titleSize + 4)
-		rarityLabel.Position = UDim2.fromOffset(16, 28 + titleSize + 6)
-		rarityLabel.Size = UDim2.new(1, -32, 0, bodySize + 4)
+		rarityChip.Position = UDim2.new(0.5, 0, 0, 28 + titleSize + 6)
+		rarityChip.Size = UDim2.fromOffset(UITheme.shape.chipW, UITheme.shape.pedlar.chipH)
 		pipRow.AnchorPoint = Vector2.new(0.5, 0)
 		pipRow.Position = UDim2.new(0.5, 0, 0, 36)
 		pipRow.Size = UDim2.fromOffset(metrics.w - 32, pip)
@@ -160,16 +159,12 @@ function RarityTease.mount(parent: Instance, isReduced: () -> boolean)
 		local ticket = generation
 		nameLabel.Text = tostring(reveal.speciesName or "")
 		rarityLabel.Text = tostring(reveal.rarity or "")
-		local rarityToken = UITheme.rarity[rarityLabel.Text]
-		if type(rarityToken) == "string" then
-			rarityLabel.TextColor3 = UITheme.color(rarityToken)
-		else
-			rarityLabel.TextColor3 = UITheme.color("BoneDim")
-		end
+		UiFactory.applyChip(rarityChip, rarityLabel, rarityLabel.Text)
 		line.Text = tostring(reveal.line or Onboarding.TEASE_LINE)
 		line.TextColor3 = UITheme.color("Bone")
 		paintPips(reveal.pips)
 		nameLabel.Visible = true
+		rarityChip.Visible = true
 		rarityLabel.Visible = true
 		pipRow.Visible = false
 		line.Visible = false
@@ -186,6 +181,7 @@ function RarityTease.mount(parent: Instance, isReduced: () -> boolean)
 				return
 			end
 			nameLabel.Visible = false
+			rarityChip.Visible = false
 			rarityLabel.Visible = false
 			pipRow.Visible = true
 			line.Visible = true
