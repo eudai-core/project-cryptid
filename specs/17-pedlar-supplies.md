@@ -81,13 +81,13 @@ The four names in `Shop.SLOTS` are cryptid offers, not these items. Implementati
 
 ## Expeditions: the yield is on the card before Send
 
-Research row 2 asked for expeditions whose haul is known when you send them. The routes are 30 minutes, 2 hours, and 8 hours. They pay 15, 45, and 150 minutes of pre-2x income, Courage excluded. The Board is shuttered in `Town.luau` (`ExpeditionBoard`). This is January, not launch (spec 15 §9).
+Research row 2 asked for expeditions whose haul is known when you send them. Route length is spec 14: Lantern Wood 10 minutes, Hollow Marsh 1 hour, Bell Quarry 4 hours. They pay 15, 45, and 150 minutes of pre-2x income, Courage excluded. Those lengths are not the Instant Return skip brackets. The Board is shuttered in `Town.luau` (`ExpeditionBoard`). This is January, not launch (spec 15 §9).
 
 | Route | Duration constant | Cash constant | Cash shown |
 |---|---|---|---|
-| Lantern Wood | `LANTERN_WOOD_DURATION_MINUTES` = 30 | `LANTERN_WOOD_CASH_MINUTES` = 15 | 15 min of pre-2x income, Courage excluded |
-| Hollow Marsh | `HOLLOW_MARSH_DURATION_MINUTES` = 120 | `HOLLOW_MARSH_CASH_MINUTES` = 45 | 45 min of pre-2x income, Courage excluded |
-| Bell Quarry | `BELL_QUARRY_DURATION_MINUTES` = 480 | `BELL_QUARRY_CASH_MINUTES` = 150 | 150 min of pre-2x income, Courage excluded |
+| Lantern Wood | `LANTERN_WOOD_DURATION_MINUTES` = 10 | `LANTERN_WOOD_CASH_MINUTES` = 15 | 15 min of pre-2x income, Courage excluded |
+| Hollow Marsh | `HOLLOW_MARSH_DURATION_MINUTES` = 60 | `HOLLOW_MARSH_CASH_MINUTES` = 45 | 45 min of pre-2x income, Courage excluded |
+| Bell Quarry | `BELL_QUARRY_DURATION_MINUTES` = 240 | `BELL_QUARRY_CASH_MINUTES` = 150 | 150 min of pre-2x income, Courage excluded |
 
 One free slot (spec 14 §3). The chosen cryptid leaves its pad. The card states that income trade-off before Send. Server time advances while you are offline (spec 14). Skill `h7` Expedition Lore (−10% time) is sealed in `SkillConfig` and does not apply until it is unsealed. Aptitude time stays inside the 5% cap in [spec 18](18-tools-capture-aptitudes.md) and does nothing until expeditions exist.
 
@@ -222,4 +222,4 @@ The first code PR is specified in [spec 18](18-tools-capture-aptitudes.md). It i
 
 ## Open questions for Eudai and Grok Bot
 
-None in this note. `Lure.ENCOUNTER_INTERVAL_SECONDS` is set in the wild-spawner PR before that lure can be sold. It is not a second rarity table.
+None for a director. `Lure.ENCOUNTER_INTERVAL_SECONDS` lands with the wild-spawner PR. The UV Lamp's track and variant capture land with the build PR. The Dossier layout mock is coming from the Art Director. `stat-card.jpg` stays mood only.
