@@ -35,6 +35,15 @@ end)
 local Income = import("./Income", function()
 	return script.Parent:WaitForChild("Income")
 end)
+local Money = import("./Money", function()
+	return script.Parent:WaitForChild("Money")
+end)
+local Ownership = import("./Ownership", function()
+	return script.Parent:WaitForChild("Ownership")
+end)
+local Rebirth = import("./Rebirth", function()
+	return script.Parent:WaitForChild("Rebirth")
+end)
 local SkillEffects = import("./SkillEffects", function()
 	return script.Parent:WaitForChild("SkillEffects")
 end)
@@ -58,6 +67,9 @@ local Snapshot = {}
 
 function Snapshot.build(profile: any, lastCredit: number, revision: number, view: any?): any
 	local goal = OnboardingGoals.view(profile)
+	local layers = Ownership.layers(profile)
+	local rebirth = layers.rebirth
+	local pass = layers.cashPass
 	local pads = {}
 	for index = 1, Economy.MAX_PADS do
 		local priced = SkillEffects.padCost(profile, index)
@@ -89,12 +101,16 @@ function Snapshot.build(profile: any, lastCredit: number, revision: number, view
 			entry.instanceId = instanceId
 			entry.displayName = if species ~= nil then species.displayName else ""
 			entry.income = if record ~= nil
-				then Income.contribution(
-					record.speciesId,
-					profile.upgrades.boneAltar,
-					BoneAltar.l3Owned(profile),
-					SkillEffects.skillIncome(profile)
-						+ if record.source == "wild" then SkillEffects.wildIncome(profile) else 0
+				then Money.round(
+					Income.contribution(
+						record.speciesId,
+						profile.upgrades.boneAltar,
+						BoneAltar.l3Owned(profile),
+						SkillEffects.skillIncome(profile)
+							+ if record.source == "wild" then SkillEffects.wildIncome(profile) else 0
+					)
+						* rebirth
+						* pass
 				)
 				else 0
 		end
@@ -162,7 +178,18 @@ function Snapshot.build(profile: any, lastCredit: number, revision: number, view
 			relicsSpent = view.relicsSpent
 		end
 	end
-	local rate = Income.perSecond(profile)
+	local rate = Money.round(Income.perSecond(profile) * rebirth)
+	local rite = Rebirth.view(profile)
+	rite.noticeSerial = 0
+	rite.noticeText = ""
+	if type(view) == "table" then
+		if type(view.rebirthNotice) == "number" and view.rebirthNotice >= 0 then
+			rite.noticeSerial = math.floor(view.rebirthNotice)
+		end
+		if type(view.rebirthText) == "string" then
+			rite.noticeText = view.rebirthText
+		end
+	end
 	local steps = {}
 	for index = 1, Return.LADDER_STEPS do
 		local preview = Daily.preview(index, rate)
@@ -215,7 +242,8 @@ function Snapshot.build(profile: any, lastCredit: number, revision: number, view
 	return {
 		revision = revision,
 		cash = profile.cash,
-		incomePerSecond = Income.perSecond(profile),
+		incomePerSecond = Money.round(rate * pass),
+		rebirth = rite,
 		lastCredit = lastCredit,
 		reducedMotion = profile.settings.reducedMotion,
 		padsUnlocked = profile.padsUnlocked,

@@ -5,9 +5,13 @@ _G.LUNE = true
 local fs = require("@lune/fs")
 local Check = require("./check")
 local Save = require("../src/shared/Config/Save")
+local StudioDataStore = require("../src/shared/Config/StudioDataStore")
 local Schema = require("../src/shared/Logic/Schema")
 local QaArgs = require("../src/shared/Logic/QaArgs")
 local QaFresh = require("../src/shared/Logic/QaFresh")
+local QaSeedConfig = require("../src/shared/Config/QaSeed")
+local QaSeed = require("../src/shared/Logic/QaSeed")
+local Rebirth = require("../src/shared/Logic/Rebirth")
 local StudioQa = require("../src/server/Dev/StudioQa")
 local WatchdogBudget = require("../src/server/Dev/WatchdogBudget")
 local Ledger = require("../src/server/Ledger")
@@ -268,4 +272,118 @@ Check.test("a fresh key for a 16-digit user id stays within the datastore limit"
 	beforeStore(saveAt :: number, "ledger.save")
 	beforeStore(renewAt :: number, "ledger.renew")
 	beforeStore(releaseAt :: number, "ledger.release")
+end)
+
+Check.test("seedv9 and rebirth6 are inert outside Studio", function()
+	Check.eq(QaArgs.seedV9(false, "qa:90:seedv9"), false)
+	Check.eq(QaArgs.rebirth6(false, "qa:90:rebirth6"), false)
+	Check.eq(StudioQa.seedKind(false, "qa:90:seedv9"), nil)
+	Check.eq(StudioQa.seedKind(false, "qa:90:rebirth6"), nil)
+	Check.eq(StudioQa.seedKind(false, "qa:90:seedv9:rebirth6"), nil)
+	Check.eq(QaArgs.seedV9(true, "qa:90:seedv9"), true)
+	Check.eq(QaArgs.rebirth6(true, "qa:90:rebirth6"), true)
+	Check.eq(StudioQa.seedKind(true, "qa:90:seedv9"), "seedv9")
+	Check.eq(StudioQa.seedKind(true, "qa:90:rebirth6"), "rebirth6")
+	Check.eq(StudioQa.seedKind(true, "qa:90:plots3"), nil)
+	Check.eq(StudioQa.seedDocument("seedv9", 1) ~= nil, true)
+	Check.eq(StudioQa.seedDocument("rebirth6", 1) ~= nil, true)
+	Check.eq(StudioQa.seedDocument("other", 1), nil)
+
+	local session = fs.readFile("src/server/PlayerSession.luau")
+	local seedAt = string.find(session, "StudioQa.seedKind(RunService:IsStudio(), StudioQaHooks.args())", 1, true)
+	local loadAt = string.find(session, "DataStoreGateway.load(player.UserId, created)", 1, true)
+	Check.truthy(seedAt)
+	Check.truthy(loadAt)
+	Check.eq((seedAt :: number) < (loadAt :: number), true)
+	Check.eq(string.find(session, "RemoteEvent", 1, true), nil)
+	local gateway = fs.readFile("src/server/DataStoreGateway.luau")
+	local guardAt = string.find(gateway, "function DataStoreGateway.seedProfile", 1, true)
+	Check.truthy(guardAt)
+	local studioAt = string.find(gateway, "if not RunService:IsStudio() then", guardAt :: number, true)
+	local writeAt = string.find(gateway, "ledger.seedProfile", guardAt :: number, true)
+	Check.truthy(studioAt)
+	Check.truthy(writeAt)
+	Check.eq((studioAt :: number) < (writeAt :: number), true)
+end)
+
+Check.test("seedv9 loads as v10 and keeps cash, pads, cryptids, and tithe", function()
+	local calls = 0
+	local real = {
+		UpdateAsync = function()
+			calls += 1
+			error("403 StudioAccessToApisNotAllowed")
+		end,
+	}
+	local mock = MockDataStore.new()
+	local warnings = {}
+	local ledger = Ledger.open({
+		getStore = function()
+			return real
+		end,
+		createMock = function()
+			return mock
+		end,
+		allowMock = function()
+			return true
+		end,
+		isStudio = true,
+		placeId = 80631305127330,
+		jobId = "studio-job",
+		now = function()
+			return 80
+		end,
+		waitFor = function() end,
+		warn = function(message: string)
+			table.insert(warnings, message)
+		end,
+	})
+	local seeded = StudioQa.seedDocument("seedv9", 80)
+	Check.eq(seeded.dataVersion, QaSeedConfig.V9_VERSION)
+	Check.eq(seeded.rebirths, nil)
+	Check.eq(seeded.familiarId, nil)
+	Check.eq(seeded.everHeld1M, nil)
+	Check.eq(seeded.cash > 0, true)
+	Check.eq(QaSeed.countPads(seeded) > 1, true)
+	Check.eq(QaSeed.countCryptids(seeded) > 1, true)
+	Check.eq(seeded.tithe > 0, true)
+	local before = StudioQa.seedLine("seedv9", "before", seeded)
+	Check.contains(before, "version=9")
+	Check.contains(before, "cash=" .. tostring(seeded.cash))
+	Check.eq(ledger.seedProfile(9, seeded), true)
+	local loaded = ledger.load(9, Schema.newProfile(80, "ignored"))
+	Check.eq(loaded.ok, true)
+	Check.eq(loaded.profile.dataVersion, Save.DATA_VERSION)
+	Check.eq(loaded.profile.cash, seeded.cash)
+	Check.eq(loaded.profile.tithe, seeded.tithe)
+	Check.eq(loaded.profile.padsUnlocked, seeded.padsUnlocked)
+	Check.eq(loaded.profile.pads["1"], seeded.pads["1"])
+	Check.eq(loaded.profile.pads["2"], seeded.pads["2"])
+	Check.eq(loaded.profile.pads["3"], seeded.pads["3"])
+	Check.eq(loaded.profile.cryptids[seeded.pads["1"]].speciesId, seeded.cryptids[seeded.pads["1"]].speciesId)
+	Check.eq(loaded.profile.cryptids[seeded.pads["2"]].speciesId, seeded.cryptids[seeded.pads["2"]].speciesId)
+	Check.eq(loaded.profile.cryptids[seeded.pads["3"]].speciesId, seeded.cryptids[seeded.pads["3"]].speciesId)
+	Check.eq(loaded.profile.rebirths, 0)
+	Check.eq(loaded.profile.familiarId, "")
+	local after = StudioQa.seedLine("seedv9", "after", loaded.profile)
+	Check.contains(after, "version=" .. tostring(Save.DATA_VERSION))
+	Check.contains(after, "pads=" .. tostring(QaSeed.countPads(seeded)))
+	Check.contains(after, "cryptids=" .. tostring(QaSeed.countCryptids(seeded)))
+	Check.eq(calls, 1)
+	Check.eq(#warnings, 1)
+	Check.eq(warnings[1], StudioDataStore.MOCK_WARNING)
+
+	local ready = StudioQa.seedDocument("rebirth6", 80)
+	Check.eq(ledger.seedProfile(10, ready), true)
+	local sixth = ledger.load(10, Schema.newProfile(80, "ignored"))
+	Check.eq(sixth.ok, true)
+	Check.eq(sixth.profile.dataVersion, Save.DATA_VERSION)
+	Check.eq(sixth.profile.rebirths, 6)
+	Check.eq(Rebirth.refusal(sixth.profile), nil)
+	local kept = sixth.profile.pads["1"]
+	local committed = Rebirth.commit(sixth.profile, kept)
+	Check.eq(committed, true)
+	Check.eq(sixth.profile.rebirths, 7)
+	local again = Rebirth.commit(sixth.profile, kept)
+	Check.eq(again, false)
+	Check.eq(sixth.profile.rebirths, 7)
 end)

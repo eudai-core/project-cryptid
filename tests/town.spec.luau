@@ -590,7 +590,7 @@ Check.test("buying rolls into the next rotation and bind at once uses the first 
 end)
 
 Check.test("v3 saves gain an empty shop and bind at once without rewriting the old table", function()
-	Check.eq(Save.DATA_VERSION, 9)
+	Check.eq(Save.DATA_VERSION, 10)
 	local legacy = Schema.newProfile(20, "starter")
 	legacy.dataVersion = 3
 	legacy.cash = 80

@@ -132,6 +132,9 @@ local function onPassFinished(player: Player, passId: number, wasPurchased: bool
 	if session == nil or session.loaded ~= true or session.alive ~= true or session.player.Parent == nil then
 		return
 	end
+	if session.riteBusy == true then
+		return
+	end
 	ownershipCache[cacheKey(player.UserId, passId)] = nil
 	if confirmOwned(player.UserId, passId) ~= true then
 		return
@@ -145,6 +148,9 @@ local function onReceipt(receipt: any): Enum.ProductPurchaseDecision
 	end
 	local session = api.sessionFor(receipt.PlayerId)
 	if session == nil or session.loaded ~= true or session.alive ~= true or session.player.Parent == nil then
+		return Enum.ProductPurchaseDecision.NotProcessedYet
+	end
+	if session.riteBusy == true then
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
 	local result = Receipts.process(receipt, session.profile, {

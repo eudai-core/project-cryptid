@@ -355,6 +355,24 @@ function Ledger.open(options: {
 		return false, status, nil
 	end
 
+	function api.seedProfile(userId: number, profile: any): boolean
+		if type(profile) ~= "table" then
+			return false
+		end
+		local snapshot = Schema.deepCopy(profile)
+		local ok, _status, result = runUpdate("seed", key(userId), function(_old)
+			return {
+				lockJobId = "",
+				lockTimestamp = 0,
+				lockLeaseSeconds = 0,
+				lockExpiresAt = 0,
+				profile = snapshot,
+			},
+				"seeded"
+		end)
+		return ok == true and type(result) == "table" and type(result.profile) == "table"
+	end
+
 	function api.seedForeignLock(userId: number, stale: boolean): boolean
 		local now = options.now()
 		local expires = now + Save.LOCK_TTL_SECONDS
