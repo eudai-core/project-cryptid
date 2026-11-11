@@ -662,7 +662,7 @@ Check.test("longship hull union is one cached call with a part fallback", functi
 		union.Material = base.Material
 		union.Color = base.Color
 		union.Anchored = true
-		return union
+		return { union }
 	end
 
 	local firstTown = buildOldTavern()
@@ -690,6 +690,51 @@ Check.test("longship hull union is one cached call with a part fallback", functi
 		Check.eq(hull:GetAttribute("TownKitPart"), true)
 		Check.eq(hull:GetAttribute("TownDecor"), nil)
 	end
+end)
+
+Check.test("tryUnion falls back when UnionAsync errors or returns no part", function()
+	Kit.clearGeometryCache()
+	local geo = roblox.game:GetService("GeometryService")
+	function geo:UnionAsync()
+		error("csg failed")
+	end
+	local failed = buildOldTavern()
+	local failedReport = Longship.replace(failed, { qualityLevel = 1 })
+	Check.eq(failedReport ~= nil, true)
+	Check.eq(countName(failed:FindFirstChild("HowlingHorn"), "Shell") >= 1, true)
+	Check.eq(countName(failed:FindFirstChild("HowlingHorn"), "Hull"), 0)
+
+	Kit.clearGeometryCache()
+	function geo:UnionAsync()
+		return {}
+	end
+	local empty = buildOldTavern()
+	Longship.replace(empty, { qualityLevel = 1 })
+	Check.eq(countName(empty:FindFirstChild("HowlingHorn"), "Shell") >= 1, true)
+	Check.eq(countName(empty:FindFirstChild("HowlingHorn"), "Hull"), 0)
+end)
+
+Check.test("applyAll keeps going when one kit throws", function()
+	local continued = false
+	local removeBoom = TownKits._push({
+		replace = function()
+			error("kit blew up")
+		end,
+	})
+	local removeNext = TownKits._push({
+		replace = function()
+			continued = true
+			return { id = "next" }
+		end,
+	})
+	TownKits.strict = false
+	local reports, failures = TownKits.applyAll(roblox.Instance.new("Folder"), {})
+	removeBoom()
+	removeNext()
+	Check.eq(continued, true)
+	Check.eq(#failures, 1)
+	Check.eq(#reports, 1)
+	Check.eq(reports[1].id, "next")
 end)
 
 Check.test("town kits do no per-frame work", function()

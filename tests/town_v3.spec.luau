@@ -162,6 +162,34 @@ local function makeInstance(className: string): any
 	function inst:Destroy()
 		self.Parent = nil
 	end
+	function inst:Clone(): any
+		local copy = makeInstance(self.ClassName)
+		for _, key in
+			{
+				"Name",
+				"Size",
+				"CFrame",
+				"Anchored",
+				"Material",
+				"Color",
+				"CanCollide",
+				"CanTouch",
+				"CanQuery",
+				"CastShadow",
+				"Transparency",
+				"Shape",
+			}
+		do
+			local value = rawget(self, key)
+			if value ~= nil then
+				copy[key] = value
+			end
+		end
+		for key, value in self._attrs do
+			copy:SetAttribute(key, value)
+		end
+		return copy
+	end
 	function inst:GetPivot(): any
 		local primary = rawget(self, "PrimaryPart")
 		if primary ~= nil and primary.CFrame ~= nil then
@@ -502,6 +530,24 @@ local function installRoblox(): any
 		},
 		workspace = makeInstance("Workspace"),
 	}
+	local function operationFrom(base: any, name: string): any
+		local operation = roblox.Instance.new("UnionOperation")
+		operation.Name = name
+		operation.Anchored = true
+		operation.CFrame = base.CFrame
+		operation.Size = base.Size
+		operation.Material = base.Material
+		operation.Color = base.Color
+		return operation
+	end
+	local geometry = makeInstance("GeometryService")
+	function geometry:UnionAsync(base, _others, _options)
+		return { operationFrom(base, "Union") }
+	end
+	function geometry:SubtractAsync(base, _others, _options)
+		return { operationFrom(base, "Subtract") }
+	end
+	services.GeometryService = geometry
 	return roblox
 end
 
@@ -572,6 +618,7 @@ local function loadModule(path: string): any
 			setmetatable = setmetatable,
 			getmetatable = getmetatable,
 			print = print,
+			warn = warn,
 			unpack = table.unpack,
 			task = task,
 			debug = debug,
@@ -1270,4 +1317,48 @@ Check.test("longship kit keeps the tavern anchors and stays inside the sanity gu
 	local builder = fs.readFile("src/server/TownBuilder.luau")
 	local _, hooks = string.gsub(builder, "TownKits.applyAll", "")
 	Check.eq(hooks, 1)
+end)
+
+Check.test("every registered kit builds on the town when UnionAsync returns an array", function()
+	local TownKits = loadModule("src/server/TownKits/init.luau")
+	local TownBuilder = loadModule("src/server/TownBuilder.luau")
+	local PlotBuilder = loadModule("src/server/PlotBuilder.luau")
+	local Kit = loadModule("src/server/TownKits/Kit.luau")
+	TownKits.strict = true
+	local function buildAt(level: number)
+		Kit.clearGeometryCache()
+		TownKits.forceQuality = level
+		local folder = roblox.Instance.new("Folder")
+		folder.Name = "Town"
+		folder.Parent = roblox.workspace
+		PlotBuilder.buildGround(folder)
+		TownBuilder.build(folder)
+		return folder
+	end
+	local function hornOf(folder: any)
+		for _, inst in folder:GetDescendants() do
+			if inst.Name == "HowlingHorn" and inst.ClassName == "Model" then
+				return inst
+			end
+		end
+		return nil
+	end
+	local ok, err = pcall(function()
+		local low = hornOf(buildAt(1))
+		local high = hornOf(buildAt(10))
+		Check.truthy(low)
+		Check.truthy(high)
+		Check.eq(low:GetAttribute("TownKit"), "Longship")
+		Check.eq(low:GetAttribute("KitQuality"), 1)
+		Check.eq(low:GetAttribute("KitDetail"), false)
+		Check.eq(high:GetAttribute("TownKit"), "Longship")
+		Check.eq(high:GetAttribute("KitQuality"), 10)
+		Check.eq(high:GetAttribute("KitDetail"), true)
+		Check.eq(high:GetAttribute("KitAfterParts") > low:GetAttribute("KitAfterParts"), true)
+	end)
+	TownKits.strict = false
+	TownKits.forceQuality = nil
+	if not ok then
+		error(err, 0)
+	end
 end)

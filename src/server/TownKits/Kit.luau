@@ -121,6 +121,49 @@ function Kit.clearGeometryCache()
 	end
 end
 
+local function isBasePart(value: any): boolean
+	if type(value) ~= "table" then
+		return typeof(value) == "Instance"
+	end
+	if type(value.SetAttribute) ~= "function" or type(value.ClassName) ~= "string" then
+		return false
+	end
+	if type(value.IsA) == "function" then
+		local ok, matched = pcall(function()
+			return value:IsA("BasePart")
+		end)
+		if ok and matched == true then
+			return true
+		end
+	end
+	local className = value.ClassName
+	return className == "Part"
+		or className == "WedgePart"
+		or className == "CornerWedgePart"
+		or className == "MeshPart"
+		or className == "UnionOperation"
+		or className == "NegateOperation"
+		or className == "TrussPart"
+		or className == "SpawnLocation"
+		or className == "Seat"
+		or className == "VehicleSeat"
+end
+
+-- GeometryService:UnionAsync returns an array of parts. A bare instance is accepted
+-- so a mock that returns one part still works. Anything else is not a hull.
+local function firstPart(result: any): any
+	if isBasePart(result) then
+		return result
+	end
+	if type(result) ~= "table" or isBasePart(result) then
+		return nil
+	end
+	if isBasePart(result[1]) then
+		return result[1]
+	end
+	return nil
+end
+
 local function finishHull(hull: any, source: any)
 	hull.Name = "Hull"
 	hull.Anchored = true
@@ -162,7 +205,12 @@ local function computeUnion(operands: { any }): any
 		RenderFidelity = Enum.RenderFidelity.Automatic,
 	}
 	local ok, union = pcall(function()
-		return service:UnionAsync(operands[1], rest, options)
+		local result = service:UnionAsync(operands[1], rest, options)
+		local part = firstPart(result)
+		if part == nil then
+			error("GeometryService:UnionAsync returned no BasePart")
+		end
+		return part
 	end)
 	if not ok or union == nil then
 		for _, operand in operands do
@@ -171,8 +219,17 @@ local function computeUnion(operands: { any }): any
 		folder:Destroy()
 		return nil
 	end
-	finishHull(union, operands[1])
-	union.Parent = cacheFolder()
+	local finished = pcall(function()
+		finishHull(union, operands[1])
+		union.Parent = cacheFolder()
+	end)
+	if not finished then
+		for _, operand in operands do
+			operand.Parent = nil
+		end
+		folder:Destroy()
+		return nil
+	end
 	folder:Destroy()
 	return union
 end
