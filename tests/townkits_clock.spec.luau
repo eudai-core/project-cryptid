@@ -506,6 +506,7 @@ local ALLOWED = {
 	["7B5434"] = true,
 	["E0263A"] = true,
 	["5E7A4A"] = true,
+	["A56BFF"] = true,
 }
 
 local BANNED_HEX = {
@@ -729,7 +730,7 @@ local function assertTower(model: any, detail: boolean)
 	local crowLocal = localOf(crow)
 	Check.near(crowLocal.X, -0.9, 0.05)
 	Check.near(crowLocal.Y, 15, 0.05)
-	Check.eq(string.gsub(faceGlow.Color:ToHex(), "#", ""), "E0263A")
+	Check.eq(string.gsub(faceGlow.Color:ToHex(), "#", ""), "A56BFF")
 	Check.eq(faceGlow.Shadows, false)
 	local dial = nil
 	for _, inst in model:GetDescendants() do
@@ -737,7 +738,7 @@ local function assertTower(model: any, detail: boolean)
 			dial = inst
 		end
 	end
-	Check.eq(string.gsub(dial.Color:ToHex(), "#", ""), "F3E6C8")
+	Check.eq(string.gsub(dial.Color:ToHex(), "#", ""), "A56BFF")
 	local life = 0
 	local grouped = 0
 	for _, inst in model:GetDescendants() do

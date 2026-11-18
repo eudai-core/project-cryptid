@@ -24,13 +24,13 @@ end) :: any
 local WeepingWell = {}
 
 local MODEL_NAME = "WeepingWell"
-local STONE = UITheme.materials.altar
 local GLASS = UITheme.materials.glass
 local NEON = UITheme.materials.neon
 
 local BLOCKOUT = {
 	Stone = true,
 	WellWater = true,
+	RuneMark = true,
 }
 
 local RING_COUNT = 8
@@ -107,8 +107,21 @@ local function buildRing(parent: Instance, pivot: any, metrics: any)
 			name = "Voussoir",
 			size = Vector3.new(metrics.width * 0.86, metrics.height * 0.92, metrics.thickness * 0.94),
 			cf = CFrame.lookAt(at, Vector3.new(0, lift, 0)) * CFrame.Angles(0, yaw, 0),
-			material = if even then "Brick" else STONE,
-			color = "Stone",
+			material = "Slate",
+			color = if even then "Stone" else "PlazaRoad",
+		})
+	end
+	for index = 0, RING_COUNT - 1 do
+		local theta = index * (2 * math.pi / RING_COUNT)
+		local radius = metrics.face + 0.22
+		local at = Vector3.new(math.sin(theta) * radius, metrics.height * 0.42, math.cos(theta) * radius)
+		place(parent, pivot, {
+			name = "Lip",
+			size = Vector3.new(metrics.width * 0.72, 0.28, 0.55),
+			cf = CFrame.lookAt(at, Vector3.new(0, at.Y, 0)),
+			material = "Cobblestone",
+			color = "PlazaCobble",
+			decor = true,
 		})
 	end
 end
@@ -135,7 +148,7 @@ local function buildOrnament(parent: Instance, pivot: any, metrics: any)
 		local runeAt = outward * runeR + Vector3.new(0, RUNE_Y, 0)
 		local rune = place(parent, pivot, {
 			name = "Rune",
-			size = Vector3.new(0.85, 1.05, 0.16),
+			size = Vector3.new(0.1, 1.25, 0.08),
 			cf = CFrame.lookAt(runeAt, Vector3.new(0, RUNE_Y, 0)),
 			material = NEON,
 			color = "Spirit",
@@ -143,7 +156,24 @@ local function buildOrnament(parent: Instance, pivot: any, metrics: any)
 			shadow = false,
 			neonRole = "rune",
 		})
-		addSpot(rune, "RuneGlow", 11, 0.85)
+		local strokes = {
+			CFrame.new(0.18, 0.35, -0.02) * CFrame.Angles(0, 0, 0.8),
+			CFrame.new(-0.16, -0.2, -0.02) * CFrame.Angles(0, 0, -0.55),
+			CFrame.new(0, -0.48, -0.02) * CFrame.Angles(0, 0, math.rad(90)),
+		}
+		for _, localCf in strokes do
+			place(parent, pivot, {
+				name = "RuneGlyph",
+				size = Vector3.new(0.08, 0.55, 0.06),
+				cf = CFrame.lookAt(runeAt, Vector3.new(0, RUNE_Y, 0)) * localCf,
+				material = NEON,
+				color = "Spirit",
+				decor = true,
+				shadow = false,
+				neonRole = "rune",
+			})
+		end
+		addSpot(rune, "RuneGlow", 12, 1.6)
 		if index % 2 == 0 then
 			local weepAt = outward * weepR + Vector3.new(0, WEEP_Y, 0)
 			local tip = weepAt + outward * 0.9 + Vector3.new(0, 2.7, 0)
@@ -172,6 +202,45 @@ local function buildOrnament(parent: Instance, pivot: any, metrics: any)
 		shape = Enum.PartType.Cylinder,
 		neonRole = "rune",
 	})
+end
+
+local function carveRunestones(model: Instance)
+	local index = 0
+	for _, inst in model:GetDescendants() do
+		if inst.Name == "Runestone" and inst.ClassName == "Part" and inst:GetAttribute(Kit.PART_ATTRIBUTE) ~= true then
+			index += 1
+			local lean = if index % 2 == 0 then 0.2 else -0.16
+			inst.Size = Vector3.new(0.72, 3.8, 0.5)
+			inst.CFrame = inst.CFrame * CFrame.Angles(lean, 0, lean * 0.4)
+			inst.Material = Enum.Material.Slate
+			inst.Color = UITheme.color("Stone")
+			local strokes = {
+				{ Vector3.new(0.08, 1.5, 0.06), CFrame.new(0, 0.45, -0.3) },
+				{ Vector3.new(0.08, 0.7, 0.06), CFrame.new(0.16, 0.9, -0.3) * CFrame.Angles(0, 0, 0.75) },
+				{ Vector3.new(0.08, 0.62, 0.06), CFrame.new(-0.14, -0.05, -0.3) * CFrame.Angles(0, 0, -0.6) },
+				{ Vector3.new(0.28, 0.08, 0.06), CFrame.new(0, -0.55, -0.3) },
+			}
+			for _, stroke in strokes do
+				local glyph = Instance.new("Part")
+				glyph.Name = "RuneGlyph"
+				glyph.Anchored = true
+				glyph.CanCollide = false
+				glyph.CanTouch = false
+				glyph.CanQuery = false
+				glyph.CastShadow = false
+				glyph.Material = Enum.Material.Neon
+				glyph.Color = UITheme.color("Spirit")
+				glyph.Size = stroke[1]
+				glyph.CFrame = inst.CFrame * stroke[2]
+				glyph.TopSurface = Enum.SurfaceType.Smooth
+				glyph.BottomSurface = Enum.SurfaceType.Smooth
+				glyph:SetAttribute("NeonRole", "rune")
+				glyph:SetAttribute(Kit.PART_ATTRIBUTE, true)
+				glyph:SetAttribute(Kit.DECOR_ATTRIBUTE, true)
+				glyph.Parent = model
+			end
+		end
+	end
 end
 
 local function seatDrip(model: Instance, pivot: any)
@@ -229,8 +298,8 @@ local function buildFinish(parent: Instance, pivot: any, metrics: any)
 				name = "Brick",
 				size = Vector3.new(0.62, 0.28, 0.74),
 				cf = CFrame.lookAt(at, Vector3.new(0, y, 0)),
-				material = if course % 2 == 0 then "Brick" else STONE,
-				color = "Stone",
+				material = "Slate",
+				color = if course % 2 == 0 then "Stone" else "PlazaRoad",
 				decor = true,
 				shadow = true,
 			})
@@ -238,12 +307,13 @@ local function buildFinish(parent: Instance, pivot: any, metrics: any)
 	end
 	local waterTop = WATER_CENTER_Y + WATER_THICKNESS / 2
 	for index = 0, 7 do
-		local diameter = 1.45 - index * 0.14
-		local y = waterTop + 0.55 + index * 1.55
+		local t = index / 7
+		local diameter = 2.6 - t * 2.25
+		local y = waterTop + 0.45 + index * 0.72
 		place(parent, pivot, {
 			className = "WedgePart",
 			name = "Cone",
-			size = Vector3.new(diameter, 1.7, diameter),
+			size = Vector3.new(diameter, 1.15, diameter),
 			cf = CFrame.new(0, y, 0),
 			material = NEON,
 			color = "Spirit",
@@ -423,21 +493,39 @@ function WeepingWell.replace(townFolder: Instance, refs: any): any
 	folder.Name = "Frame"
 	folder.Parent = model
 
-	local metrics = ringMetrics()
-	buildRing(folder, pivot, metrics)
-	buildBasin(folder, pivot)
-	if detail then
-		buildOrnament(folder, pivot, metrics)
-		buildFinish(folder, pivot, metrics)
+	local function phase(stepName: string, fn: () -> ())
+		Kit.step("WeepingWell", stepName, fn)
 	end
-	seatDrip(model, pivot)
+	local metrics = ringMetrics()
+	phase("ring", function()
+		buildRing(folder, pivot, metrics)
+	end)
+	phase("basin", function()
+		buildBasin(folder, pivot)
+	end)
+	phase("runestones", function()
+		carveRunestones(model)
+	end)
 	if detail then
-		dressSpirits(model)
-		playMotion(model)
+		phase("ornament", function()
+			buildOrnament(folder, pivot, metrics)
+			buildFinish(folder, pivot, metrics)
+		end)
+	end
+	phase("drip", function()
+		seatDrip(model, pivot)
+	end)
+	if detail then
+		phase("spirits", function()
+			dressSpirits(model)
+			playMotion(model)
+		end)
 	else
 		stripEmitters(model)
 	end
-	dressColumn(model)
+	phase("column", function()
+		dressColumn(model)
+	end)
 	quietLights(model)
 
 	local centre = findNamed(model, "Centre", "Part")

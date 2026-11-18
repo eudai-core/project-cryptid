@@ -41,6 +41,17 @@ local LIGHT_CLASS = {
 	SurfaceLight = true,
 }
 
+-- A failed step warns and the rest of the kit still builds. Studio used to lose
+-- every part after the first throw, with only a single kit-level warning.
+function Kit.step(kitName: string, stepName: string, fn: () -> any): any
+	local ok, result = xpcall(fn, debug.traceback)
+	if ok then
+		return result
+	end
+	warn(string.format("[TownKits] %s step %s failed: %s", kitName, stepName, tostring(result)))
+	return nil
+end
+
 function Kit.detailEnabled(level: number): boolean
 	if level >= 1 and level <= TownLook.LOW_QUALITY_MAX then
 		return false

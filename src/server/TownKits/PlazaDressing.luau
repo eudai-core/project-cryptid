@@ -36,7 +36,7 @@ local CLEARANCE = 10
 local WALK_TOP = 7.2
 local WELL_PAD = 9
 local PROMPT_PAD = 5
-local LIGHT_BUDGET = 50
+local LIGHT_BUDGET = 72
 local NEW_LAMP_CAP = 28
 local CRYSTAL_CAP = 40
 local CRYSTAL_CAP_LOW = 8
@@ -61,7 +61,8 @@ local SHOP_FOOT = {
 }
 
 local CRYSTAL_COLORS = { "FlameGreen", "Spirit", "Blood", "Gold", "Bone" }
-local BRAZIER_COLORS = { "FlameCrimson", "Spirit", "FlameGreen", "Gold" }
+local BRAZIER_COLORS = { "DuskViolet", "FlameGreen", "Spirit", "FlameCrimson" }
+local LAMP_COLORS = { "Candle", "DuskViolet", "Spirit", "FlameGreen", "FlameCrimson", "Magenta" }
 local BRAZIER_COUNT = 8
 
 local function distance(a: any, b: any): number
@@ -512,7 +513,7 @@ local function dressPost(
 		size = Vector3.new(0.55, 0.72, 0.55),
 		cf = CFrame.new(wickAt),
 		material = NEON,
-		color = Lanterns.COLOR_TOKEN,
+		color = LAMP_COLORS[(math.floor(math.abs(seed)) % #LAMP_COLORS) + 1],
 		decor = true,
 		shadow = false,
 		shape = Enum.PartType.Ball,
@@ -1107,30 +1108,15 @@ end
 
 local function placeBraziers(parent: Instance, keep: any, detail: boolean, budget: any): number
 	local placed = 0
-	local function spotClear(x: number, z: number): boolean
-		local y = Town.FLOOR_Y + 0.9
-		if not pointClear(keep, x, y, z, 1.6, true, true) then
-			return false
-		end
-		for step = 0, 3 do
-			local turn = step * 1.57
-			local rimX = x + math.cos(turn) * 0.85
-			local rimZ = z + math.sin(turn) * 0.85
-			if not pointClear(keep, rimX, y, rimZ, 0.45, true, true) then
-				return false
-			end
-		end
-		return true
-	end
 	local function build(x: number, z: number, token: string, seed: number)
 		local yaw = math.atan2(x, z)
 		local bowl = makePart(parent, {
 			name = "PlazaBrazier",
-			size = Vector3.new(0.55, 1.7, 1.7),
-			cf = upright(Vector3.new(x, Town.FLOOR_Y + 0.55, z)),
+			size = Vector3.new(0.85, 2.6, 2.6),
+			cf = upright(Vector3.new(x, Town.FLOOR_Y + 0.7, z)),
 			material = STONE,
 			color = "Stone",
-			decor = false,
+			decor = true,
 			shadow = true,
 			shape = Enum.PartType.Cylinder,
 		})
@@ -1160,8 +1146,19 @@ local function placeBraziers(parent: Instance, keep: any, detail: boolean, budge
 		})
 		local flame = makePart(parent, {
 			name = "BrazierFlame",
-			size = Vector3.new(0.55, 0.9, 0.55),
-			cf = CFrame.new(x, Town.FLOOR_Y + 1.45, z),
+			size = Vector3.new(1.15, 2.8, 1.15),
+			cf = CFrame.new(x, Town.FLOOR_Y + 2.35, z),
+			material = NEON,
+			color = token,
+			decor = true,
+			shadow = false,
+			neonRole = "flame",
+		})
+		flame.Transparency = 0.05
+		makePart(parent, {
+			name = "BrazierFlame",
+			size = Vector3.new(0.55, 1.35, 0.55),
+			cf = CFrame.new(x, Town.FLOOR_Y + 3.7, z),
 			material = NEON,
 			color = token,
 			decor = true,
@@ -1169,34 +1166,41 @@ local function placeBraziers(parent: Instance, keep: any, detail: boolean, budge
 			shape = Enum.PartType.Ball,
 			neonRole = "flame",
 		})
-		flame.Transparency = 0.12
 		if detail then
 			table.insert(budget.flicker, {
 				wick = flame,
 				seed = seed,
 			})
 			addFlame(flame, token)
-			addGlow(flame, TownLook.PLAZA_LIGHT.brazier.range, TownLook.PLAZA_LIGHT.brazier.brightness, token, budget)
+			local light = Instance.new("PointLight")
+			light.Name = "BrazierGlow"
+			light.Color = UITheme.color(token)
+			light.Range = 14
+			light.Brightness = 2.4
+			light.Shadows = false
+			light.Enabled = true
+			light.Parent = flame
+			budget.lights += 1
 		end
 	end
+	local wellX = Town.WELL_OFFSET
+	local wellZ = 0
+	local y = Town.FLOOR_Y + 0.9
 	for index = 1, BRAZIER_COUNT do
-		if placed >= BRAZIER_COUNT then
-			break
-		end
-		-- Halfway between a road and a shop spoke, so the bowl is off both.
-		local base = 11.25 + (index - 1) * 45
+		local token = BRAZIER_COLORS[((index - 1) % #BRAZIER_COLORS) + 1]
+		local base = (index - 0.5) * (math.pi * 2 / BRAZIER_COUNT)
 		local built = false
-		for _, shift in { 0, -4, 4 } do
+		for _, radius in { 11.4, 13.2, 15.2, 17.4 } do
 			if built then
 				break
 			end
-			local theta = math.rad(base + shift)
-			for _, radius in { 16.5, 54, 61 } do
-				local x = radius * math.sin(theta)
-				local z = radius * math.cos(theta)
-				if spotClear(x, z) then
-					local token = BRAZIER_COLORS[(placed % #BRAZIER_COLORS) + 1]
-					build(x, z, token, index + placed)
+			for _, shift in { 0, 0.18, -0.18, 0.36, -0.36 } do
+				local theta = base + shift
+				local x = wellX + math.sin(theta) * radius
+				local z = wellZ + math.cos(theta) * radius
+				local fromWell = (x - wellX) * (x - wellX) + (z - wellZ) * (z - wellZ)
+				if fromWell > 121 and not hitsApproach(keep, x, y, z, 2.6) and not hitsRoad(keep, x, y, z, 1.8) then
+					build(x, z, token, index)
 					placed += 1
 					built = true
 					break
@@ -1205,6 +1209,82 @@ local function placeBraziers(parent: Instance, keep: any, detail: boolean, budge
 		end
 	end
 	return placed
+end
+
+local function placeFlowers(parent: Instance, keep: any, detail: boolean): number
+	local planted = 0
+	local cap = if detail then 18 else 8
+	local colors = { "DuskViolet", "Spirit" }
+	local wellX = Town.WELL_OFFSET
+	for index = 1, cap do
+		local theta = index * 2.399
+		local radius = 13.4 + (index % 3) * 0.4
+		local x = wellX + math.sin(theta) * radius
+		local z = math.cos(theta) * radius
+		local token = colors[(index % #colors) + 1]
+		local y = Town.FLOOR_Y + 0.28
+		if hitsApproach(keep, x, y, z, 1.6) or hitsRoad(keep, x, y, z, 0.8) then
+			continue
+		end
+		makePart(parent, {
+			name = "PlazaFlower",
+			size = Vector3.new(0.42, 0.42, 0.42),
+			cf = CFrame.new(x, y, z),
+			material = NEON,
+			color = token,
+			decor = true,
+			shadow = false,
+			shape = Enum.PartType.Ball,
+			neonRole = "flame",
+		})
+		makePart(parent, {
+			className = "WedgePart",
+			name = "PlazaFlower",
+			size = Vector3.new(0.28, 0.55, 0.22),
+			cf = CFrame.new(x + 0.28, y + 0.15, z) * CFrame.Angles(0, theta, 0.4),
+			material = NEON,
+			color = if token == "Spirit" then "DuskViolet" else "Spirit",
+			decor = true,
+			shadow = false,
+			neonRole = "flame",
+		})
+		planted += 1
+	end
+	return planted
+end
+
+local function placeFill(parent: Instance, detail: boolean, budget: any)
+	if not detail then
+		return
+	end
+	local tokens = { "DuskViolet", "Candle", "Magenta" }
+	for index = 1, 6 do
+		if budget.lights >= LIGHT_BUDGET then
+			break
+		end
+		local theta = (index - 1) * (math.pi * 2 / 6)
+		local x = math.sin(theta) * 22
+		local z = math.cos(theta) * 22
+		local pad = makePart(parent, {
+			name = "PlazaFill",
+			size = Vector3.new(1.2, 0.2, 1.2),
+			cf = CFrame.new(x, Town.FLOOR_Y + 0.2, z),
+			material = "Slate",
+			color = "PlazaCobble",
+			decor = true,
+			shadow = false,
+		})
+		pad.Transparency = 1
+		local light = Instance.new("PointLight")
+		light.Name = "PlazaFillLight"
+		light.Color = UITheme.color(tokens[((index - 1) % #tokens) + 1])
+		light.Range = 36
+		light.Brightness = 1.8
+		light.Shadows = false
+		light.Enabled = true
+		light.Parent = pad
+		budget.lights += 1
+	end
 end
 
 local function placeLife(parent: Instance, keep: any, detail: boolean)
@@ -1300,8 +1380,22 @@ function PlazaDressing.replace(townFolder: Instance, refs: any): any
 	placeCrates(folder, townFolder, keep, detail)
 	local crystals = placeCrystals(folder, keep, detail)
 	local runes = placeRunes(folder, keep, detail)
-	local braziers = placeBraziers(folder, keep, detail, budget)
-	placeLife(folder, keep, detail)
+	local braziers = 0
+	local function phase(stepName: string, fn: () -> ())
+		Kit.step("PlazaDressing", stepName, fn)
+	end
+	phase("braziers", function()
+		braziers = placeBraziers(folder, keep, detail, budget)
+	end)
+	phase("flowers", function()
+		placeFlowers(folder, keep, detail)
+	end)
+	phase("fill", function()
+		placeFill(folder, detail, budget)
+	end)
+	phase("life", function()
+		placeLife(folder, keep, detail)
+	end)
 	local flicker = budget.flicker
 	local motion = sways
 	Kit.animate(folder, function(dt: number, t: number)

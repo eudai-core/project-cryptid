@@ -232,6 +232,18 @@ local function buildRoof(parent: Instance, pivot: any)
 			shadow = true,
 		})
 	end
+	local roofStripes = { "DuskViolet", "Gold", "Magenta", "DuskViolet" }
+	for index, token in roofStripes do
+		place(parent, pivot, {
+			name = "Stripe",
+			size = Vector3.new(7.6, 0.7, 0.28),
+			cf = CFrame.new(0, 7.4 + index * 0.85, -3.15 + index * 0.35),
+			material = CLOTH,
+			color = token,
+			decor = true,
+			shadow = false,
+		})
+	end
 end
 
 local function buildCloth(parent: Instance, pivot: any)
@@ -360,8 +372,8 @@ end
 local function buildSigil(parent: Instance, pivot: any)
 	place(parent, pivot, {
 		name = "EyeRing",
-		size = Vector3.new(0.12, 2.05, 2.05),
-		cf = CFrame.new(0, 7.85, -2.48) * CFrame.Angles(0, math.rad(90), 0),
+		size = Vector3.new(0.16, 3.4, 3.4),
+		cf = CFrame.new(0, 10.35, -2.4) * CFrame.Angles(0, math.rad(90), 0),
 		material = METAL,
 		color = "Gold",
 		decor = true,
@@ -370,10 +382,10 @@ local function buildSigil(parent: Instance, pivot: any)
 	})
 	local eye = place(parent, pivot, {
 		name = "Eye",
-		size = Vector3.new(0.16, 1.45, 1.45),
-		cf = CFrame.new(0, 7.85, -2.62) * CFrame.Angles(0, math.rad(90), 0),
+		size = Vector3.new(0.22, 2.8, 2.8),
+		cf = CFrame.new(0, 10.35, -2.55) * CFrame.Angles(0, math.rad(90), 0),
 		material = NEON,
-		color = "TentCloth",
+		color = "DuskViolet",
 		decor = true,
 		shadow = false,
 		shape = Enum.PartType.Cylinder,
@@ -381,16 +393,15 @@ local function buildSigil(parent: Instance, pivot: any)
 	})
 	place(parent, pivot, {
 		name = "Pupil",
-		size = Vector3.new(0.42, 0.48, 0.42),
-		cf = CFrame.new(0, 7.85, -2.74),
+		size = Vector3.new(0.7, 0.85, 0.7),
+		cf = CFrame.new(0, 10.35, -2.72),
 		material = BONE,
 		color = "Void",
 		decor = true,
 		shadow = false,
 		shape = Enum.PartType.Ball,
 	})
-	local eyeGlow = TownLook.TAROT_LIGHT.eye
-	addGlow(eye, "EyeGlow", eyeGlow.range + 6, eyeGlow.brightness * 4, "TentCloth")
+	addGlow(eye, "EyeGlow", 18, 2.6, "DuskViolet")
 	place(parent, pivot, {
 		name = "Lantern",
 		size = Vector3.new(0.72, 0.48, 0.48),
@@ -403,16 +414,16 @@ local function buildSigil(parent: Instance, pivot: any)
 	})
 	local wick = place(parent, pivot, {
 		name = "Wick",
-		size = Vector3.new(0.28, 0.28, 0.28),
+		size = Vector3.new(0.46, 0.55, 0.46),
 		cf = CFrame.new(0.15, 4.7, -1.7),
-		material = BONE,
-		color = "Bone",
+		material = NEON,
+		color = "Magenta",
 		decor = true,
 		shadow = false,
 		shape = Enum.PartType.Ball,
+		neonRole = "flame",
 	})
-	local lanternGlow = TownLook.TAROT_LIGHT.lantern
-	addGlow(wick, "LanternGlow", lanternGlow.range, lanternGlow.brightness * 1.9, "Gold")
+	addGlow(wick, "LanternGlow", 14, 2.2, "Magenta")
 	place(parent, pivot, {
 		name = "Finial",
 		size = Vector3.new(0.7, 0.7, 0.7),
@@ -539,24 +550,36 @@ local function buildCanvas(parent: Instance, pivot: any)
 		end
 	end
 	for band = 0, 4 do
+		local stripeColor = if band % 3 == 0 then "DuskViolet" elseif band % 3 == 1 then "Gold" else "Magenta"
 		place(parent, pivot, {
 			name = "Stripe",
-			size = Vector3.new(7.4, 0.22, 0.12),
-			cf = CFrame.new(0, 2.2 + band * 0.85, -3.55),
+			size = Vector3.new(8.2, 0.72, 0.22),
+			cf = CFrame.new(0, 2.4 + band * 1.15, -3.62),
 			material = CLOTH,
-			color = if band % 2 == 0 then "TentCloth" else "Gold",
+			color = stripeColor,
 			decor = true,
 			shadow = false,
 		})
 		place(parent, pivot, {
 			name = "Stripe",
-			size = Vector3.new(7.4, 0.18, 0.1),
-			cf = CFrame.new(0, 2.55 + band * 0.85, 3.2),
+			size = Vector3.new(8.2, 0.68, 0.2),
+			cf = CFrame.new(0, 2.7 + band * 1.15, 3.35),
 			material = CLOTH,
-			color = if band % 2 == 0 then "Gold" else "TentCloth",
+			color = stripeColor,
 			decor = true,
 			shadow = false,
 		})
+		for _, side in { -1, 1 } do
+			place(parent, pivot, {
+				name = "Stripe",
+				size = Vector3.new(0.18, 0.7, 6.4),
+				cf = CFrame.new(side * 4.18, 2.5 + band * 1.05, -0.1),
+				material = CLOTH,
+				color = stripeColor,
+				decor = true,
+				shadow = false,
+			})
+		end
 	end
 	for _, side in { -1, 1 } do
 		local bowl = place(parent, pivot, {
@@ -700,16 +723,16 @@ local function buildDetail(parent: Instance, pivot: any)
 		})
 		local sconceWick = place(parent, pivot, {
 			name = "SconceWick",
-			size = Vector3.new(0.18, 0.18, 0.18),
-			cf = CFrame.new(side * 3.45, 4.55, -3.15),
-			material = BONE,
-			color = "Bone",
+			size = Vector3.new(0.42, 0.48, 0.42),
+			cf = CFrame.new(side * 3.45, 4.55, -3.35),
+			material = NEON,
+			color = if side < 0 then "DuskViolet" else "Magenta",
 			decor = true,
 			shadow = false,
 			shape = Enum.PartType.Ball,
+			neonRole = "flame",
 		})
-		local sconceGlow = TownLook.TAROT_LIGHT.sconce
-		addGlow(sconceWick, "SconceGlow", sconceGlow.range + 2, 1.15, "TentCloth")
+		addGlow(sconceWick, "SconceGlow", 12, 1.8, if side < 0 then "DuskViolet" else "Magenta")
 	end
 	place(parent, pivot, {
 		name = "Moon",
@@ -864,6 +887,23 @@ local function repositionKept(model: Instance, pivot: any)
 		table.insert(signParts, trim)
 	end
 	moveTo(sign, pivot * SIGN_LOCAL, signParts)
+	if sign ~= nil then
+		sign.Size = Vector3.new(4.6, 1.15, 0.16)
+		sign.Material = Enum.Material.WoodPlanks
+		sign.Color = UITheme.color("Bark")
+		local gui = sign:FindFirstChild("SignGui")
+		local label = if gui ~= nil then gui:FindFirstChild("SignText") else nil
+		if label ~= nil then
+			label.Text = "Veil & Fate - Tarot Reader"
+			label.TextColor3 = UITheme.color("Gold")
+			label.TextSize = 16
+		end
+	end
+	if trim ~= nil then
+		trim.Size = Vector3.new(4.9, 1.35, 0.08)
+		trim.Material = Enum.Material.WoodPlanks
+		trim.Color = UITheme.color("Gold")
+	end
 
 	local bowl = findNamed(model, "Bowl", "Part")
 	local flameParts = {}
@@ -937,17 +977,37 @@ function TarotTent.replace(townFolder: Instance, refs: any): any
 	folder.Name = "Tent"
 	folder.Parent = model
 
-	buildFrame(folder, pivot)
-	buildRoof(folder, pivot)
-	buildCloth(folder, pivot)
-	local anchor = buildMouth(folder, pivot)
-	buildSigil(folder, pivot)
-	if detail then
-		buildDetail(folder, pivot)
-		playMotion(model)
+	local function phase(stepName: string, fn: () -> ())
+		Kit.step("TarotTent", stepName, fn)
 	end
-	repositionKept(model, pivot)
-	lightFlames(model)
+	phase("frame", function()
+		buildFrame(folder, pivot)
+	end)
+	phase("roof", function()
+		buildRoof(folder, pivot)
+	end)
+	phase("cloth", function()
+		buildCloth(folder, pivot)
+	end)
+	local anchor = nil
+	phase("mouth", function()
+		anchor = buildMouth(folder, pivot)
+	end)
+	phase("sigil", function()
+		buildSigil(folder, pivot)
+	end)
+	if detail then
+		phase("detail", function()
+			buildDetail(folder, pivot)
+			playMotion(model)
+		end)
+	end
+	phase("sign", function()
+		repositionKept(model, pivot)
+	end)
+	phase("flames", function()
+		lightFlames(model)
+	end)
 	quietLights(model)
 
 	for _, prompt in prompts do

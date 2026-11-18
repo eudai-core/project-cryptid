@@ -201,6 +201,7 @@ local function addGlow(parent: Instance, name: string, range: number, brightness
 		light.Face = Enum.NormalId.Front
 	end
 	light.Parent = parent
+	return light
 end
 
 local function addLife(
@@ -277,7 +278,7 @@ local function pointedOpening(
 			size = Vector3.new(width * 0.62, height * 0.48, 0.05),
 			cf = cf * CFrame.new(0, -height * 0.05, -0.06),
 			material = NEON,
-			color = "FlameCrimson",
+			color = "DuskViolet",
 			decor = true,
 			shadow = false,
 			neonRole = "rune",
@@ -436,14 +437,14 @@ local function buildDoor(parent: Instance, pivot: any): any
 		size = Vector3.new(0.16, 0.16, 0.16),
 		cf = CFrame.new(0.95, 2.42, -3.36),
 		material = NEON,
-		color = "FlameCrimson",
+		color = "DuskViolet",
 		decor = true,
 		shadow = false,
 		shape = Enum.PartType.Ball,
 		neonRole = "flame",
 	})
 	addGlow(lantern, "DoorGlow", 8, 0.48, "Gold", false)
-	addGlow(wick, "DoorSpot", 12, 0.36, "FlameCrimson", true)
+	addGlow(wick, "DoorSpot", 12, 0.36, "DuskViolet", true)
 	return sill
 end
 
@@ -456,12 +457,12 @@ end
 
 local function buildDial(parent: Instance, pivot: any): any
 	local hubLocal = CFrame.new(0, CLOCK_Y, -3.12)
-	place(parent, pivot, {
+	local halo = place(parent, pivot, {
 		name = "DialHalo",
-		size = Vector3.new(0.1, 4.4, 4.4),
-		cf = CFrame.new(0, CLOCK_Y, -2.9) * CFrame.Angles(0, math.rad(90), 0),
+		size = Vector3.new(0.12, 4.8, 4.8),
+		cf = CFrame.new(0, CLOCK_Y, -2.88) * CFrame.Angles(0, math.rad(90), 0),
 		material = NEON,
-		color = "FlameCrimson",
+		color = "DuskViolet",
 		decor = true,
 		shadow = false,
 		shape = Enum.PartType.Cylinder,
@@ -469,36 +470,43 @@ local function buildDial(parent: Instance, pivot: any): any
 	})
 	local face = place(parent, pivot, {
 		name = "Dial",
-		size = Vector3.new(0.12, 3.9, 3.9),
+		size = Vector3.new(0.16, 4.15, 4.15),
 		cf = CFrame.new(0, CLOCK_Y, -3.02) * CFrame.Angles(0, math.rad(90), 0),
-		material = BONE,
-		color = "MoonFace",
+		material = NEON,
+		color = "DuskViolet",
 		decor = true,
-		shadow = true,
+		shadow = false,
 		shape = Enum.PartType.Cylinder,
+		neonRole = "sign",
 	})
 	local gui = Instance.new("SurfaceGui")
 	gui.Name = "DialGui"
 	gui.Face = Enum.NormalId.Right
 	gui.LightInfluence = 0
 	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-	gui.PixelsPerStud = 42
+	gui.PixelsPerStud = 28
 	gui.Parent = face
 	for n = 0, 11 do
 		local theta = n * (math.pi / 6)
 		local label = Instance.new("TextLabel")
 		label.Name = "Numeral"
 		label.BackgroundTransparency = 1
+		label.AnchorPoint = Vector2.new(0.5, 0.5)
 		label.Text = ROMAN[n + 1]
 		label.TextColor3 = UITheme.color("Gold")
-		label.TextSize = 26
-		label.Size = UDim2.fromScale(0.16, 0.12)
-		label.Position = UDim2.fromScale(0.42 + math.sin(theta) * 0.34, 0.44 - math.cos(theta) * 0.34)
+		label.TextSize = 15
+		label.TextScaled = false
+		label.Size = UDim2.fromScale(0.2, 0.16)
+		label.Position = UDim2.fromScale(0.5 + math.sin(theta) * 0.32, 0.5 - math.cos(theta) * 0.32)
 		label.Parent = gui
+		local cap = Instance.new("UITextSizeConstraint")
+		cap.MinTextSize = 10
+		cap.MaxTextSize = 16
+		cap.Parent = label
 		place(parent, pivot, {
 			name = "HourMark",
-			size = Vector3.new(0.1, 0.1, 0.1),
-			cf = hubLocal * CFrame.new(math.sin(theta) * 2.02, math.cos(theta) * 2.02, -0.02),
+			size = Vector3.new(0.12, 0.12, 0.12),
+			cf = hubLocal * CFrame.new(math.sin(theta) * 2.15, math.cos(theta) * 2.15, -0.02),
 			material = METAL,
 			color = "Gold",
 			decor = true,
@@ -569,13 +577,13 @@ local function buildDial(parent: Instance, pivot: any): any
 		size = Vector3.new(0.1, 0.1, 0.1),
 		cf = hubLocal * CFrame.new(0, 0, -0.18),
 		material = NEON,
-		color = "FlameCrimson",
+		color = "DuskViolet",
 		decor = true,
 		shadow = false,
 		shape = Enum.PartType.Ball,
 		neonRole = "eye",
 	})
-	addGlow(pupil, "FaceGlow", 14, 0.7, "FlameCrimson", false)
+	local faceGlow = addGlow(pupil, "FaceGlow", 16, 2.2, "DuskViolet", false)
 	local rod = place(parent, pivot, {
 		name = "PendulumRod",
 		size = Vector3.new(0.06, 2.4, 0.06),
@@ -596,6 +604,10 @@ local function buildDial(parent: Instance, pivot: any): any
 	})
 	return {
 		hub = pivot * hubLocal,
+		dial = face,
+		halo = halo,
+		core = pupil,
+		faceGlow = faceGlow,
 		hour = hour,
 		minute = minute,
 		hourLocal = CFrame.new(0, 0.35, -0.08),
@@ -732,7 +744,7 @@ local function buildSpire(parent: Instance, pivot: any, detail: boolean)
 			size = Vector3.new(width, rise, run),
 			cf = CFrame.Angles(0, yaw, 0) * CFrame.new(0, baseY + rise * 0.5, -run * 0.5),
 			material = STONE,
-			color = "NightSky",
+			color = "Stone",
 			shadow = true,
 		})
 	end
@@ -758,17 +770,17 @@ local function buildSpire(parent: Instance, pivot: any, detail: boolean)
 	end
 	place(parent, pivot, {
 		name = "Finial",
-		size = Vector3.new(0.1, 1.25, 0.1),
-		cf = CFrame.new(0, 19.15, 0),
+		size = Vector3.new(0.12, 1.7, 0.12),
+		cf = CFrame.new(0, 20.2, 0),
 		material = METAL,
 		color = "BoneDim",
 		decor = true,
 		shadow = true,
 	})
 	place(parent, pivot, {
-		name = "FinialBall",
-		size = Vector3.new(0.2, 0.2, 0.2),
-		cf = CFrame.new(0, 19.82, 0),
+		name = "SpireTip",
+		size = Vector3.new(0.28, 0.28, 0.28),
+		cf = CFrame.new(0, 21.15, 0),
 		material = METAL,
 		color = "Gold",
 		decor = true,
@@ -951,7 +963,7 @@ local function buildLife(parent: Instance, pivot: any)
 		size = Vector3.new(0.3, 0.3, 0.3),
 		cf = CFrame.new(0, CLOCK_Y, -3.3),
 		material = BONE,
-		color = "FlameCrimson",
+		color = "DuskViolet",
 		decor = true,
 		shadow = false,
 	})
@@ -968,7 +980,7 @@ local function buildLife(parent: Instance, pivot: any)
 	})
 	smoke.Transparency = 1
 	addLife(smoke, "DoorSmoke", 5, 2.2, 0.45, 0.4, 14, "Ash")
-	addLife(smoke, "DoorFlame", 8, 1.1, 0.7, 0.22, 12, "FlameCrimson")
+	addLife(smoke, "DoorFlame", 8, 1.1, 0.7, 0.22, 12, "DuskViolet")
 	local fog = place(parent, pivot, {
 		name = "FogHost",
 		size = Vector3.new(1.2, 0.2, 1.2),
@@ -980,6 +992,48 @@ local function buildLife(parent: Instance, pivot: any)
 	})
 	fog.Transparency = 1
 	addLife(fog, "BaseFog", 6, 2, 0.25, 0.7, 40, "BoneDim")
+end
+
+local function bloodMoonOn(model: Instance): boolean
+	if model:GetAttribute("BloodMoon") == true then
+		return true
+	end
+	local ok, lighting = pcall(function()
+		return game:GetService("Lighting")
+	end)
+	if ok and lighting ~= nil and lighting:GetAttribute("BloodMoon") == true then
+		return true
+	end
+	return false
+end
+
+local function paintFace(model: Instance, rig: any, blood: boolean)
+	local token = if blood then "FlameCrimson" else "DuskViolet"
+	local color = UITheme.color(token)
+	if model ~= nil then
+		for _, inst in model:GetDescendants() do
+			if inst.Name == "ArchGlow" or inst.Name == "Dial" or inst.Name == "DialHalo" or inst.Name == "DialCore" then
+				inst.Color = color
+			end
+		end
+	end
+	if rig == nil then
+		return
+	end
+	if rig.dial ~= nil then
+		rig.dial.Color = color
+		rig.dial.Material = Enum.Material.Neon
+	end
+	if rig.halo ~= nil then
+		rig.halo.Color = color
+	end
+	if rig.core ~= nil then
+		rig.core.Color = color
+	end
+	if rig.faceGlow ~= nil then
+		rig.faceGlow.Color = color
+	end
+	rig.blood = blood
 end
 
 local function readNow(dt: number): number
@@ -994,8 +1048,12 @@ end
 
 local function driveClock(model: Instance, rig: any)
 	Kit.animate(model, function(dt: number, elapsed: number)
-		if type(dt) ~= "number" or type(elapsed) ~= "number" then
+		if type(dt) ~= "number" or type(elapsed) ~= "number" or rig == nil then
 			return
+		end
+		local blood = bloodMoonOn(model)
+		if blood ~= rig.blood then
+			paintFace(model, rig, blood)
 		end
 		local now = readNow(dt)
 		local minute = 60
@@ -1011,7 +1069,7 @@ local function driveClock(model: Instance, rig: any)
 		local swung = CFrame.Angles(0, 0, swing)
 		rig.rod.CFrame = rig.pendPivot * swung * rig.rodLocal
 		rig.bob.CFrame = rig.pendPivot * swung * rig.bobLocal
-		for _, gear in rig.gears do
+		for _, gear in rig.gears or {} do
 			local spin = CFrame.Angles(now * gear.rate, 0, 0)
 			for _, item in gear.parts do
 				item.part.CFrame = gear.cf * spin * item.localCf
@@ -1043,6 +1101,22 @@ local function repositionKept(model: Instance, pivot: any)
 		table.insert(signParts, trim)
 	end
 	moveTo(sign, pivot * SIGN_LOCAL, signParts)
+	if sign ~= nil then
+		sign.Size = Vector3.new(3.3, 0.95, 0.16)
+		sign.Material = Enum.Material.WoodPlanks
+		sign.Color = UITheme.color("Bark")
+		local gui = sign:FindFirstChild("SignGui")
+		local label = if gui ~= nil then gui:FindFirstChild("SignText") else nil
+		if label ~= nil then
+			label.TextColor3 = UITheme.color("Gold")
+			label.TextSize = 16
+		end
+	end
+	if trim ~= nil then
+		trim.Size = Vector3.new(3.55, 1.15, 0.08)
+		trim.Material = Enum.Material.WoodPlanks
+		trim.Color = UITheme.color("Gold")
+	end
 
 	local crow = findNamed(model, "CrowBody", "Part")
 	local crowParts = {}
@@ -1124,30 +1198,69 @@ function ClockTower.replace(townFolder: Instance, refs: any): any
 	folder.Name = "Tower"
 	folder.Parent = model
 
-	buildBase(folder, pivot)
+	local function phase(stepName: string, fn: () -> ())
+		Kit.step("ClockTower", stepName, fn)
+	end
+	phase("base", function()
+		buildBase(folder, pivot)
+	end)
 	local course = if detail then FINE_COURSE else COARSE_COURSE
 	local brick = if detail then FINE_BRICK else COARSE_BRICK
 	local thick = if detail then 0.46 else 0.7
-	addMasonry(folder, pivot, course, brick, thick)
-	buildTimber(folder, pivot)
-	local anchor = buildDoor(folder, pivot)
-	buildWindows(folder, pivot)
-	local rig = buildDial(folder, pivot)
-	rig.gears = buildGears(folder, pivot, detail)
-	buildBelfry(folder, pivot)
-	buildSpire(folder, pivot, detail)
-	buildRavens(folder, pivot)
-	buildChains(folder, pivot)
+	phase("masonry", function()
+		addMasonry(folder, pivot, course, brick, thick)
+	end)
+	phase("timber", function()
+		buildTimber(folder, pivot)
+	end)
+	local anchor = nil
+	phase("door", function()
+		anchor = buildDoor(folder, pivot)
+	end)
+	phase("windows", function()
+		buildWindows(folder, pivot)
+	end)
+	local rig = nil
+	phase("dial", function()
+		rig = buildDial(folder, pivot)
+	end)
+	phase("gears", function()
+		if rig ~= nil then
+			rig.gears = buildGears(folder, pivot, detail)
+		end
+	end)
+	phase("belfry", function()
+		buildBelfry(folder, pivot)
+	end)
+	phase("spire", function()
+		buildSpire(folder, pivot, detail)
+	end)
+	phase("ravens", function()
+		buildRavens(folder, pivot)
+	end)
+	phase("chains", function()
+		buildChains(folder, pivot)
+	end)
 	if detail then
-		buildGargoyles(folder, pivot)
-		buildDentils(folder, pivot)
-		buildLife(folder, pivot)
+		phase("ornament", function()
+			buildGargoyles(folder, pivot)
+			buildDentils(folder, pivot)
+			buildLife(folder, pivot)
+		end)
 	else
 		stripDetailLights(model)
 	end
-	repositionKept(model, pivot)
+	phase("sign", function()
+		repositionKept(model, pivot)
+	end)
 	quietLights(model)
-	driveClock(model, rig)
+	if model:GetAttribute("BloodMoon") == nil then
+		model:SetAttribute("BloodMoon", false)
+	end
+	paintFace(model, rig, bloodMoonOn(model))
+	if rig ~= nil then
+		driveClock(model, rig)
+	end
 
 	for _, prompt in prompts do
 		prompt.Parent = if anchor ~= nil then anchor else model

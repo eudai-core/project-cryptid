@@ -31,7 +31,7 @@ local LIME = "Limestone"
 -- Local -Z faces the plaza. The walk gap (|x| < 2, y < 6) stays clear of colliding parts.
 local VORTEX_Y = 4.4
 local VORTEX_Z = 0.15
-local DISC = 6.3
+local DISC = 8.4
 local LOCK_X = 5.05
 
 local SIGN_AT = {
@@ -361,7 +361,7 @@ local function buildVortex(parent: Instance, pivot: any, spec: any, detail: bool
 		shape = Enum.PartType.Cylinder,
 		neonRole = "portal",
 	})
-	disc.Transparency = 0.34
+	disc.Transparency = 0.08
 	addLight(disc, "PortalLight", spec.color, TownLook.PORTAL_ACCENT_RANGE, TownLook.PORTAL_ACCENT_BRIGHTNESS)
 
 	local secondary = if spec.id == "BoneQuarry" then "Bone" elseif spec.id == "SunkenMarsh" then "Moss" else "Rift"
@@ -906,15 +906,25 @@ local function replaceOne(townFolder: Instance, spec: any, level: number, detail
 	local folder = Instance.new("Folder")
 	folder.Name = "Arch"
 	folder.Parent = model
-	if spec.kind == "tree" then
-		buildWoods(folder, pivot, detail)
-	elseif spec.kind == "serpent" then
-		buildMarsh(folder, pivot, detail)
-	else
-		buildQuarry(folder, pivot, detail)
+	local function phase(stepName: string, fn: () -> ())
+		Kit.step("Portals", stepName, fn)
 	end
-	local vortex = buildVortex(folder, pivot, spec, detail)
-	repositionKept(model, pivot, spec.id)
+	phase("arch", function()
+		if spec.kind == "tree" then
+			buildWoods(folder, pivot, detail)
+		elseif spec.kind == "serpent" then
+			buildMarsh(folder, pivot, detail)
+		else
+			buildQuarry(folder, pivot, detail)
+		end
+	end)
+	local vortex = nil
+	phase("vortex", function()
+		vortex = buildVortex(folder, pivot, spec, detail)
+	end)
+	phase("sign", function()
+		repositionKept(model, pivot, spec.id)
+	end)
 	attachSpin(model, vortex)
 	quietLights(model)
 
