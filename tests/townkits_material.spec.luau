@@ -816,4 +816,13 @@ Check.test("Color3 matches Studio: ToHex and channels, and Hex is not a member",
 	end
 	Check.eq(tooth:GetAttribute(TownMaterials.ROLE_ATTRIBUTE), "Bone")
 	Check.eq(hexOf(tooth), "E8E0CF")
+	local cf = roblox.CFrame.lookAt(roblox.Vector3.new(30, 2, 10), roblox.Vector3.new(0, 2, 10))
+	local origin = cf:Inverse() * cf.Position
+	Check.near(origin.X, 0, 0.001)
+	Check.near(origin.Y, 0, 0.001)
+	Check.near(origin.Z, 0, 0.001)
+	local raised = cf:Inverse() * (cf.Position + cf.UpVector * 5)
+	Check.near(raised.Y, 5, 0.001)
+	local beside = cf:Inverse() * (cf.Position + cf.RightVector * 2)
+	Check.near(beside.X, 2, 0.001)
 end)

@@ -40,6 +40,8 @@ local TownMaterials = {
 	PROMPT_CLEARANCE = 6,
 	SIGN_CLEARANCE = 4,
 	ROAD_MARGIN = 0.5,
+	-- Vertical slack only. The horizontal margin must not thicken a flat road into a wall.
+	ROAD_Y_SLACK = 0.15,
 	WELL_MARGIN = 6,
 	PORTAL_MARGIN = 4,
 	PORTAL_RING_MIN = 9,

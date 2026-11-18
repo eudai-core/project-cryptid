@@ -508,19 +508,39 @@ local function ensureVariants(): (number, number)
 	return created, reused
 end
 
-local function insideExpanded(part: any, point: any, margin: number): boolean
+local function localOf(part: any, point: any): (any, any)
 	local cf = part.CFrame
 	local size = part.Size
 	if cf == nil or size == nil or type(cf.Inverse) ~= "function" then
-		return false
+		return nil, nil
 	end
 	local localPos = cf:Inverse() * point
 	if localPos == nil or localPos.X == nil then
+		return nil, nil
+	end
+	return localPos, size
+end
+
+local function insideExpanded(part: any, point: any, margin: number): boolean
+	local localPos, size = localOf(part, point)
+	if localPos == nil then
 		return false
 	end
 	return math.abs(localPos.X) <= size.X * 0.5 + margin
 		and math.abs(localPos.Y) <= size.Y * 0.5 + margin
 		and math.abs(localPos.Z) <= size.Z * 0.5 + margin
+end
+
+-- A road is a flat slab. Widen it in X/Z only. A vertical margin would turn
+-- TownRoad and TownRamp into a low wall and reject the cobble rim and ivy.
+local function onRoadSlab(part: any, point: any): boolean
+	local localPos, size = localOf(part, point)
+	if localPos == nil then
+		return false
+	end
+	return math.abs(localPos.X) <= size.X * 0.5 + TownMaterials.ROAD_MARGIN
+		and math.abs(localPos.Z) <= size.Z * 0.5 + TownMaterials.ROAD_MARGIN
+		and math.abs(localPos.Y) <= size.Y * 0.5 + TownMaterials.ROAD_Y_SLACK
 end
 
 local function spawnPart(
@@ -693,7 +713,7 @@ function MaterialPass.replace(townFolder: Instance, refs: any)
 	end
 
 	local natureCount = 0
-	local function blockedPoint(point: any): boolean
+	local function blockedPoint(point: any, skipRoads: boolean?): boolean
 		for _, item in doors do
 			if insideExpanded(item.part, point, TownMaterials.DOOR_CLEARANCE) then
 				return true
@@ -709,9 +729,11 @@ function MaterialPass.replace(townFolder: Instance, refs: any)
 				return true
 			end
 		end
-		for _, item in roads do
-			if insideExpanded(item.part, point, TownMaterials.ROAD_MARGIN) then
-				return true
+		if skipRoads ~= true then
+			for _, item in roads do
+				if onRoadSlab(item.part, point) then
+					return true
+				end
 			end
 		end
 		for _, item in wells do
@@ -758,8 +780,8 @@ function MaterialPass.replace(townFolder: Instance, refs: any)
 		sortList(stones)
 		sortList(walls)
 
-		local function mossAt(pos: any, yaw: number)
-			if not room() or pos == nil or blockedPoint(pos) then
+		local function mossAt(pos: any, yaw: number, skipRoads: boolean?)
+			if not room() or pos == nil or blockedPoint(pos, skipRoads) then
 				return
 			end
 			local width = 0.65 + rng() * 0.85
@@ -778,6 +800,46 @@ function MaterialPass.replace(townFolder: Instance, refs: any)
 				Enum.PartType.Ball
 			)
 			natureCount += 1
+		end
+
+		local function flatAngle(pos: any): number
+			return math.atan2(pos.X, pos.Z)
+		end
+
+		-- One patch in each gap between roads, on the cobble rim. Road slabs are
+		-- not consulted here: their boxes meet the rim at the road mouths, and a
+		-- vertical margin used to reject the gaps as well.
+		if #rims > 0 and room() then
+			local host = rims[1].part
+			local origin = positionOf(host)
+			local hostSize = host.Size
+			if origin ~= nil and hostSize ~= nil then
+				local radius = math.max(hostSize.X, hostSize.Y, hostSize.Z) * 0.5 - TownMaterials.MOSS_INSET
+				if radius < 1 then
+					radius = 1
+				end
+				local y = origin.Y + math.min(hostSize.X, hostSize.Y, hostSize.Z) * 0.5 + TownMaterials.MOSS_LIFT
+				local angles = {}
+				for _, item in roads do
+					if item.part.Name == "TownRoad" then
+						local roadPos = positionOf(item.part)
+						if roadPos ~= nil then
+							table.insert(angles, flatAngle(roadPos))
+						end
+					end
+				end
+				table.sort(angles)
+				if #angles == 0 then
+					table.insert(angles, 0)
+				end
+				for index, angle in angles do
+					local nxt = angles[index + 1]
+					local span = if nxt == nil then angles[1] + math.pi * 2 else nxt
+					local mid = (angle + span) * 0.5
+					local point = Vector3.new(origin.X + math.cos(mid) * radius, y, origin.Z + math.sin(mid) * radius)
+					mossAt(point, mid, true)
+				end
+			end
 		end
 
 		local rimCount = scaled(TownMaterials.MOSS_ON_RIM, level)
@@ -855,7 +917,7 @@ function MaterialPass.replace(townFolder: Instance, refs: any)
 					+ cf.LookVector * (size.Z * 0.5 + TownMaterials.IVY_GAP)
 					+ cf.RightVector * along
 					+ Vector3.new(0, -size.Y * 0.5 + climb, 0)
-				if blockedPoint(pos) then
+				if blockedPoint(pos, true) then
 					continue
 				end
 				local wedgeCf = CFrame.new(pos) * CFrame.Angles(0.4, rng() * 0.6, 0.2)
@@ -873,7 +935,7 @@ function MaterialPass.replace(townFolder: Instance, refs: any)
 				natureCount += 1
 				if room() then
 					local leafPos = pos + Vector3.new(0, 0.16, 0)
-					if not blockedPoint(leafPos) then
+					if not blockedPoint(leafPos, true) then
 						spawnPart(
 							ivyFolder,
 							"Part",

@@ -2554,8 +2554,28 @@ Check.test("all-kit town keeps the material pass inside the census guard", funct
 	Check.eq(report.parts <= TownLook.PART_CAP, true)
 	Check.eq(report.lights <= TownLook.LIGHT_CAP, true)
 	Check.eq(report.emitters <= TownLook.EMITTER_CAP, true)
-	local nature = named(root, TownMaterials.NATURE_FOLDER)
-	Check.truthy(nature, "MaterialNature")
+	local built = named(root, TownMaterials.NATURE_FOLDER)
+	Check.truthy(built, "MaterialNature")
+	local moss = 0
+	local ivyWedge = 0
+	local ivyLeaf = 0
+	local roots = 0
+	for _, inst in descendants(built) do
+		if inst.Name == "MossPatch" then
+			moss += 1
+		elseif inst.Name == "IvyWedge" then
+			ivyWedge += 1
+		elseif inst.Name == "IvyLeaf" then
+			ivyLeaf += 1
+		elseif inst.Name == "Gnarl" then
+			roots += 1
+		end
+	end
+	Check.eq(moss > 0, true, "default quality moss " .. tostring(moss))
+	Check.eq(ivyWedge > 0, true, "default quality ivy " .. tostring(ivyWedge))
+	Check.eq(ivyLeaf > 0, true, "default quality ivy leaf " .. tostring(ivyLeaf))
+	Check.eq(roots > 0, true, "default quality roots " .. tostring(roots))
+	local nature = built
 	local roles = { AgedBrick = 0, MossyCobble = 0, WornDarkTimber = 0, SlateShingle = 0, WeatheredStone = 0, Bone = 0 }
 	for _, inst in descendants(root) do
 		local role = inst:GetAttribute(TownMaterials.ROLE_ATTRIBUTE)
@@ -2588,9 +2608,13 @@ Check.test("all-kit town keeps the material pass inside the census guard", funct
 	Check.eq(service:FindFirstChild("Bone").ClassName, "MaterialVariant")
 	print(
 		string.format(
-			"all-kit material pass tinted=%d nature=%d parts=%d lights=%d emitters=%d cobble=%d timber=%d stone=%d shingle=%d bone=%d brick=%d",
+			"all-kit material pass tinted=%d nature=%d moss=%d ivyWedge=%d ivyLeaf=%d roots=%d parts=%d lights=%d emitters=%d cobble=%d timber=%d stone=%d shingle=%d bone=%d brick=%d",
 			report.tinted,
 			report.natureParts,
+			moss,
+			ivyWedge,
+			ivyLeaf,
+			roots,
 			report.parts,
 			report.lights,
 			report.emitters,
