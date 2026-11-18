@@ -10,7 +10,6 @@ local Analytics = require(script.Parent:WaitForChild("Analytics"))
 local DataStoreGateway = require(script.Parent:WaitForChild("DataStoreGateway"))
 local StudioQa = require(script.Parent:WaitForChild("Dev"):WaitForChild("StudioQa"))
 local StudioQaHooks = require(script.Parent:WaitForChild("Dev"):WaitForChild("StudioQaHooks"))
-local Pedlar = require(script.Parent:WaitForChild("Pedlar"))
 local QaGrant = require(script.Parent:WaitForChild("Dev"):WaitForChild("QaGrant"))
 local MonetisationService = require(script.Parent:WaitForChild("MonetisationService"))
 local Plot = require(script.Parent:WaitForChild("Plot"))
@@ -508,8 +507,8 @@ end
 
 local function notePedlar(session: any, message: string)
 	session.pedlarToken += 1
-	session.player:SetAttribute("PedlarNotice", message)
-	session.player:SetAttribute("PedlarNoticeToken", session.pedlarToken)
+	session.player:SetAttribute(Shop.NOTICE, message)
+	session.player:SetAttribute(Shop.NOTICE_TOKEN, session.pedlarToken)
 end
 
 local function pedlarDistance(player: Player): number?
@@ -596,40 +595,20 @@ local function onPedlarBuy(session: any, rotationId: any, slot: any)
 	if parsedSlot == nil or parsedRotation == nil then
 		return
 	end
-	local serverRotation = ShopStock.rotationId(os.time(), Shop.ROTATION_SECONDS)
-	local refusal = ShopStock.refusal(parsedRotation, serverRotation)
-	if refusal ~= nil then
-		notePedlar(session, refusal)
-		publish(session, 0)
-		return
-	end
-	local distance = pedlarDistance(session.player)
-	if not RemoteArgs.withinDistance(distance, Town.BUY_DISTANCE) then
-		return
-	end
-	if not allowPurchase(session) then
-		return
-	end
-	local offers = Pedlar.offers()
-	if offers == nil then
-		return
-	end
-	local offer = offers[parsedSlot]
-	local speciesId = if type(offer) == "table" then offer.speciesId else nil
-	local beforeCash = session.profile.cash
-	local ok = Transactions.buyPedlar(
+	local bought = Transactions.buyPedlar(
 		session.profile,
-		serverRotation,
+		parsedRotation,
 		parsedSlot,
-		offers,
-		distance,
+		{},
+		pedlarDistance(session.player),
 		os.time(),
-		HttpService:GenerateGUID(false)
+		"cryptid-sale"
 	)
-	if ok == true and type(speciesId) == "string" then
-		sink().pedlarPurchase(session.player, session, parsedSlot, speciesId, beforeCash)
+	if bought ~= true then
+		notePedlar(session, Shop.CRYPTID_REFUSAL)
+		return
 	end
-	commit(session, ok)
+	commit(session, true)
 end
 
 local function onBind(session: any, enabled: any)
@@ -703,8 +682,14 @@ end
 
 local function shopGate(session: any, shopId: string): any
 	local step = session.profile.onboarding.step
+	local opened = session.townShopId == shopId
+		and type(session.townShopToken) == "number"
+		and session.townShopToken > 0
+	if shopId == ShopAnchors.PEDLAR_ID then
+		opened = opened and type(session.pedlarOpenToken) == "number" and session.pedlarOpenToken > 0
+	end
 	return {
-		opened = session.townShopId == shopId and type(session.townShopToken) == "number" and session.townShopToken > 0,
+		opened = opened,
 		distance = shopDistance(session.player, shopId),
 		step = step,
 	}
@@ -1188,6 +1173,10 @@ function PlayerSession.onTownShopOpen(player: Player, shopId: any)
 	end
 	local parsed = RemoteArgs.shopId(shopId)
 	if parsed == nil then
+		return
+	end
+	if parsed == ShopAnchors.PEDLAR_ID then
+		grantPedlarOpen(session)
 		return
 	end
 	local opened, at = PedlarBrowse.tryOpen(

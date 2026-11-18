@@ -80,9 +80,8 @@ Check.test("the shop frame becomes visible only when the server says so", functi
 	local root = { Visible = false }
 	PedlarBrowse.reveal(root)
 	Check.eq(root.Visible, true)
-	local shop = fs.readFile("src/client/PedlarShop.luau")
+	local shop = fs.readFile("src/client/ShopPanel.luau")
 	Check.contains(shop, "Shop.OPEN_TOKEN")
-	Check.contains(shop, "PedlarBrowse.reveal")
 	Check.contains(shop, "showFromServer")
 	local interactions = fs.readFile("src/client/Interactions.luau")
 	Check.contains(interactions, "names.REQUEST_PEDLAR_OPEN")

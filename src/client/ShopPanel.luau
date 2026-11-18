@@ -13,6 +13,15 @@ local UITheme = require(Shared:WaitForChild("UITheme")) :: any
 
 local ShopPanel = {}
 
+local function accent(gui: GuiObject, fillToken: string, glowToken: string)
+	gui.BackgroundColor3 = UITheme.color(fillToken)
+	local stroke = gui:FindFirstChildOfClass("UIStroke")
+	if stroke ~= nil then
+		stroke.Color = UITheme.color(glowToken)
+		stroke.Thickness = UITheme.shape.strokePx
+	end
+end
+
 local function fire(remotes: Folder, name: string, ...: any)
 	local remote = remotes:WaitForChild(name) :: RemoteEvent
 	remote:FireServer(...)
@@ -38,6 +47,7 @@ function ShopPanel.mount(
 	root.AnchorPoint = Vector2.new(0.5, 0.5)
 	root.Position = UDim2.fromScale(0.5, 0.5)
 	root.Size = UDim2.fromOffset(Shop.PANEL.width, Shop.PANEL.height)
+	accent(root, "Void", "teal")
 
 	local title = UiFactory.label(root, "display", UITheme.fonts.display.mobile, "Bone")
 	title.Name = "Title"
@@ -67,6 +77,7 @@ function ShopPanel.mount(
 	list.BackgroundTransparency = 1
 	list.BorderSizePixel = 0
 	list.ScrollBarThickness = gap
+	list.ScrollBarImageColor3 = UITheme.color("BoneDim")
 	list.AutomaticCanvasSize = Enum.AutomaticSize.Y
 	list.CanvasSize = UDim2.new()
 	list.Position = UDim2.fromOffset(gap, touch + gap * 2)
@@ -136,6 +147,7 @@ function ShopPanel.mount(
 			card.LayoutOrder = index
 			card.AutomaticSize = Enum.AutomaticSize.Y
 			card.Size = UDim2.fromScale(1, 0)
+			accent(card, "Ash", "violet")
 			local pad = Instance.new("UIPadding")
 			pad.PaddingTop = UDim.new(0, gap)
 			pad.PaddingBottom = UDim.new(0, gap)
@@ -231,6 +243,21 @@ function ShopPanel.mount(
 	end
 
 	player:GetAttributeChangedSignal(ShopAnchors.OPEN_TOKEN):Connect(showFromServer)
+	player:GetAttributeChangedSignal(Shop.OPEN_TOKEN):Connect(function()
+		local token = player:GetAttribute(Shop.OPEN_TOKEN)
+		if type(token) ~= "number" then
+			return
+		end
+		shownId = ShopAnchors.PEDLAR_ID
+		render(ShopAnchors.PEDLAR_ID)
+		root.Visible = true
+	end)
+	player:GetAttributeChangedSignal(Shop.NOTICE_TOKEN):Connect(function()
+		local message = player:GetAttribute(Shop.NOTICE)
+		if type(message) == "string" and message ~= "" then
+			toast.Text = message
+		end
+	end)
 	player:GetAttributeChangedSignal(ShopAnchors.NOTICE_TOKEN):Connect(function()
 		local message = player:GetAttribute(ShopAnchors.NOTICE)
 		if type(message) == "string" and message ~= "" then

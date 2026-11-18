@@ -17,6 +17,8 @@ local Species = require("../src/shared/Config/Species")
 local Town = require("../src/shared/Config/Town")
 local TownShop = require("../src/shared/Logic/TownShop")
 local TownShops = require("../src/shared/Config/TownShops")
+local Transactions = require("../src/shared/Logic/Transactions")
+local UITheme = require("../src/shared/UITheme")
 local RemoteArgs = require("../src/shared/Logic/RemoteArgs")
 local RateLimiter = require("../src/server/RateLimiter")
 
@@ -512,6 +514,17 @@ Check.test("shop remotes are server checked and the placeholder panel shows each
 	Check.contains(panel, "Coming later.")
 	Check.contains(panel, "names.SHOP_BUY")
 	Check.contains(panel, "names.SHOP_SELL")
+	Check.contains(panel, "Shop.OPEN_TOKEN")
+	Check.contains(panel, 'accent(root, "Void", "teal")')
+	Check.contains(panel, 'accent(card, "Ash", "violet")')
+	Check.contains(panel, "UITheme.color(fillToken)")
+	Check.contains(panel, 'UITheme.color("BoneDim")')
+	Check.eq(string.find(panel, "Color3.from", 1, true), nil)
+	Check.eq(string.find(panel, "names.PEDLAR_BUY", 1, true), nil)
+	Check.eq(UITheme.glow.teal, "3C7F78")
+	Check.eq(UITheme.glow.violet, "6E5C9A")
+	local main = fs.readFile("src/client/Main.client.luau")
+	Check.eq(string.find(main, "PedlarShop", 1, true), nil)
 	Check.eq(string.find(panel, "profile.cash", 1, true), nil)
 	local service = fs.readFile("src/server/TownShopService.luau")
 	Check.contains(service, "Enum.KeyCode.E")
@@ -525,4 +538,45 @@ Check.test("shop remotes are server checked and the placeholder panel shows each
 	Check.contains(service, "task.spawn")
 	local interactions = fs.readFile("src/client/Interactions.luau")
 	Check.contains(interactions, "ShopAnchors.PROMPT_KIND")
+	Check.contains(session, "Shop.CRYPTID_REFUSAL")
+	Check.contains(session, "SetAttribute(Shop.OPEN_TOKEN, session.pedlarOpenToken)")
+end)
+
+Check.test("the pedlar refuses a cryptid sale and still sells supplies", function()
+	local profile = purse()
+	profile.cryptids["kept-cage"] = {
+		speciesId = "hodag",
+		mutation = "",
+		traits = {},
+		acquiredAt = 20,
+		source = "pedlar",
+	}
+	profile.shop.lastRotationId = 9
+	profile.shop.boughtSlots[2] = true
+	local cash = profile.cash
+	local refused, reason =
+		Transactions.buyPedlar(profile, 9, 2, { [2] = { speciesId = "hodag" } }, 0, 30, "new-cryptid")
+	Check.eq(refused, false)
+	Check.eq(reason, "cryptids")
+	Check.eq(profile.cash, cash)
+	Check.eq(profile.cryptids["new-cryptid"], nil)
+	Check.eq(profile.cryptids["kept-cage"].speciesId, "hodag")
+	Check.eq(profile.shop.lastRotationId, 9)
+	Check.eq(profile.shop.boughtSlots[2], true)
+	local loaded = Schema.migrate(Schema.deepCopy(profile), 4_000)
+	Check.eq(loaded.cryptids["kept-cage"].source, "pedlar")
+	Check.eq(loaded.shop.lastRotationId, 9)
+	Check.eq(loaded.shop.boughtSlots[2], true)
+	for _, id in { "witness_cage", "keepers_rim", "veil_mantle", "reed_cage", "iron_cage" } do
+		local item = TownShops.item("PalePedlar", id)
+		Check.truthy(item, id)
+		local result = TownShop.buy(loaded, "PalePedlar", id, "supply-" .. id, 1, openGate())
+		Check.eq(result.code, "ok", id)
+		Check.eq(loaded.wares.counts[id], 1, id)
+	end
+	Check.eq(loaded.cryptids["kept-cage"].speciesId, "hodag")
+	Check.eq(loaded.cash < cash, true)
+	local session = fs.readFile("src/server/PlayerSession.luau")
+	Check.contains(session, "grantPedlarOpen")
+	Check.contains(session, "Shop.OPEN_TOKEN")
 end)

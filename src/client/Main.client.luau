@@ -16,7 +16,6 @@ local HomeBeam = require(script.Parent:WaitForChild("HomeBeam"))
 local HudMenu = require(script.Parent:WaitForChild("HudMenu"))
 local Interactions = require(script.Parent:WaitForChild("Interactions"))
 local LairBanners = require(script.Parent:WaitForChild("LairBanners"))
-local PedlarShop = require(script.Parent:WaitForChild("PedlarShop"))
 local ShopPanel = require(script.Parent:WaitForChild("ShopPanel"))
 local SkillTree = require(script.Parent:WaitForChild("SkillTree"))
 local TownDress = require(script.Parent:WaitForChild("TownDress"))
@@ -282,7 +281,6 @@ if RunService:IsStudio() then
 		task.defer(openWhenReady)
 	end
 end
-PedlarShop.mount(gui, player, remotes :: Folder, Names, isReduced)
 ShopPanel.mount(gui, player, remotes :: Folder, Names, camera, snapshotValue)
 TownDress.start()
 TownQuality.start()
