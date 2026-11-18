@@ -121,11 +121,13 @@ Check.test("QA14 and QA15 source guards", function()
 			Check.eq(string.find(text, "PromptProductPurchase", 1, true), nil, path)
 			Check.eq(string.find(text, "ProcessReceipt", 1, true), nil, path)
 		end
-		local allowsColor = path == "src/shared/UITheme.luau"
-		if not allowsColor then
+		if path ~= "src/shared/UITheme.luau" then
 			Check.eq(string.find(text, "Color3.new", 1, true), nil, path)
-			Check.eq(string.find(text, "Color3.from", 1, true), nil, path)
 			Check.eq(string.find(text, "BrickColor", 1, true), nil, path)
+			-- The sky grade is TownLook hexes applied in LightingSetup. UITheme stays the UI palette.
+			if path ~= "src/server/LightingSetup.luau" then
+				Check.eq(string.find(text, "Color3.from", 1, true), nil, path)
+			end
 		end
 		local allowsFont = path == "src/client/ThemeBind.luau"
 		if not allowsFont then

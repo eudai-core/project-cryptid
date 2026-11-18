@@ -30,8 +30,9 @@ end
 function LightingSetup.apply()
 	local Lighting = game:GetService("Lighting")
 	local lighting = UITheme.lighting
-	Lighting.Ambient = UITheme.color(lighting.ambient)
-	Lighting.OutdoorAmbient = UITheme.color(lighting.outdoorAmbient)
+	Lighting.Ambient = Color3.fromHex(TownLook.SKY_AMBIENT)
+	Lighting.OutdoorAmbient = Color3.fromHex(TownLook.SKY_OUTDOOR_AMBIENT)
+	Lighting.ColorShift_Top = Color3.fromHex(TownLook.SKY_COLOR_SHIFT_TOP)
 	Lighting.Brightness = lighting.brightness
 	Lighting.ExposureCompensation = lighting.exposureCompensation
 	Lighting.ClockTime = lighting.clockTime
@@ -42,12 +43,12 @@ function LightingSetup.apply()
 	Lighting.FogEnd = lighting.fogEnd
 
 	local atmosphere = effect(Lighting, "Atmosphere")
-	atmosphere.Density = lighting.atmosphereDensity
+	atmosphere.Density = TownLook.SKY_ATMOSPHERE_DENSITY
 	atmosphere.Offset = lighting.atmosphereOffset
-	atmosphere.Color = UITheme.color(lighting.atmosphereColor)
-	atmosphere.Decay = UITheme.color(lighting.atmosphereDecay)
-	atmosphere.Glare = lighting.atmosphereGlare
-	atmosphere.Haze = lighting.atmosphereHaze
+	atmosphere.Color = Color3.fromHex(TownLook.SKY_ATMOSPHERE_COLOR)
+	atmosphere.Decay = Color3.fromHex(TownLook.SKY_ATMOSPHERE_DECAY)
+	atmosphere.Glare = TownLook.SKY_ATMOSPHERE_GLARE
+	atmosphere.Haze = TownLook.SKY_ATMOSPHERE_HAZE
 
 	local bloom = effect(Lighting, "BloomEffect")
 	bloom.Name = "TownBloom"
@@ -59,10 +60,10 @@ function LightingSetup.apply()
 	local grade = effect(Lighting, "ColorCorrectionEffect")
 	grade.Name = "TownGrade"
 	grade.Enabled = true
-	grade.Saturation = lighting.colorSaturation
+	grade.Saturation = TownLook.SKY_GRADE_SATURATION
 	grade.Contrast = lighting.colorContrast
 	grade.Brightness = lighting.colorBrightness
-	grade.TintColor = UITheme.color(lighting.colorTint)
+	grade.TintColor = Color3.fromHex(TownLook.SKY_GRADE_TINT)
 
 	local sky = effect(Lighting, "Sky")
 	sky.Name = "HollowmereSky"

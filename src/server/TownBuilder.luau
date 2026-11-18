@@ -38,6 +38,9 @@ end)
 local Wisp = import("./Wisp", function()
 	return script.Parent:WaitForChild("Wisp")
 end)
+local TownKits = import("./TownKits", function()
+	return script.Parent:WaitForChild("TownKits")
+end)
 
 local TownBuilder = {}
 
@@ -1330,6 +1333,7 @@ function TownBuilder.build(town: Folder)
 	if _G.LUNE ~= true then
 		task.wait()
 	end
+	TownKits.applyAll(town, {})
 end
 
 return TownBuilder
