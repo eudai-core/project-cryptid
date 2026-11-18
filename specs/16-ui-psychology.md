@@ -13,6 +13,7 @@ This brief tells the World Builder how to make Hollowmere's UI feel good and con
 Roblox policy and Eudai's 4 Nov decision already ban the dark patterns this research is often used to justify. This brief never overrides them.
 
 - **No paid random items** except January **Server Luck**, PolicyService-gated, live odds shown ([paid random items](https://create.roblox.com/docs/production/monetization/paid-random-items); specs 09, 15). Cash is paid currency (`compliance-audit-cash-random.md`). Variants, readings and cases stay earn-only.
+- **Conflict, 18 Nov, not resolved by deleting the line above.** Eudai asked for premium tiered tarot cases and a limited-time event case, sold for Robux, with the percentage chance of each rarity shown and no false odds. Spec 09 v3.2 §5.7 follows that for the Veil & Fate tent and leaves this bullet in place for everything else. The tent still has to show the roll weights before purchase, fail closed on `ArePaidRandomItemsRestricted`, pay something on every outcome, and print a real UTC end instead of a countdown. Prices and product ids are unset, so nothing is on sale.
 - **No fake urgency:** no invented stock limits, no inaccurate or restarting countdowns, no "always on sale" fake discounts, no "expires" / "last chance" copy ([Monetization](https://create.roblox.com/docs/production/monetization); [Presenting Experience Items](https://en.help.roblox.com/hc/en-us/articles/47965051378324-Presenting-Experience-Items-and-Subscriptions)).
 - **No pressure language toward minors.** Prefer "**View Item**", "**See Price**", "**Open Shop**" — never "GET IT NOW", "LAST CHANCE, ACT NOW", "BUY BEFORE IT'S GONE!" ([Promoting Items to Younger Audiences](https://en.help.roblox.com/hc/en-us/articles/47965190783892-Promoting-Items-to-Younger-Audiences)).
 - **No fake players**, hidden purchases or decorative NPCs that are secretly shops (spec 15 §3).
@@ -104,7 +105,7 @@ Hamari's three spend-linked motives map onto our catalogue without new products:
 
 ## 7. What we will not do
 
-1. Sell random crates, mystery cages, luck boosts (except gated Server Luck), or any bundle whose result is not shown first.
+1. Sell random crates, mystery cages, luck boosts (except gated Server Luck), or any bundle whose result is not shown first. The 18 Nov tent in spec 09 v3.2 §5.7 is the recorded exception, and only while the odds, the policy gate, and a real benefit on every outcome hold.
 2. Fake a near-miss, tease a higher rarity, or play a win fanfare on a loss.
 3. Use fake scarcity, restarting timers, or "deal of the day" that never ends.
 4. Use "GET IT NOW" / "LAST CHANCE" / "only X Robux" pressure copy, or "only" / "just" to shrink a price in front of younger players ([Advertising Standards](https://en.help.roblox.com/hc/en-us/articles/13722260778260-Advertising-Standards) spirit, applied to in-experience merchandising).

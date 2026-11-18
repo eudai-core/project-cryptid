@@ -11,6 +11,9 @@ local function import(lunePath: string, getRoblox: () -> any): any
 	return require(getRoblox())
 end
 
+local PedlarBrowse = import("./PedlarBrowse", function()
+	return script.Parent:WaitForChild("PedlarBrowse")
+end)
 local ShopAnchors = import("../Config/ShopAnchors", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("ShopAnchors")
 end)
@@ -73,7 +76,7 @@ local function bindOne(town: any, entry: any, deps: any)
 		end
 	end
 	if entry.mode == "pedlar" then
-		local prompt = walk(town, entry.promptPath, waitSeconds)
+		local prompt = PedlarBrowse.findPrompt(town)
 		if prompt ~= nil then
 			local host = prompt.Parent
 			if host == nil then

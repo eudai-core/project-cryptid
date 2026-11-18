@@ -13,6 +13,8 @@
 > - **From spec 11 v1 §11 (approved by Grok Bot as the design base, 4 Nov):** §7.2 gains the Shiny Rite (300), Corruption Rite (1,000), mastery frame dyes (50) and Ward Candle skins (100, Update 3); all deterministic. Readings get the variant roll (99.3 / 0.5 / 0.2, spec 09 v3 §4).
 >
 > v1.2 history (superseded where it conflicts): paid spin approvals, ~37% free emphasis at Luck ×3 (still valid), Mythic sky on free sources.
+>
+> **18 Nov 2026, Eudai, the Veil & Fate tent.** The earn-only banner above is **superseded for paid tent cases only**. Spec 09 v3.2 §5.7 is the rule: tiered cases and a limited-time event case may be sold for Robux when the rarity odds are the roll weights, shown before purchase, and `ArePaidRandomItemsRestricted` is an explicit false. This conflicts with the "only paid random item is Server Luck" line in this banner and with spec 16. Those lines stay on record. The tent does not build the Fate Reel, the charge-up, or the dormant paid spin in §3.6. The reveal is the true tier as static text. Paid cases ship off until Eudai approves prices, product ids, contents, pity counts, and the event dates. Server Luck and Bound Rites are unchanged.
 
 **Owner:** Cryptid Growth Strategist · **Builder:** Cryptid Systems Architect · **Visuals:** Cryptid Art Director · **Status:** Draft **v2.1** (Wed 4 Nov 2026; v2.1 audit fix: free-source wording) · see also spec 11 (multiplayer and pacing, separate workstream)
 **Companion:** spec 09 v3 keeps deck odds (§5.1), pity (§5.2), free routes (§5.4), the POLICY GATE (§6), Bound Rites (§9.5), the PRICE TABLE (§10) and the launch split (§11).

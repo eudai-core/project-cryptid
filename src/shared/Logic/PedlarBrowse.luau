@@ -14,8 +14,8 @@ end)
 local RemoteArgs = import("./RemoteArgs", function()
 	return script.Parent:WaitForChild("RemoteArgs")
 end)
-local Town = import("../Config/Town", function()
-	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Town")
+local ShopAnchors = import("../Config/ShopAnchors", function()
+	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("ShopAnchors")
 end)
 
 local PedlarBrowse = {}
@@ -61,15 +61,18 @@ function PedlarBrowse.findPrompt(town: any): any
 	if districts == nil then
 		return nil
 	end
-	local model = districts:FindFirstChild(Town.PEDLAR_ID)
-	if model == nil then
+	local model = districts:FindFirstChild(ShopAnchors.PEDLAR_ID)
+	if model == nil or type(model.GetDescendants) ~= "function" then
 		return nil
 	end
-	local host = model:FindFirstChild(Town.PEDLAR_HOST)
-	if host == nil then
-		return nil
+	local entry = ShopAnchors.get(ShopAnchors.PEDLAR_ID)
+	local promptName = if entry ~= nil then entry.promptKind else "Pedlar"
+	for _, child in model:GetDescendants() do
+		if child.Name == promptName and child.ClassName == "ProximityPrompt" then
+			return child
+		end
 	end
-	return host:FindFirstChild(Town.PEDLAR_PROMPT_NAME)
+	return nil
 end
 
 return PedlarBrowse

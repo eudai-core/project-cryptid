@@ -8,6 +8,9 @@ local function import(lunePath: string, getRoblox: () -> any): any
 	return require(getRoblox())
 end
 
+local Analytics = import("../Config/Analytics", function()
+	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Analytics")
+end)
 local Economy = import("../Config/Economy", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Economy")
 end)
@@ -19,6 +22,9 @@ local OnboardingGoals = import("./OnboardingGoals", function()
 end)
 local Plots = import("../Config/Plots", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Plots")
+end)
+local RebirthRules = import("../Config/Rebirth", function()
+	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Rebirth")
 end)
 local Save = import("../Config/Save", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Save")
@@ -624,7 +630,7 @@ local function parseAnalytics(raw: any): { lastReturnDay: number, funnelStep: nu
 			type(parsedDay) == "number"
 			and parsedDay == math.floor(parsedDay)
 			and parsedDay >= 0
-			and parsedDay <= 10000000
+			and parsedDay <= Analytics.MAX_RETURN_DAY
 		then
 			day = parsedDay
 		end
@@ -654,7 +660,52 @@ end
 
 local function migrateToV9(profile: any, raw: any, _version: number, _now: number): boolean
 	profile.analytics = parseAnalytics(raw)
-	return applyWares(profile, raw)
+	return true
+end
+
+local function familiarIdOf(value: any): string?
+	if type(value) ~= "string" or #value > RebirthRules.FAMILIAR_MAX then
+		return nil
+	end
+	if value ~= "" and string.match(value, "^[%w_]+$") == nil then
+		return nil
+	end
+	return value
+end
+
+local function migrateToV10(profile: any, raw: any, version: number, _now: number): boolean
+	if version >= 10 then
+		local count = wholeNumber(raw.rebirths, 0, RebirthRules.LAUNCH_CAP)
+		local familiarId = familiarIdOf(raw.familiarId)
+		if count == nil or familiarId == nil or type(raw.everHeld1M) ~= "boolean" then
+			return false
+		end
+		profile.rebirths = count
+		profile.familiarId = familiarId
+		profile.everHeld1M = raw.everHeld1M
+		if applyWares(profile, raw) ~= true then
+			return false
+		end
+		return TarotSave.apply(profile, raw)
+	end
+	local earned = profile.totalEarned
+	if type(earned) ~= "number" or not Money.isFinite(earned) or earned < 0 then
+		earned = 0
+	end
+	if version < 6 then
+		profile.tithe = Money.round(earned)
+	end
+	local held = earned >= RebirthRules.REVEAL_CASH
+	if type(profile.cash) == "number" and profile.cash >= RebirthRules.REVEAL_CASH then
+		held = true
+	end
+	profile.rebirths = 0
+	profile.familiarId = ""
+	profile.everHeld1M = held
+	if applyWares(profile, raw) ~= true then
+		return false
+	end
+	return TarotSave.apply(profile, raw)
 end
 
 local MIGRATION_STEPS: { { to: number, apply: (any, any, number, number) -> boolean } } = {
@@ -681,6 +732,7 @@ local MIGRATION_STEPS: { { to: number, apply: (any, any, number, number) -> bool
 	{ to = 7, apply = migrateToV7 },
 	{ to = 8, apply = migrateToV8 },
 	{ to = 9, apply = migrateToV9 },
+	{ to = 10, apply = migrateToV10 },
 }
 
 function Schema.migrationTargets(): { number }
@@ -714,11 +766,6 @@ function Schema.migrate(raw: any, now: number?): any?
 		if step.apply(profile, raw, version, clock) ~= true then
 			return nil
 		end
-	end
-	-- Inventory, family pity, and the purchase ledger. Move this call into
-	-- migrateToV10 beside the other additive defaults when that step is present.
-	if TarotSave.apply(profile, raw) ~= true then
-		return nil
 	end
 	profile.dataVersion = Save.DATA_VERSION
 	return profile
@@ -756,6 +803,9 @@ function Schema.newProfile(now: number, starterInstanceId: string): any
 		firstJoinUnix = now,
 		lastSeenUnix = if Money.isFinite(now) and now >= 0 then math.floor(now) else 0,
 		tithe = 0,
+		rebirths = 0,
+		familiarId = "",
+		everHeld1M = false,
 		bowl = 0,
 		offline = {
 			rate = 0,

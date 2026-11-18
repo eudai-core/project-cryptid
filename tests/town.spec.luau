@@ -471,7 +471,7 @@ Check.test("QA14 the shrine prompt is the spec 04 hook", function()
 	Check.contains(shrine, "Town.SHRINE_UNMARKED")
 	Check.contains(shrine, "Shop.GATE_STEP")
 	local interactions = fs.readFile("src/client/Interactions.luau")
-	Check.contains(interactions, 'kindName == "Pedlar" or kindName == "SkillShrine"')
+	Check.contains(interactions, 'kindName == "SkillShrine"')
 	Check.contains(interactions, "SkillShrine")
 	Check.contains(interactions, "town.onShrine")
 	local session = fs.readFile("src/server/PlayerSession.luau")
@@ -608,7 +608,7 @@ Check.test("a cryptid buy does not bind a cryptid or move the saved rotation", f
 end)
 
 Check.test("v3 saves gain an empty shop and bind at once without rewriting the old table", function()
-	Check.eq(Save.DATA_VERSION, 9)
+	Check.eq(Save.DATA_VERSION, 10)
 	local legacy = Schema.newProfile(20, "starter")
 	legacy.dataVersion = 3
 	legacy.cash = 80

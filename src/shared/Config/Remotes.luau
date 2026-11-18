@@ -24,6 +24,7 @@ local Remotes = {
 	SHOP_SELL = "RequestShopSell",
 	TAROT_OPEN = "RequestTarotOpen",
 	TAROT_BUY = "RequestTarotBuy",
+	REBIRTH = "RequestRebirth",
 }
 
 return table.freeze(Remotes)
