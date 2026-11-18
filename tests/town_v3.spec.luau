@@ -311,6 +311,8 @@ function vec(x: number, y: number, z: number): any
 	})
 end
 
+local cframeMatrix: { [any]: { number } } = setmetatable({}, { __mode = "k" }) :: any
+
 function newCFrame(
 	px: number,
 	py: number,
@@ -329,79 +331,88 @@ function newCFrame(
 		X = px,
 		Y = py,
 		Z = pz,
-		r00 = r00,
-		r01 = r01,
-		r02 = r02,
-		r10 = r10,
-		r11 = r11,
-		r12 = r12,
-		r20 = r20,
-		r21 = r21,
-		r22 = r22,
 	}
+	cframeMatrix[self] = { r00, r01, r02, r10, r11, r12, r20, r21, r22 }
+	function self:GetComponents(): (
+		number,
+		number,
+		number,
+		number,
+		number,
+		number,
+		number,
+		number,
+		number,
+		number,
+		number,
+		number
+	)
+		local m = cframeMatrix[self]
+		return self.X, self.Y, self.Z, m[1], m[2], m[3], m[4], m[5], m[6], m[7], m[8], m[9]
+	end
 	function self:Inverse(): any
-		local x = -(self.r00 * self.X + self.r10 * self.Y + self.r20 * self.Z)
-		local y = -(self.r01 * self.X + self.r11 * self.Y + self.r21 * self.Z)
-		local z = -(self.r02 * self.X + self.r12 * self.Y + self.r22 * self.Z)
-		return newCFrame(
-			x,
-			y,
-			z,
-			self.r00,
-			self.r10,
-			self.r20,
-			self.r01,
-			self.r11,
-			self.r21,
-			self.r02,
-			self.r12,
-			self.r22
-		)
+		local m = cframeMatrix[self]
+		local x = -(m[1] * self.X + m[4] * self.Y + m[7] * self.Z)
+		local y = -(m[2] * self.X + m[5] * self.Y + m[8] * self.Z)
+		local z = -(m[3] * self.X + m[6] * self.Y + m[9] * self.Z)
+		return newCFrame(x, y, z, m[1], m[4], m[7], m[2], m[5], m[8], m[3], m[6], m[9])
 	end
 	function self:ToWorldSpace(point: any): any
 		return self * point
 	end
+	function self:PointToWorldSpace(point: any): any
+		return self * point
+	end
+	function self:ToObjectSpace(other: any): any
+		return self:Inverse() * other
+	end
 	return setmetatable(self, {
 		__mul = function(a: any, b: any): any
-			if b.r00 == nil then
+			local am = cframeMatrix[a]
+			local bm = cframeMatrix[b]
+			if bm == nil then
 				return vec(
-					a.X + a.r00 * b.X + a.r01 * b.Y + a.r02 * b.Z,
-					a.Y + a.r10 * b.X + a.r11 * b.Y + a.r12 * b.Z,
-					a.Z + a.r20 * b.X + a.r21 * b.Y + a.r22 * b.Z
+					a.X + am[1] * b.X + am[2] * b.Y + am[3] * b.Z,
+					a.Y + am[4] * b.X + am[5] * b.Y + am[6] * b.Z,
+					a.Z + am[7] * b.X + am[8] * b.Y + am[9] * b.Z
 				)
 			end
 			return newCFrame(
-				a.X + a.r00 * b.X + a.r01 * b.Y + a.r02 * b.Z,
-				a.Y + a.r10 * b.X + a.r11 * b.Y + a.r12 * b.Z,
-				a.Z + a.r20 * b.X + a.r21 * b.Y + a.r22 * b.Z,
-				a.r00 * b.r00 + a.r01 * b.r10 + a.r02 * b.r20,
-				a.r00 * b.r01 + a.r01 * b.r11 + a.r02 * b.r21,
-				a.r00 * b.r02 + a.r01 * b.r12 + a.r02 * b.r22,
-				a.r10 * b.r00 + a.r11 * b.r10 + a.r12 * b.r20,
-				a.r10 * b.r01 + a.r11 * b.r11 + a.r12 * b.r21,
-				a.r10 * b.r02 + a.r11 * b.r12 + a.r12 * b.r22,
-				a.r20 * b.r00 + a.r21 * b.r10 + a.r22 * b.r20,
-				a.r20 * b.r01 + a.r21 * b.r11 + a.r22 * b.r21,
-				a.r20 * b.r02 + a.r21 * b.r12 + a.r22 * b.r22
+				a.X + am[1] * b.X + am[2] * b.Y + am[3] * b.Z,
+				a.Y + am[4] * b.X + am[5] * b.Y + am[6] * b.Z,
+				a.Z + am[7] * b.X + am[8] * b.Y + am[9] * b.Z,
+				am[1] * bm[1] + am[2] * bm[4] + am[3] * bm[7],
+				am[1] * bm[2] + am[2] * bm[5] + am[3] * bm[8],
+				am[1] * bm[3] + am[2] * bm[6] + am[3] * bm[9],
+				am[4] * bm[1] + am[5] * bm[4] + am[6] * bm[7],
+				am[4] * bm[2] + am[5] * bm[5] + am[6] * bm[8],
+				am[4] * bm[3] + am[5] * bm[6] + am[6] * bm[9],
+				am[7] * bm[1] + am[8] * bm[4] + am[9] * bm[7],
+				am[7] * bm[2] + am[8] * bm[5] + am[9] * bm[8],
+				am[7] * bm[3] + am[8] * bm[6] + am[9] * bm[9]
 			)
 		end,
 		__index = function(frame: any, key: string): any
+			local m = cframeMatrix[frame]
 			if key == "Position" then
 				return vec(frame.X, frame.Y, frame.Z)
 			end
+			if key == "Rotation" then
+				return newCFrame(0, 0, 0, m[1], m[2], m[3], m[4], m[5], m[6], m[7], m[8], m[9])
+			end
 			if key == "RightVector" or key == "XVector" then
-				return vec(frame.r00, frame.r10, frame.r20)
+				return vec(m[1], m[4], m[7])
 			end
 			if key == "UpVector" or key == "YVector" then
-				return vec(frame.r01, frame.r11, frame.r21)
+				return vec(m[2], m[5], m[8])
 			end
 			if key == "ZVector" then
-				return vec(frame.r02, frame.r12, frame.r22)
+				return vec(m[3], m[6], m[9])
 			end
 			if key == "LookVector" then
-				return vec(-frame.r02, -frame.r12, -frame.r22)
+				return vec(-m[3], -m[6], -m[9])
 			end
-			return nil
+			error(tostring(key) .. " is not a valid member of CFrame", 2)
 		end,
 	})
 end
@@ -2699,6 +2710,12 @@ Check.test("town census line and attributes survive the build", function()
 	Check.eq(root:GetAttribute("CensusLights") <= TownLook.LIGHT_CAP, true)
 	Check.eq(root:GetAttribute("CensusEmitters") <= TownLook.EMITTER_CAP, true)
 	Check.eq(root:GetAttribute("CensusHighlights") < 31, true)
+	Check.eq(root:GetAttribute("CensusKit_Portals") > 800, true, tostring(root:GetAttribute("CensusKit_Portals")))
+	local probe = installRoblox().CFrame.new(1, 2, 3)
+	local readable, _member = pcall(function()
+		return probe.r00
+	end)
+	Check.eq(readable, false, "CFrame.r00 must throw")
 	Check.contains(fs.readFile("src/server/TownBuilder.luau"), "[TownCensus] quality=")
 	Check.contains(fs.readFile("src/server/TownKits/Kit.luau"), "[TownKits] %s step %s failed: %s")
 end)

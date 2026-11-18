@@ -171,28 +171,11 @@ local function findNamed(root: Instance, name: string, className: string?): any
 end
 
 local function growCf(cf: any): any
-	if cf == nil or cf.Position == nil then
+	if cf == nil then
 		return cf
 	end
 	local pos = cf.Position
-	if cf.r00 ~= nil then
-		return CFrame.new(
-			pos.X * PORTAL_SCALE,
-			pos.Y * PORTAL_SCALE,
-			pos.Z * PORTAL_SCALE,
-			cf.r00,
-			cf.r01,
-			cf.r02,
-			cf.r10,
-			cf.r11,
-			cf.r12,
-			cf.r20,
-			cf.r21,
-			cf.r22
-		)
-	end
-	local extra = PORTAL_SCALE - 1
-	return cf + Vector3.new(pos.X * extra, pos.Y * extra, pos.Z * extra)
+	return CFrame.new(pos.X * PORTAL_SCALE, pos.Y * PORTAL_SCALE, pos.Z * PORTAL_SCALE) * cf.Rotation
 end
 
 local function growSize(size: any): any
