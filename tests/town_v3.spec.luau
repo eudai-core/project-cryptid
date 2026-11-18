@@ -455,14 +455,43 @@ local function installRoblox(): any
 			end,
 		},
 		CFrame = {
-			new = function(x: any, y: number?, z: number?)
+			new = function(
+				x: any,
+				y: number?,
+				z: number?,
+				r00: number?,
+				r01: number?,
+				r02: number?,
+				r10: number?,
+				r11: number?,
+				r12: number?,
+				r20: number?,
+				r21: number?,
+				r22: number?
+			)
 				if x == nil then
 					return newCFrame(0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1)
 				end
 				if type(x) ~= "number" then
 					return newCFrame(x.X, x.Y, x.Z, 1, 0, 0, 0, 1, 0, 0, 0, 1)
 				end
-				return newCFrame(x, y or 0, z or 0, 1, 0, 0, 0, 1, 0, 0, 0, 1)
+				if r00 == nil then
+					return newCFrame(x, y or 0, z or 0, 1, 0, 0, 0, 1, 0, 0, 0, 1)
+				end
+				return newCFrame(
+					x,
+					y or 0,
+					z or 0,
+					r00,
+					r01 or 0,
+					r02 or 0,
+					r10 or 0,
+					r11 or 1,
+					r12 or 0,
+					r20 or 0,
+					r21 or 0,
+					r22 or 1
+				)
 			end,
 			lookAt = function(eye: any, target: any, up: any?)
 				local forward = unit(vec(target.X - eye.X, target.Y - eye.Y, target.Z - eye.Z))

@@ -5,13 +5,13 @@ Branch: `cursor/town-integration-17b`
 ## Done
 
 - Pass 4 is on this branch: EnumItem tint, census nature counts, tonal clock bricks.
-- Pass 5 item 1: lighting, bloom, grade, atmosphere, and cloud colour sit halfway between `e5c3330` (blown out) and `4799e39` (too dark). Clock face is SmoothPlastic DuskViolet with a mid-strength violet point light, not a Neon slab. The Pedlar supply lantern stays green and is brighter (`SupplyLight` range 18, brightness 2.8).
+- Pass 5 item 1 (`7647a67`, push `0a39d89`, CI `44242984885` green): lighting sits halfway between `e5c3330` and `4799e39`. Clock face is SmoothPlastic DuskViolet with a mid light. Pedlar supply lantern is brighter green.
+- Pass 5 item 2: portals are scaled 2.25x around their pivots, quarry ribs are thicker, and a wooden SurfaceGui sign is added when the blockout sign has no label. Woods, marsh, and quarry keep their vortex, arch, fireflies, eyes, mist, and embers.
 
 ## Next
 
-- Pass 5 item 2: scale the three portals 2–3x, keep the themed arches and swirls, and put SurfaceGui signs on wooden boards.
-- Pass 5 item 3: hooded Pedlar statue, draped tent, tapered apothecary trunk, cottage variation, real sign text.
+- Pass 5 item 3: hooded Pedlar statue, draped tent, tapered apothecary trunk, cottage variation, real sign text on the shops.
 
 ## Head
 
-`7647a67f0c29b057de14e8b2bbf24f1c3a5c4db6`
+`82f58f2ccb28c578420b203ec90764d47b675135`

@@ -31,13 +31,20 @@ local LIME = "Limestone"
 -- Local -Z faces the plaza. The walk gap (|x| < 2, y < 6) stays clear of colliding parts.
 local VORTEX_Y = 4.4
 local VORTEX_Z = 0.15
+local PORTAL_SCALE = 2.25
 local DISC = 8.4
-local LOCK_X = 5.05
+local LOCK_X = 5.05 * PORTAL_SCALE
 
 local SIGN_AT = {
 	WhisperingWoods = CFrame.new(0, 12.8, -2.2),
 	SunkenMarsh = CFrame.new(0, 11.6, -3.9),
 	BoneQuarry = CFrame.new(0, 12.5, -2.2),
+}
+
+local SIGN_COPY = {
+	WhisperingWoods = "Whispering Woods",
+	SunkenMarsh = "Sunken Marsh",
+	BoneQuarry = "Bone Quarry",
 }
 
 local BLOCKOUT = {
@@ -163,7 +170,41 @@ local function findNamed(root: Instance, name: string, className: string?): any
 	return nil
 end
 
+local function growCf(cf: any): any
+	if cf == nil or cf.Position == nil then
+		return cf
+	end
+	local pos = cf.Position
+	if cf.r00 ~= nil then
+		return CFrame.new(
+			pos.X * PORTAL_SCALE,
+			pos.Y * PORTAL_SCALE,
+			pos.Z * PORTAL_SCALE,
+			cf.r00,
+			cf.r01,
+			cf.r02,
+			cf.r10,
+			cf.r11,
+			cf.r12,
+			cf.r20,
+			cf.r21,
+			cf.r22
+		)
+	end
+	local extra = PORTAL_SCALE - 1
+	return cf + Vector3.new(pos.X * extra, pos.Y * extra, pos.Z * extra)
+end
+
+local function growSize(size: any): any
+	if size == nil then
+		return size
+	end
+	return Vector3.new(size.X * PORTAL_SCALE, size.Y * PORTAL_SCALE, size.Z * PORTAL_SCALE)
+end
+
 local function place(parent: Instance, pivot: any, spec: any): any
+	spec.size = growSize(spec.size)
+	spec.cf = growCf(spec.cf)
 	spec.cf = pivot * spec.cf
 	spec.parent = parent
 	return Kit.spawn(spec)
@@ -679,7 +720,7 @@ local function buildQuarry(parent: Instance, pivot: any, detail: boolean)
 		for _, side in { -1, 1 } do
 			local points = ribPoints(side, spread, height, z, ribN, rib * 5 + side)
 			local color = if rib % 2 == 0 then "BoneDim" else "Bone"
-			layChain(parent, pivot, "Rib", points, 0.42, 0.2, LIME, color, false, detail, "Ridge", "BoneDim")
+			layChain(parent, pivot, "Rib", points, 0.68, 0.32, LIME, color, false, detail, "Ridge", "BoneDim")
 		end
 	end
 	local spine = samples(steps(detail, 12, 6), function(t: number)
@@ -778,8 +819,53 @@ local function moveTo(anchor: any, desired: any, parts: { any })
 	end
 end
 
+local function growPart(part: any)
+	if part == nil or part.Size == nil or part:GetAttribute("PortalScaled") == true then
+		return
+	end
+	part.Size = growSize(part.Size)
+	part:SetAttribute("PortalScaled", true)
+end
+
+local function ensureSign(sign: any, id: string)
+	if sign == nil then
+		return
+	end
+	for _, inst in sign:GetDescendants() do
+		if inst.Name == "SignText" then
+			return
+		end
+	end
+	local gui = Instance.new("SurfaceGui")
+	gui.Name = "SignGui"
+	gui.Face = Enum.NormalId.Front
+	gui.LightInfluence = 0
+	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	gui.PixelsPerStud = 36
+	gui.Parent = sign
+	local label = Instance.new("TextLabel")
+	label.Name = "SignText"
+	label.BackgroundTransparency = 1
+	label.Size = UDim2.fromScale(1, 0.62)
+	label.Text = SIGN_COPY[id] or id
+	label.TextColor3 = UITheme.color("Bone")
+	label.TextScaled = true
+	label.Parent = gui
+	if id == "SunkenMarsh" then
+		local level = Instance.new("TextLabel")
+		level.Name = "SignText"
+		level.BackgroundTransparency = 1
+		level.Size = UDim2.fromScale(1, 0.32)
+		level.Position = UDim2.fromScale(0, 0.64)
+		level.Text = "Level 25+"
+		level.TextColor3 = UITheme.color("Gold")
+		level.TextScaled = true
+		level.Parent = gui
+	end
+end
+
 local function repositionKept(model: Instance, pivot: any, id: string)
-	local signCf = SIGN_AT[id]
+	local signCf = growCf(SIGN_AT[id])
 	if signCf == nil then
 		return
 	end
@@ -792,7 +878,10 @@ local function repositionKept(model: Instance, pivot: any, id: string)
 	if trim ~= nil then
 		table.insert(signParts, trim)
 	end
+	growPart(sign)
+	growPart(trim)
 	moveTo(sign, pivot * signCf, signParts)
+	ensureSign(sign, id)
 
 	local lock = findNamed(model, "LockIcon", "Model")
 	local lockBody = findNamed(model, "LockBody", "Part")
