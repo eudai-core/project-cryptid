@@ -64,6 +64,8 @@ local Monetisation = {
 	LAIR_COSMETIC = "lair_cosmetics",
 	RELIC_PADS = table.freeze({ 9, 10 }),
 	KEY_MAX = 64,
+	-- Paid tent cases stay off. Prices and product ids are unset.
+	PAID_TAROT_ENABLED = false,
 }
 
 function Monetisation.items(): { any }

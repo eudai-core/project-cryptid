@@ -42,7 +42,15 @@ local function addLine(
 	return label
 end
 
-function TarotPanel.fill(list: ScrollingFrame, snapshotValue: StringValue, remotes: Folder, names: any, gap: number)
+function TarotPanel.fill(
+	list: ScrollingFrame,
+	snapshotValue: StringValue,
+	remotes: Folder,
+	names: any,
+	gap: number,
+	pricePx: number,
+	priceColor: string
+)
 	local touch = UITheme.shape.touchPx
 	local tent = nil
 	local ok, decoded = pcall(function()
@@ -75,7 +83,7 @@ function TarotPanel.fill(list: ScrollingFrame, snapshotValue: StringValue, remot
 	notePad.PaddingRight = UDim.new(0, gap)
 	notePad.Parent = note
 	local noteText = if type(tent.oddsNote) == "string" then tent.oddsNote else ""
-	addLine(note, "Copy", noteText, 1, "body", UITheme.fonts.body.mobile, "BoneDim")
+	addLine(note, "Copy", noteText, 1, "body", pricePx, priceColor)
 
 	for index, card in tent.cases do
 		if type(card) == "table" and type(card.id) == "string" then
@@ -104,15 +112,7 @@ function TarotPanel.fill(list: ScrollingFrame, snapshotValue: StringValue, remot
 			if type(card.odds) == "table" then
 				for _, row in card.odds do
 					if type(row) == "table" and type(row.rarity) == "string" and type(row.text) == "string" then
-						addLine(
-							frame,
-							row.rarity,
-							row.rarity .. " " .. row.text,
-							order,
-							"body",
-							UITheme.fonts.body.mobile,
-							"Bone"
-						)
+						addLine(frame, row.rarity, row.rarity .. " " .. row.text, order, "body", pricePx, priceColor)
 						order += 1
 					end
 				end
@@ -122,7 +122,7 @@ function TarotPanel.fill(list: ScrollingFrame, snapshotValue: StringValue, remot
 				order += 1
 			end
 			if type(card.duplicateLine) == "string" then
-				addLine(frame, "Duplicates", card.duplicateLine, order, "body", UITheme.fonts.body.mobile, "BoneDim")
+				addLine(frame, "Duplicates", card.duplicateLine, order, "body", pricePx, priceColor)
 				order += 1
 			end
 			if type(card.endsText) == "string" and card.endsText ~= "" then

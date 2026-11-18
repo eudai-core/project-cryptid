@@ -284,6 +284,12 @@ local UITheme = {
 			padW = 220,
 			padH = 96,
 		}),
+		-- Shop prices and tent odds. Bone on Ash, at least the 18px floor.
+		priceLine = table.freeze({
+			desktop = 22,
+			mobile = 18,
+			color = "Bone",
+		}),
 		mobileWidthBreakpoint = 700,
 		overlayTransparency = 0.15,
 		beamWidth = 0.3,

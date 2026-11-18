@@ -176,7 +176,7 @@ local function onReceipt(receipt: any): Enum.ProductPurchaseDecision
 		tarot = function(receiptInfo, heldProfile, receiptDeps)
 			return TarotReceipts.process(receiptInfo, heldProfile, {
 				paidEnabled = TarotAccess.enabled(
-					TarotCases.PAID_TAROT_ENABLED,
+					Monetisation.PAID_TAROT_ENABLED,
 					RunService:IsStudio(),
 					StudioQaHooks.args()
 				),

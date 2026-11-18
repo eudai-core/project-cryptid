@@ -2,13 +2,18 @@
 
 local HttpService = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local TarotPanel = require(script.Parent:WaitForChild("TarotPanel"))
 local UiFactory = require(script.Parent:WaitForChild("UiFactory"))
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local NumberFormat = require(Shared:WaitForChild("Logic"):WaitForChild("NumberFormat")) :: any
+local PanelRange = require(Shared:WaitForChild("Logic"):WaitForChild("PanelRange")) :: any
+local PedlarBrowse = require(Shared:WaitForChild("Logic"):WaitForChild("PedlarBrowse")) :: any
 local Shop = require(Shared:WaitForChild("Config"):WaitForChild("Shop")) :: any
 local ShopAnchors = require(Shared:WaitForChild("Config"):WaitForChild("ShopAnchors")) :: any
+local ShopNotices = require(Shared:WaitForChild("Logic"):WaitForChild("ShopNotices")) :: any
+local Town = require(Shared:WaitForChild("Config"):WaitForChild("Town")) :: any
 local TownShops = require(Shared:WaitForChild("Config"):WaitForChild("TownShops")) :: any
 local UITheme = require(Shared:WaitForChild("UITheme")) :: any
 
@@ -28,6 +33,49 @@ local function fire(remotes: Folder, name: string, ...: any)
 	remote:FireServer(...)
 end
 
+local function hostPart(inst: Instance?): BasePart?
+	if inst == nil then
+		return nil
+	end
+	if inst:IsA("BasePart") then
+		return inst
+	end
+	if inst:IsA("Model") then
+		if inst.PrimaryPart ~= nil then
+			return inst.PrimaryPart
+		end
+		return inst:FindFirstChildWhichIsA("BasePart", true)
+	end
+	if inst:IsA("ProximityPrompt") then
+		return hostPart(inst.Parent)
+	end
+	return nil
+end
+
+local function walkPath(root: Instance, path: any): Instance?
+	if type(path) ~= "table" then
+		return nil
+	end
+	local node: Instance? = root
+	for _, name in path do
+		if node == nil or type(name) ~= "string" then
+			return nil
+		end
+		node = node:FindFirstChild(name)
+	end
+	return node
+end
+
+local function activationOf(prompt: Instance?): number
+	if prompt ~= nil and prompt:IsA("ProximityPrompt") then
+		local distance = prompt.MaxActivationDistance
+		if type(distance) == "number" and distance == distance and distance > 0 and distance < math.huge then
+			return distance
+		end
+	end
+	return Town.PROMPT_DISTANCE
+end
+
 function ShopPanel.mount(
 	parent: Instance,
 	player: Player,
@@ -41,6 +89,14 @@ function ShopPanel.mount(
 	local shownToken = -1
 	local shownId = ""
 	local counts: { [string]: number } = {}
+	local noticeText: { [string]: string } = {}
+	local anchorPart: BasePart? = nil
+	local closeLimit = PanelRange.limit(Town.PROMPT_DISTANCE, Town.PANEL_HYSTERESIS)
+	local lastSample = 0
+	local rangeConn: RBXScriptConnection? = nil
+	local diedConn: RBXScriptConnection? = nil
+	local addedConn: RBXScriptConnection? = nil
+	local removingConn: RBXScriptConnection? = nil
 
 	local root = UiFactory.panel(parent)
 	root.Name = "ShopPanel"
@@ -61,9 +117,6 @@ function ShopPanel.mount(
 	closeButton.Text = "Close"
 	closeButton.Size = UDim2.fromOffset(touch * 2, touch)
 	closeButton.Position = UDim2.new(1, -(touch * 2 + gap), 0, gap)
-	closeButton.MouseButton1Click:Connect(function()
-		root.Visible = false
-	end)
 
 	local soon = UiFactory.label(root, "body", UITheme.fonts.body.desktop, "Bone")
 	soon.Name = "Soon"
@@ -89,12 +142,156 @@ function ShopPanel.mount(
 	layout.SortOrder = Enum.SortOrder.LayoutOrder
 	layout.Parent = list
 
-	local toast = UiFactory.label(root, "body", UITheme.fonts.body.mobile, "GoldBright")
-	toast.Name = "Result"
-	toast.Text = ""
-	toast.TextWrapped = true
-	toast.Position = UDim2.new(0, gap, 1, -(touch + gap))
-	toast.Size = UDim2.new(1, -gap * 2, 0, touch)
+	local function noticeLabel(name: string): TextLabel
+		local label = UiFactory.label(root, "body", UITheme.fonts.body.desktop, "Bone")
+		label.Name = name
+		label.Text = ""
+		label.TextWrapped = true
+		label.Visible = false
+		label.Position = UDim2.new(0, gap, 1, -(touch + gap))
+		label.Size = UDim2.new(1, -gap * 2, 0, touch)
+		return label
+	end
+
+	local pedlarNotice = noticeLabel("PedlarNotice")
+	local shopNotice = noticeLabel("ShopNotice")
+	local tarotNotice = noticeLabel("TarotNotice")
+
+	local function pricePx(): number
+		if camera.ViewportSize.X < UITheme.shape.mobileWidthBreakpoint then
+			return UITheme.shape.priceLine.mobile
+		end
+		return UITheme.shape.priceLine.desktop
+	end
+
+	local function stopWatch()
+		if rangeConn ~= nil then
+			rangeConn:Disconnect()
+			rangeConn = nil
+		end
+		if diedConn ~= nil then
+			diedConn:Disconnect()
+			diedConn = nil
+		end
+		if addedConn ~= nil then
+			addedConn:Disconnect()
+			addedConn = nil
+		end
+		if removingConn ~= nil then
+			removingConn:Disconnect()
+			removingConn = nil
+		end
+	end
+
+	local function closePanel()
+		root.Visible = false
+		stopWatch()
+	end
+
+	local function paintNotice()
+		local channel = ShopNotices.channel(ShopAnchors.get(shownId))
+		local text = ""
+		if shownId ~= "" then
+			local stored = noticeText[shownId]
+			if type(stored) == "string" then
+				text = stored
+			end
+		end
+		pedlarNotice.Text = if channel == "pedlar" then text else ""
+		shopNotice.Text = if channel == "shop" then text else ""
+		tarotNotice.Text = if channel == "tarot" then text else ""
+		pedlarNotice.Visible = channel == "pedlar" and text ~= ""
+		shopNotice.Visible = channel == "shop" and text ~= ""
+		tarotNotice.Visible = channel == "tarot" and text ~= ""
+	end
+
+	local function bindAnchor(shopId: string)
+		anchorPart = nil
+		closeLimit = PanelRange.limit(Town.PROMPT_DISTANCE, Town.PANEL_HYSTERESIS)
+		local town = workspace:FindFirstChild("Town")
+		local entry = ShopAnchors.get(shopId)
+		if town == nil or entry == nil then
+			return
+		end
+		local prompt: Instance? = nil
+		local host: Instance? = nil
+		if entry.mode == "pedlar" then
+			prompt = PedlarBrowse.findPrompt(town)
+			if prompt == nil then
+				host = walkPath(town, entry.fallbackPath)
+			end
+		else
+			host = walkPath(town, entry.anchorPath)
+		end
+		if host ~= nil and prompt == nil then
+			prompt = host:FindFirstChildWhichIsA("ProximityPrompt")
+		end
+		closeLimit = PanelRange.limit(activationOf(prompt), Town.PANEL_HYSTERESIS)
+		local part = hostPart(host)
+		if part == nil then
+			part = hostPart(prompt)
+		end
+		anchorPart = part
+	end
+
+	local function watchRange()
+		if not root.Visible then
+			stopWatch()
+			return
+		end
+		local now = os.clock()
+		if not PanelRange.due(now, lastSample, Town.PANEL_POLL_SECONDS) then
+			return
+		end
+		lastSample = now
+		local part = anchorPart
+		if part == nil or part.Parent == nil then
+			return
+		end
+		local character = player.Character
+		if character == nil then
+			return
+		end
+		local rootPart = character:FindFirstChild("HumanoidRootPart")
+		if rootPart == nil or not rootPart:IsA("BasePart") then
+			return
+		end
+		local distance = (rootPart.Position - part.Position).Magnitude
+		if PanelRange.outOfRange(distance, closeLimit) then
+			closePanel()
+		end
+	end
+
+	local function bindLife(character: Model)
+		local humanoid = character:FindFirstChildOfClass("Humanoid")
+		if humanoid ~= nil then
+			diedConn = humanoid.Died:Connect(function()
+				closePanel()
+			end)
+		end
+	end
+
+	local function startWatch()
+		if rangeConn ~= nil then
+			return
+		end
+		lastSample = 0
+		rangeConn = RunService.Heartbeat:Connect(watchRange)
+		local character = player.Character
+		if character ~= nil then
+			bindLife(character)
+		end
+		addedConn = player.CharacterAdded:Connect(function()
+			closePanel()
+		end)
+		removingConn = player.CharacterRemoving:Connect(function()
+			closePanel()
+		end)
+	end
+
+	closeButton.MouseButton1Click:Connect(function()
+		closePanel()
+	end)
 
 	local function readCounts()
 		counts = {}
@@ -127,11 +324,11 @@ function ShopPanel.mount(
 		return button
 	end
 
-	local function render(shopId: string)
+	local function render(shopId: string): boolean
 		local entry = ShopAnchors.get(shopId)
 		if entry == nil then
 			root.Visible = false
-			return
+			return false
 		end
 		title.Text = entry.displayName
 		local tent = entry.plug == "tarot"
@@ -140,13 +337,14 @@ function ShopPanel.mount(
 		list.Visible = not comingSoon
 		clearCards()
 		if tent then
-			TarotPanel.fill(list, snapshotValue, remotes, names, gap)
-			return
+			TarotPanel.fill(list, snapshotValue, remotes, names, gap, pricePx(), UITheme.shape.priceLine.color)
+			return true
 		end
 		if comingSoon then
-			return
+			return true
 		end
 		readCounts()
+		local linePx = pricePx()
 		for index, item in TownShops.items(entry.catalogueId) do
 			local card = UiFactory.panel(list)
 			card.Name = item.id
@@ -181,10 +379,11 @@ function ShopPanel.mount(
 			effectLabel.TextWrapped = true
 			effectLabel.Text = item.effect
 
-			local priceLabel = UiFactory.label(card, "number", UITheme.fonts.number.mobile, "GoldBright")
+			local priceLabel = UiFactory.label(card, "number", linePx, UITheme.shape.priceLine.color)
 			priceLabel.Name = "Price"
 			priceLabel.LayoutOrder = 3
 			priceLabel.Size = UDim2.new(1, 0, 0, touch)
+			priceLabel.TextWrapped = true
 			if item.kind == "later" then
 				priceLabel.Text = "Coming later."
 			else
@@ -216,6 +415,24 @@ function ShopPanel.mount(
 				end
 			end
 		end
+		return true
+	end
+
+	local function showShop(shopId: string)
+		local opening = not root.Visible or shopId ~= shownId
+		if render(shopId) ~= true then
+			shownId = ""
+			stopWatch()
+			return
+		end
+		shownId = shopId
+		if opening then
+			noticeText[shopId] = ShopNotices.onOpen(shopId)
+		end
+		root.Visible = true
+		paintNotice()
+		bindAnchor(shopId)
+		startWatch()
 	end
 
 	local function showFromServer()
@@ -225,16 +442,14 @@ function ShopPanel.mount(
 			return
 		end
 		if ShopAnchors.get(shopId) == nil then
-			root.Visible = false
+			closePanel()
 			return
 		end
 		if token == shownToken and shopId == shownId and root.Visible then
 			return
 		end
 		shownToken = token
-		shownId = shopId
-		render(shopId)
-		root.Visible = true
+		showShop(shopId)
 	end
 
 	local function placePanel()
@@ -246,6 +461,34 @@ function ShopPanel.mount(
 			height = camera.ViewportSize.Y - margin * 2
 		end
 		root.Size = UDim2.fromOffset(math.max(width, touch * 4), math.max(height, touch * 4))
+		if root.Visible and shownId ~= "" then
+			render(shownId)
+		end
+	end
+
+	local function onPedlarNotice()
+		local message = player:GetAttribute(Shop.NOTICE)
+		if type(message) ~= "string" or message == "" then
+			return
+		end
+		if not root.Visible or not ShopNotices.accept(shownId, ShopAnchors.PEDLAR_ID) then
+			return
+		end
+		noticeText[ShopAnchors.PEDLAR_ID] = message
+		paintNotice()
+	end
+
+	local function onShopNotice()
+		local message = player:GetAttribute(ShopAnchors.NOTICE)
+		local noticeShop = player:GetAttribute(ShopAnchors.NOTICE_SHOP)
+		if type(message) ~= "string" or message == "" or type(noticeShop) ~= "string" then
+			return
+		end
+		if not root.Visible or not ShopNotices.accept(shownId, noticeShop) then
+			return
+		end
+		noticeText[noticeShop] = message
+		paintNotice()
 	end
 
 	player:GetAttributeChangedSignal(ShopAnchors.OPEN_TOKEN):Connect(showFromServer)
@@ -254,22 +497,10 @@ function ShopPanel.mount(
 		if type(token) ~= "number" then
 			return
 		end
-		shownId = ShopAnchors.PEDLAR_ID
-		render(ShopAnchors.PEDLAR_ID)
-		root.Visible = true
+		showShop(ShopAnchors.PEDLAR_ID)
 	end)
-	player:GetAttributeChangedSignal(Shop.NOTICE_TOKEN):Connect(function()
-		local message = player:GetAttribute(Shop.NOTICE)
-		if type(message) == "string" and message ~= "" then
-			toast.Text = message
-		end
-	end)
-	player:GetAttributeChangedSignal(ShopAnchors.NOTICE_TOKEN):Connect(function()
-		local message = player:GetAttribute(ShopAnchors.NOTICE)
-		if type(message) == "string" and message ~= "" then
-			toast.Text = message
-		end
-	end)
+	player:GetAttributeChangedSignal(Shop.NOTICE_TOKEN):Connect(onPedlarNotice)
+	player:GetAttributeChangedSignal(ShopAnchors.NOTICE_TOKEN):Connect(onShopNotice)
 	snapshotValue.Changed:Connect(function()
 		if root.Visible and shownId ~= "" then
 			render(shownId)
