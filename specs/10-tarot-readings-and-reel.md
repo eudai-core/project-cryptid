@@ -1,5 +1,7 @@
 # Spec 10 v2: Earn-Only Tarot Readings, the Fate Reel, Server Luck, Ritual Essence + the Bestiary
 
+> **11 Nov 2026.** Variant names in this file are spec 15 §6. The `mutation` values are Normal, Spectral, Gilded, Shadow, Moonlit. Spectral Rite and Shadow Rite are the fixed crafts. Gilded and Moonlit are in that set and are not extra crafts here.
+>
 > **Change note (v2, Wed 4 Nov 2026): EUDAI'S DECISION B** (12:57 UTC, 4 Nov, Eudai's own words in the Analytics Lead's chat, confirmed by Grok Bot). It **supersedes the earlier paid-crate approval** that v1.x was built on:
 > - **Tarot readings are EARN-ONLY.** No paid crates, cases, readings or pulls. **Every reel is a free pull.** The paid side of the Tarot Table is the **Bound Rites** (fixed bundles, exact contents shown, no odds; spec 09 v3 §9.5).
 > - **Paid-reel rules are DORMANT** (style guide D37): the fixed paid spin (5.0 s, slow-down at 3.8 s) and "no emphasis on paid reels" are kept **only as a dormant note** (§3.6). They are **not** a launch or January build item.
@@ -10,7 +12,7 @@
 > - **Silhouettes are cut** (strip cards, Bestiary, onboarding goal 3; D40): replaced by **tier pips + a text tease** (§8, §9; spec 01 v2.1). Final goal-3 line: **"Three marks. Rarer things are watching."**
 > - **Server Luck is a JANUARY item, NOT in the launch build** (§5, spec 09 v3 §11).
 > - **v2.1 (compliance audit (`compliance-audit-cash-random.md` §4; Grok Bot approved, 4 Nov; cash = paid currency)):** §10 free-source rule: Nothing bought at a shop, with Robux or cash, counts as a free source. The Rift belt counts as a building, so its catches stay free sources; Pedlar buys don't.
-> - **From spec 11 v1 §11 (approved by Grok Bot as the design base, 4 Nov):** §7.2 gains the Shiny Rite (300), Corruption Rite (1,000), mastery frame dyes (50) and Ward Candle skins (100, Update 3); all deterministic. Readings get the variant roll (99.3 / 0.5 / 0.2, spec 09 v3 §4).
+> - **From spec 11 v1 §11 (approved by Grok Bot as the design base, 4 Nov):** §7.2 gains the Spectral Rite (300), Shadow Rite (1,000), mastery frame dyes (50) and Ward Candle skins (100, Update 3); all deterministic. Readings get the variant roll (99.3 / 0.5 / 0.2, spec 09 v3 §4).
 >
 > v1.2 history (superseded where it conflicts): paid spin approvals, ~37% free emphasis at Luck ×3 (still valid), Mythic sky on free sources.
 
@@ -201,8 +203,8 @@ Probably **not** paid random items: they don't buy a random outcome, add cards o
 |---|---|
 | Bind a **chosen** Uncommon / Rare / Epic (you pick the species) | **30 / 120 / 400** |
 | Gilded card back (cosmetic, per species) | **50** |
-| **Shiny Rite**: turn one owned cryptid into its Shiny (you choose) | **300** (spec 11 §3.3; doesn't fill the "found" Shiny page, which needs a rolled Shiny [A]) |
-| **Corruption Rite**: turn one owned cryptid into its Corrupted | **1,000** (same rule) |
+| **Spectral Rite**: turn one owned cryptid into its Spectral (you choose) | **300** (spec 11 §3.3; doesn't fill the "found" Spectral page, which needs a rolled Spectral [A]) |
+| **Shadow Rite**: turn one owned cryptid into its Shadow | **1,000** (same rule) |
 | Mastery frame dye (Update 1) | **50** |
 | Lair Ward Candle skin (**Update 3**, fresh review then) | **100** |
 | **Banned forever:** "guaranteed tier" pulls with a random species, mutation/trait rerolls, any random craft, converting Essence into tokens or readings | – |
@@ -213,7 +215,7 @@ Probably **not** paid random items: they don't buy a random outcome, add cards o
 |---|---|---|---|
 | Pale | 2.90 | **3.69** | **8 / 33 / 109** |
 | Blood | 9.50 | **10.46** | **3 / 12 / 38** |
-- Paid Essence (max 150 lifetime) covers one chosen Rare at most, **never** a chosen Epic (400), a Shiny Rite (300) or a Corruption Rite (1,000). A F2P player reaches a chosen Rare in ~6 weeks [A].
+- Paid Essence (max 150 lifetime) covers one chosen Rare at most, **never** a chosen Epic (400), a Spectral Rite (300) or a Shadow Rite (1,000). A F2P player reaches a chosen Rare in ~6 weeks [A].
 
 ### 7.4 Pity and Essence are separate
 Neither resets the other. The panel shows "**Pity: 12 / 40**" and "**Essence: 236**".

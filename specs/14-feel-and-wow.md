@@ -60,7 +60,7 @@ There is no specified IV generator or ability table yet; a saved traits field is
 
 ### Undecided: recommendation — the Stat Card on every acquisition
 
-After the true-tier reveal, open a compact dossier: creature portrait, name + rarity word, Normal/Shiny/Corrupted, base income → placed income, three aptitude bars, trait name + exact effect, Bond, mastery, source and first-found date. Buttons: Bind, Compare, Keep. On phone show the essentials first, Details for the rest; batch readings use a swipeable result stack. Example: Hodag · Common · $5/s · Courage 8/10 · Marshwise · Wild catch. This card and these example rolls are not built.
+After the true-tier reveal, open a compact dossier: creature portrait, name + rarity word, and a `mutation` of Normal, Spectral, Gilded, Shadow, or Moonlit, then base income → placed income, three aptitude bars, trait name + exact effect, Bond, mastery, source and first-found date. Buttons: Bind, Compare, Keep. On phone show the essentials first, Details for the rest; batch readings use a swipeable result stack. Example: Hodag · Common · $5/s · Courage 8/10 · Marshwise · Wild catch. This card and these example rolls are not built.
 
 ### Undecided: recommendation — unique abilities without power inflation
 
@@ -68,7 +68,7 @@ Give each free-found individual one trait, with the provisional rates below, ind
 
 ### Planned (specs 09–12) / Undecided: recommendation — retention layers
 
-Already planned: cosmetic Shiny/Corrupted and event looks; species mastery at 5/15/40/100/250 obtains, capped at +5% species income; separate found-variant pages. New proposal: individual Bond 1–10 from active use, unlocking an idle animation, dossier notes and a pad ornament, with no decay or passive AFK obligation. Preserve Bond on the chosen rebirth familiar. Defer additional weather-mutation mechanics: their rates and effects are not settled.
+Already planned: cosmetic Spectral/Shadow and event looks; species mastery at 5/15/40/100/250 obtains, capped at +5% species income; separate found-variant pages. New proposal: individual Bond 1–10 from active use, unlocking an idle animation, dossier notes and a pad ornament, with no decay or passive AFK obligation. Preserve Bond on the chosen rebirth familiar. Defer additional weather-mutation mechanics: their rates and effects are not settled.
 
 Undecided: recommendation — one trait roll per eligible free-source individual; total 100%. These are ability tiers, not species rarities.
 
@@ -342,7 +342,7 @@ Offline earnings are 20% for at most eight hours; active play matters. Launch R1
 
 ### Planned (spec 11 model) — targets, not player results
 
-Under its two 20-minute sessions/day assumptions: base Bestiary around day 2, R3 day 4, R5 day 10, R7 day 44; all Shiny/Corrupted around 10–13 weeks once available. Modelled light spender speed-up never exceeds 1.69×. These are old simulations, not guarantees: onboarding timing changed and new systems/events need reruns. Retention means enjoyable goals and social variety, not merely longer waits.
+Under its two 20-minute sessions/day assumptions: base Bestiary around day 2, R3 day 4, R5 day 10, R7 day 44; all Spectral/Shadow around 10–13 weeks once available. Modelled light spender speed-up never exceeds 1.69×. These are old simulations, not guarantees: onboarding timing changed and new systems/events need reruns. Retention means enjoyable goals and social variety, not merely longer waits.
 
 ### Planned (specs 07, 09, 11–12) — fair competition and controlled sinks
 

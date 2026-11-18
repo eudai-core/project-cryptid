@@ -137,7 +137,7 @@ Lanternwright, Expedition Board, Bone Broker, Grimoire Lectern, Skill Shrine, an
 
 - **Images:** [`art/concepts/v3-tools.jpg`](../art/concepts/v3-tools.jpg).
 - **Art direction:** Spec 15 §5. The Lanternwright row in spec 03.
-- **Architectural traits:** L1 Rusty Lantern, orange beam. L2 Ember Lantern, green beam. L3 Spirit Compass, blue arrow. L4 Binding Chains, purple chains, 16 stud range. L5 Moonlit Censer, silver smoke. The sheet matches those five names.
+- **Architectural traits:** L1 Rusty Lantern, orange beam. L2 Ember Lantern, green beam. L3 Spirit Compass, blue arrow. L4 Binding Chains, purple chains, 16 stud range. L5 Silver Censer, silver smoke. The concept sheet's "Moonlit Censer" label is this tool. Moonlit is a variant name. The sheet matches those five names.
 - **Gameplay function:** L1 is the free tutorial lantern. L2–L5 are deterministic tools. They never change rarity, spawn, or variant odds. Spec 15 says they do not change Sigil Trace push strength.
 - **On main:** The tutorial tool is a Lantern created in `src/server/PlayerSession.luau` (`Economy.TOOL_NAME`). `src/shared/Config/Lanterns.luau` is the world-lantern and Rift-light budget, not the L2–L5 set. L2–L5 are not built. The Lanternwright stall is shuttered.
 - **QA:** The budgets at the top of this file. Purple chains and a blue beam are the spec 15 tool colours (director ruling 1). They are not forbidden by the superseded world palette. Tools still do not change rarity, spawn, variant odds, or Sigil Trace push strength (ruling 14).

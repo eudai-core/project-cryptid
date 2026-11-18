@@ -16,7 +16,7 @@
 
 | Goal | How this spec does it |
 |---|---|
-| **Not completable fast** (players who "finish" quit) | A 7-tier rebirth ladder at launch, with costs ×3 per tier and a multiplier that grows only +0.5 per tier. Sim: a free player needs **~6 weeks** (2 × 20 min a day) to reach the launch cap. Then come Shiny/Corrupted variants (~10–13 weeks), mastery, and later layers (§2.6) |
+| **Not completable fast** (players who "finish" quit) | A 7-tier rebirth ladder at launch, with costs ×3 per tier and a multiplier that grows only +0.5 per tier. Sim: a free player needs **~6 weeks** (2 × 20 min a day) to reach the launch cap. Then come Spectral/Shadow variants (~10–13 weeks), mastery, and later layers (§2.6) |
 | **Clear rules for how the 8 players interact** | Contested wild spawns (first to *finish* the catch wins; others get an assist). Co-op server rites. Plot likes. A non-toxic "Echo" steal that never takes a cryptid (§4–§5) |
 | **Competition** | The existing Tithe board, plus a weekly global **Hunt** board (cosmetic rewards, can't be bought), plus short in-server races (§5) |
 
@@ -77,7 +77,7 @@
 | With l3 | ×1.30 | ×1.60 | ×1.825 | ×1.994 | ×2.120 | ×2.215 | ×2.286 | ×2.340 | ×2.380 | ×2.410 |
 
 ### 2.3 Rule to stop "pay = rank"
-**Tithe** (spec 07) now also **excludes income from Relic pads 9–10** (the +2 Pads pass). It already excludes 2x Cash, Blood Moon, bundles and daily rewards. So both the Tithe board and the rebirth gate count **only play a free player could match**.
+**Tithe** (spec 07) now also **excludes income from Relic pads 9–10** (the +2 Pads pass) and **excludes expedition cash** (spec 17). It already excludes 2x Cash, Blood Moon, bundles and daily rewards. So both the Tithe board and the rebirth gate count **only play a free player could match**.
 
 ### 2.4 Sim output (MODEL OUTPUT, 200 seeds each; `python3 specs/tools/pacing_sim.py`, saved in `tools/pacing_sim_output.txt`)
 
@@ -92,8 +92,8 @@
 | Rebirth 5 | 6.2 h | 10 | 4.7 h | 8 | 1.34× |
 | Rebirth 6 | 12.7 h | 20 | 10.0 h | 16 | 1.27× |
 | **Rebirth 7 (launch max)** | **28.7 h** (28.3–29.2) | **~44 (6 weeks)** | **23.0 h** (22.7–23.3) | **~36** | **1.25×** |
-| All 12 **Shiny** | 45.3 h (24.8–71.2) | ~69 | 45.3 h | ~69 | 1.00× |
-| All 12 **Corrupted** | 60.6 h (41.6–76.1) | ~92 | 59.2 h | ~90 | 1.02× |
+| All 12 **Spectral** | 45.3 h (24.8–71.2) | ~69 | 45.3 h | ~69 | 1.00× |
+| All 12 **Shadow** | 60.6 h (41.6–76.1) | ~92 | 59.2 h | ~90 | 1.02× |
 
 **Reading it:**
 - **Day 1–2 feels fast on purpose:** Ring 1, Rebirth 1 and the full launch Bestiary (spec 07 goal: rebirth in the D1–D3 window).
@@ -122,12 +122,14 @@
 ### 3.1 Rebirth layers
 See §2.2 and §2.6. The rebirth panel (spec 07 UI) now shows the next tier's cost, the Tithe gate bar and the new multiplier. Tier 8+ tooltip: **"The eighth rite is not yet written."**
 
-### 3.2 Bestiary variants: Shiny and Corrupted (true odds)
+### 3.2 Bestiary variants: spec 15 names (true odds)
+
+The `mutation` values are Normal, Spectral, Gilded, Shadow, and Moonlit. The weights below stay on Normal, Spectral, and Shadow. Gilded and Moonlit are named and have no separate column in this verified table.
 - **Rolled by the server after** rarity and species, independently. **Luck never changes variant odds** (paid or free, now or later).
-- **Cosmetic only:** the same income as the normal cryptid. Variants add a Bestiary page each (12 + 12) and count for mastery.
+- **Cosmetic only:** the same income as the normal cryptid. Spectral and Shadow each add a Bestiary page. Gilded and Moonlit are named and are not in that page count. Variants count for mastery.
 - **Seen before buying:** Rift belt and Pedlar offers show the variant before you pay, so buying one isn't a paid random item.
 
-| Source | Normal | Shiny | Corrupted | Total |
+| Source | Normal | Spectral | Shadow | Total |
 |---|---|---|---|---|
 | Wild spawns | 98.6% | 1% | 0.4% | **100%** |
 | Rift belt | 99.3% | 0.5% | 0.2% | **100%** |
@@ -135,22 +137,22 @@ See §2.2 and §2.6. The rebirth panel (spec 07 UI) now shows the next tier's co
 | Tarot readings (January; free = paid) | 99.3% | 0.5% | 0.2% | **100%** |
 | Daily ladder, Starter Pack, Essence crafts | 100% | 0% | 0% | **100%** (fixed, not random) |
 
-- **Per species:** multiply by the spec 09 species odds. Example: a Corrupted Jersey Devil from the Wilds is 0.1% × 0.4% = **0.0004%**.
+- **Per species:** multiply by the spec 09 species odds. Example: a Shadow Jersey Devil from the Wilds is 0.1% × 0.4% = **0.0004%**.
 - `verify_odds.py` now checks every variant table **and** every full species × variant table (36 outcomes for the Wilds) sums to exactly 100%.
 - **Look (Art Director):**
-  - **Shiny:** a pale **Bone `#E8E0CF` / GoldBright `#C9A55A`** sheen with a slow glint, every 3 s, never a strobe.
-  - **Corrupted:** a darker body with thin **Rift `#7FA34A`** veins and a faint Rift smoke trail.
+  - **Spectral:** a pale **Bone `#E8E0CF` / GoldBright `#C9A55A`** sheen with a slow glint, every 3 s, never a strobe.
+  - **Shadow:** a darker body with thin **Rift `#7FA34A`** veins and a faint Rift smoke trail.
   - **No purple.**
-  - Badge on cards: "✦ Shiny" (GoldBright) or "☍ Corrupted" (Rift).
-- **Announcements (spec 08):** a **Corrupted** catch from the Wilds or Rift belt, any rarity, gets the spec 08 server banner (same rate limits). Shiny gets only the catcher's toast.
+  - Badge on cards: "✦ Spectral" (GoldBright) or "☍ Shadow" (Rift).
+- **Announcements (spec 08):** a **Shadow** catch from the Wilds or Rift belt, any rarity, gets the spec 08 server banner (same rate limits). Spectral gets only the catcher's toast.
 
 ### 3.3 Essence sinks (spec 10 §7; January, with the Tarot Table)
 Essence stays **readings-only and never sold** (spec 10 §7.5). New deterministic sinks:
 
 | Sink | Cost | Notes |
 |---|---|---|
-| **Shiny Rite:** turn one owned cryptid into its Shiny | 300 | Deterministic; you choose. Doesn't count toward the "found" Shiny Bestiary page, which needs a rolled Shiny, so the chase stays [A] |
-| **Corruption Rite:** turn one into its Corrupted | 1,000 | Same rule |
+| **Spectral Rite:** turn one owned cryptid into its Spectral | 300 | Deterministic; you choose. Doesn't count toward the "found" Spectral Bestiary page, which needs a rolled Spectral, so the chase stays [A] |
+| **Shadow Rite:** turn one into its Shadow | 1,000 | Same rule |
 | Mastery frame dye (§3.4) | 50 | Cosmetic |
 | Lair Ward Candle skins (Update 3) | 100 | Cosmetic |
 
@@ -326,7 +328,7 @@ Bump `dataVersion`. Migration: `variants = {}`, `mastery = {}` (seeded from `bes
 | Race | "The Uncommon Chase · first to 3 Uncommons · 4m 12s" | Moss `#5E7A4A` accent, Bone text |
 | Steal toast (victim) | "{DisplayName} stole an echo of your Jersey Devil. Nothing was lost. **Reclaim**" | Bone text, Blood edge |
 | Sanctuary | "Sanctuary: no one can steal from you, and you can't steal." | BoneDim |
-| Variant badges | "✦ Shiny" / "☍ Corrupted" | GoldBright / Rift |
+| Variant badges | "✦ Spectral" / "☍ Shadow" | GoldBright / Rift |
 
 ## 10. Edge cases
 1. **Two catches finish on the same step:** first `RequestStartChannel` received wins; the other gets an assist.
@@ -336,7 +338,7 @@ Bump `dataVersion`. Migration: `variants = {}`, `mastery = {}` (seeded from `bes
 5. **Like on an Unclaimed Lair:** prompt hidden.
 6. **Server shuts down mid-rite or mid-race:** no reward, no loss.
 7. **UTC Monday rollover mid-session:** a new `weekId` starts; the old week's last write is flushed within 120 s.
-8. **Variant + Mythic (later):** a Corrupted Mythic from a free source fires both the sky (spec 10) and the banner.
+8. **Variant + Mythic (later):** a Shadow Mythic from a free source fires both the sky (spec 10) and the banner.
 9. **Steal on a pad holding an Echo:** not allowed (Echoes can't be stolen).
 10. **Victim toggles Sanctuary mid-channel:** the channel completes only if Sanctuary hadn't taken effect when it started.
 11. **Old profiles above the new caps** (test saves with altar > 10): clamp to 10, no refund.
@@ -352,10 +354,10 @@ Bump `dataVersion`. Migration: `variants = {}`, `mastery = {}` (seeded from `bes
 | 07 | §2 tiers | Tier 2 sealed; `rebirths` 0–1 | Tiers 1–7 at launch: cost `5M × 3^(n−1)`, mult `1 + 0.5n`, Tithe gate §2.2; tier 8+ sealed |
 | 07 | §2 pad prices | "Same prices apply again" | × 1.5^r |
 | 07 | §3 Tithe | Excludes 2x, Blood Moon, bundles | **Also excludes Relic pads 9–10** |
-| 08 | §2 triggers | Epic catches | **Plus Corrupted catches** (Wilds / Rift belt, any rarity) |
+| 08 | §2 triggers | Epic catches | **Plus Shadow catches** (Wilds / Rift belt, any rarity) |
 | 09 | §4 odds | Rarity + species | **Plus variant tables** (§3.2) |
 | 09 | §12 F2P rules | — | Add: Robux never buys Ward Candles, Essence, Sigils or steal immunity |
-| 10 | §7.2 sinks | 4 crafts | Plus the Shiny Rite (300), Corruption Rite (1,000), dyes, candle skins |
+| 10 | §7.2 sinks | 4 crafts | Plus the Spectral Rite (300), Shadow Rite (1,000), dyes, candle skins |
 | 03 | Ledger of Tithes | One board | Second face: Hunt Ledger (Update 1) |
 
 ## 12. Launch cut vs Update 1 (freeze Fri 13 Nov)
@@ -368,7 +370,7 @@ Bump `dataVersion`. Migration: `variants = {}`, `mastery = {}` (seeded from `bes
 | Contested catch rule (server-complete, tie order, assist cash) | **LAUNCH** | Wild catching already ships. This is the rule for when two players meet; first-sight and spawn spacing included |
 | Remote rate limits (§6) | **LAUNCH** | Small, protects everything else |
 | Plot likes + liked count + top-lair beacon | **LAUNCH stretch** | Small. First to cut if the week is tight |
-| Variants (Shiny, Corrupted) | **Update 1** | Needs art (2 looks × 12) + variant data |
+| Variants (Spectral, Shadow) | **Update 1** | Needs art (2 looks × 12) + variant data |
 | Mastery levels + frames | Update 1 | Needs frames art |
 | Hollow Rite, Uncommon Chase, Blood Moon hunts | Update 1 | Event framework + Blood Moon (already Update 1) |
 | Weekly Hunt board | Update 1 | Second OrderedDataStore + slab face |
@@ -395,12 +397,14 @@ Bump `dataVersion`. Migration: `variants = {}`, `mastery = {}` (seeded from `bes
 | 12 | Likes | Same liker, same plot, twice in a UTC day: 1 like. 11th rewarded like for an owner pays $0 but the count rises. A 3-day-old account's like doesn't count |
 | 13 | Beacon | The plot with most candles today has the Gold pillar; it moves within 60 s of being overtaken |
 | 14 | Remote flood | 100 `RequestLike` calls in 1 s: at most 1 processed; flood logged |
-| 15 | Variants (Update 1) | 100,000 forced wild rolls: Shiny 1% ± 4σ, Corrupted 0.4% ± 4σ; Server Luck ×3 on doesn't change them |
+| 15 | Variants (Update 1) | 100,000 forced wild rolls: Spectral 1% ± 4σ, Shadow 0.4% ± 4σ; Server Luck ×3 on doesn't change them |
 | 16 | Hollow Rite AFK (Update 1) | Idle player in the server gets no reward; a player with 3 catches gets the tier reward |
 | 17 | Uncommon Chase under luck (Update 1) | Uncommon rate in the Wilds stays 16.4% with Server Luck ×3 (spec 10 formula) |
 | 18 | Echo theft caps (Update 3) | Victim keeps every cryptid; only one pad Shaken (−25%, 5 min); thief can't hit the same victim again for 30 min; Sanctuary player can't be targeted |
 
-## 14. Requests for Analytics (Analytics Lead owns `analytics/`; nothing there was edited)
+## 14. Requests for Analytics (nothing under `analytics/` was edited)
+
+> **11 Nov 2026.** The Analytics Lead role is retired. The Systems Architect owns the v1.2 catalogue in spec 18. The requests below were not added to that catalogue.
 Please consider adding:
 - **Events:**
   - `rebirth_tier` {n, activeHoursToTier, daysSinceInstall, spenderFlag}

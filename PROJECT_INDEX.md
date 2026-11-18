@@ -107,9 +107,12 @@ Design authority for gameplay numbers is specs 01–13, plus the change notes th
 | Feel and wow answers | [`specs/14-feel-and-wow.md`](specs/14-feel-and-wow.md) — proposals, not an implementation approval |
 | Creative brief v3 | [`specs/15-creative-brief-v3.md`](specs/15-creative-brief-v3.md) — approved direction for look, feel, and hunt. World look wins where style guide v0.2, v0.8, and specs 01 and 03 conflict (director ruling 1). Covers the Stat Card (ruling 21). Clock-face colour is Update 1. |
 | UI psychology | [`specs/16-ui-psychology.md`](specs/16-ui-psychology.md) — draft v1, 11 Nov 2026. Ten UI rules in §8. Does not change gameplay numbers, prices, or economy formulae. |
+| Pedlar supplies shop | [`specs/17-pedlar-supplies.md`](specs/17-pedlar-supplies.md) — draft v1, 11 Nov 2026. Design note. The stall stops selling cryptids and becomes a cash supplies shop. Prices are proposals. No `src/` change in that note. |
+| Tools, capture twists, aptitudes | [`specs/18-tools-capture-aptitudes.md`](specs/18-tools-capture-aptitudes.md) — draft v1, 11 Nov 2026. Design note. Deterministic L1–L5 and the UV Lamp, one twist per launch species, Courage / Instinct / Attunement. Read with spec 17. |
 | Cash-as-paid-currency audit | [`specs/compliance-audit-cash-random.md`](specs/compliance-audit-cash-random.md) |
 | Store icon and thumbnails | [`specs/store-art-brief.md`](specs/store-art-brief.md) |
 | Competitor snapshots (4 Nov 2026) | [`specs/research/gamepasses-snapshot-2026-11-04.json`](specs/research/gamepasses-snapshot-2026-11-04.json), [`specs/research/devproducts-snapshot-2026-11-04.json`](specs/research/devproducts-snapshot-2026-11-04.json) |
+| Retention and monetisation research (11 Nov 2026) | [`specs/research/2026-11-roblox-retention-monetisation-research.md`](specs/research/2026-11-roblox-retention-monetisation-research.md). Research, not a spec. Specs 17 and 18 fold in its top five recommendations and replace each **[A]** with a cited config or spec. |
 
 Art direction and VFX intent:
 
@@ -130,13 +133,13 @@ Concept images, every file. Town name on the art is Hollowmere, and the apotheca
 | [`art/concepts/winter-town.jpg`](art/concepts/winter-town.jpg) | Snow on the well and roofs, holiday wreaths with red bows. |
 | [`art/concepts/case-reveal.jpg`](art/concepts/case-reveal.jpg) | "Veil & Vesper" rare tarot case, single card reveal. |
 | [`art/concepts/v2-case-spin.jpg`](art/concepts/v2-case-spin.jpg) | Spinning tarot reel with a gem cost on Open x3. |
-| [`art/concepts/stat-card.jpg`](art/concepts/stat-card.jpg) | Jackalope dossier card. |
+| [`art/concepts/stat-card.jpg`](art/concepts/stat-card.jpg) | Jackalope dossier card. Mood only. The layout is [`art/mocks/dossier-v1.png`](art/mocks/dossier-v1.png). |
 | [`art/concepts/v2-shops.jpg`](art/concepts/v2-shops.jpg) | Cauldron potion shop and jack-o'-lantern food shop. Retired by art direction v3. |
 | [`art/concepts/v2-town-portals.jpg`](art/concepts/v2-town-portals.jpg) | "Witchwood" plaza, three portals, gem HUD, pumpkins. |
 | [`art/concepts/v3-town.jpg`](art/concepts/v3-town.jpg) | Mythic plaza: Runeheart Apothecary, Howling Horn, Veil & Fate, Dusk & Dial, three portals, runestones, gem HUD. |
 | [`art/concepts/v3-shops.jpg`](art/concepts/v3-shops.jpg) | Tree apothecary and longship tavern with blue fire. |
-| [`art/concepts/v3-tools.jpg`](art/concepts/v3-tools.jpg) | Lanterns L1–L5: Rusty, Ember, Spirit Compass, Binding Chains, Moonlit Censer. |
-| [`art/concepts/v3-variants.jpg`](art/concepts/v3-variants.jpg) | Jackalope as Normal, Spectral, Gilded, Shadow, Moonlit. Sheet says Legendary and tradeable. |
+| [`art/concepts/v3-tools.jpg`](art/concepts/v3-tools.jpg) | Lanterns L1–L5: Rusty, Ember, Spirit Compass, Binding Chains, Silver Censer. The sheet's old "Moonlit Censer" label is the same tool. Moonlit is a variant name, not the tool. |
+| [`art/concepts/v3-variants.jpg`](art/concepts/v3-variants.jpg) | Jackalope as Normal, Spectral, Gilded, Shadow, Moonlit. Sheet says Legendary and tradeable. Gilded and Moonlit are look, odds, and source TBD (AD). |
 | [`art/concepts/v3-sigil-trace.jpg`](art/concepts/v3-sigil-trace.jpg) | Sigil Trace minigame over a Jackalope. |
 | [`art/concepts/v3-tug-of-war.jpg`](art/concepts/v3-tug-of-war.jpg) | Two lantern beams clashing on one cryptid. |
 | [`art/vfx/concepts/ATMOS_concept_lair-night_2026-11-04.png`](art/vfx/concepts/ATMOS_concept_lair-night_2026-11-04.png) | Lair at night. Labelled concept only, not Studio proof, never store art. |
@@ -231,9 +234,15 @@ The Project Director ruled on the conflicts the pull request #19 report left ope
 21. **Spec 15 and spec 14. Resolved.** Spec 15 is approved. It covers the Stat Card. The clock-face colour change is Update 1 (ruling 2). Spec 14 stays a recommendation except where spec 15 adopts the Stat Card.
 22. **Fake players. Resolved.** No fake players. Named bystanders and the identical crowd on `v3-town.jpg`, `v2-town-portals.jpg`, and `hollow-clock-bloodmoon.jpg` are mood only. They are not NPCs, shops, or a player count.
 
+### Later ruling, recorded with specs 17 and 18
+
+Not part of the 1–22 count. It does not close item 5.
+
+The Pale Pedlar stops selling cryptids. Cryptids come from hunting, earn-only crates, and expedition eggs. The stall is a cash supplies shop. Tools are deterministic and never change odds. Every price and timing in those two notes is a proposal for the Growth Strategist. The notes do not change `src/`, Robux prices, or species ids. See [`specs/17-pedlar-supplies.md`](specs/17-pedlar-supplies.md) and [`specs/18-tools-capture-aptitudes.md`](specs/18-tools-capture-aptitudes.md).
+
 ## Conflicts and unresolved decisions
 
-Closed by the director rulings above, in the pull request #19 report's numbering. Item 5 (Server Luck and Robux prices) is the only one still open, flagged pending Eudai. Do not treat a sentence in an older file as the winner when a ruling above names the winner.
+Closed by the director rulings above, in the pull request #19 report's numbering. Item 5 (Server Luck and Robux prices) is the only one still open, flagged pending Eudai. Specs 17 and 18 do not close it. Do not treat a sentence in an older file as the winner when a ruling above names the winner.
 
 ## Missing references
 
