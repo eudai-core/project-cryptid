@@ -3,6 +3,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Motion = require(script.Parent:WaitForChild("Motion"))
+local QaShots = require(script.Parent:WaitForChild("QaShots"))
 local UiFactory = require(script.Parent:WaitForChild("UiFactory"))
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Onboarding = require(Shared:WaitForChild("Config"):WaitForChild("Onboarding")) :: any
@@ -133,7 +134,7 @@ function GoalBanner.mount(parent: Instance, isReduced: () -> boolean, onAction: 
 		local label = tostring(goal.buttonText or "")
 		actionEnabled = goal.buttonEnabled == true
 		action.Text = label
-		action.Visible = label ~= ""
+		action.Visible = label ~= "" and not QaShots.hidden()
 		action.Active = actionEnabled
 		action.AutoButtonColor = false
 		if actionEnabled then
@@ -143,7 +144,12 @@ function GoalBanner.mount(parent: Instance, isReduced: () -> boolean, onAction: 
 			action.BackgroundColor3 = UITheme.color("Soot")
 			action.TextColor3 = UITheme.color("BoneDim")
 		end
-		skip.Visible = goal.showSkip == true
+		skip.Visible = goal.showSkip == true and not QaShots.hidden()
+		if QaShots.hidden() then
+			frame.Visible = false
+			action.Visible = false
+			skip.Visible = false
+		end
 		if step > seenStep and seenStep > 0 and stroke ~= nil then
 			local plan = UITheme.resolveMotion("goalComplete", isReduced())
 			stroke.Color = UITheme.color("GoldBright")
@@ -169,6 +175,8 @@ function GoalBanner.mount(parent: Instance, isReduced: () -> boolean, onAction: 
 	skip.Activated:Connect(onSkip)
 
 	api.layout(false)
+	QaShots.conceal(frame)
+	QaShots.conceal(action)
 	return api
 end
 

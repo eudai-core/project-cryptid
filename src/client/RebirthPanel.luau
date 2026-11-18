@@ -2,6 +2,7 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local QaShots = require(script.Parent:WaitForChild("QaShots"))
 local ThemeBind = require(script.Parent:WaitForChild("ThemeBind"))
 local UiFactory = require(script.Parent:WaitForChild("UiFactory"))
 local Shared = ReplicatedStorage:WaitForChild("Shared")
@@ -143,6 +144,10 @@ function RebirthPanel.mount(parent: Instance, _isReduced: () -> boolean, fire: (
 	end
 
 	paint = function()
+		if QaShots.hidden() then
+			root.Visible = false
+			return
+		end
 		local view = latest
 		if type(view) ~= "table" or view.revealed ~= true then
 			root.Visible = false
@@ -241,6 +246,10 @@ function RebirthPanel.mount(parent: Instance, _isReduced: () -> boolean, fire: (
 	end
 
 	function api.open()
+		if QaShots.hidden() then
+			root.Visible = false
+			return
+		end
 		if type(latest) ~= "table" or latest.revealed ~= true then
 			return
 		end
@@ -259,6 +268,7 @@ function RebirthPanel.mount(parent: Instance, _isReduced: () -> boolean, fire: (
 		root.Size = UDim2.fromOffset(width, height)
 	end
 
+	QaShots.conceal(root)
 	return api
 end
 

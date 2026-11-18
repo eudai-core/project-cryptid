@@ -4,6 +4,7 @@ local ContextActionService = game:GetService("ContextActionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Motion = require(script.Parent:WaitForChild("Motion"))
+local QaShots = require(script.Parent:WaitForChild("QaShots"))
 local UiFactory = require(script.Parent:WaitForChild("UiFactory"))
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local NumberFormat = require(Shared:WaitForChild("Logic"):WaitForChild("NumberFormat")) :: any
@@ -148,6 +149,9 @@ function OfferingPanel.mount(parent: Instance, isReduced: () -> boolean, claim: 
 	local remainFrom = 0
 
 	local function setOpen(on: boolean)
+		if on and QaShots.hidden() then
+			on = false
+		end
 		open = on
 		backdrop.Visible = on
 		if on then
@@ -213,6 +217,11 @@ function OfferingPanel.mount(parent: Instance, isReduced: () -> boolean, claim: 
 	end
 
 	local function paintButton()
+		if QaShots.hidden() then
+			button.Visible = false
+			pip.Visible = false
+			return
+		end
 		local show = latest ~= nil and latest.button == true
 		if show and isBlocked() then
 			button.Visible = false
@@ -238,7 +247,7 @@ function OfferingPanel.mount(parent: Instance, isReduced: () -> boolean, claim: 
 	local mobileLayout = false
 
 	local function openPanel()
-		if latest == nil or isBlocked() then
+		if QaShots.hidden() or latest == nil or isBlocked() then
 			return
 		end
 		if latest.missed == true and not missedShown then
@@ -342,6 +351,8 @@ function OfferingPanel.mount(parent: Instance, isReduced: () -> boolean, claim: 
 	end
 
 	api.layout(false)
+	QaShots.conceal(button)
+	QaShots.conceal(backdrop)
 	api.button = button
 	api.pip = pip
 	return api

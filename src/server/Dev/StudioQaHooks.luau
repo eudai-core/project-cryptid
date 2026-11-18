@@ -96,4 +96,11 @@ function StudioQaHooks.tarotBloodSample(): boolean
 	return tokens().tarotBlood == true
 end
 
+function StudioQaHooks.noHud(): boolean
+	if not RunService:IsStudio() then
+		return false
+	end
+	return tokens().noHud == true
+end
+
 return StudioQaHooks

@@ -11,6 +11,7 @@
 -- `seedv9` writes a v9 save before load. `rebirth6` writes a v10 save at six rites.
 -- `tarot` marks a Pale deck sample. `tarotblood` marks a Blood deck sample.
 -- `tarotpaid` marks the paid tent framework. Callers still require Studio.
+-- `nohud` asks Studio to hide client overlays. Callers still require Studio.
 
 local QaArgs = {}
 
@@ -30,6 +31,7 @@ export type Tokens = {
 	rebirthReady: boolean,
 	seedV9: boolean,
 	rebirth6: boolean,
+	noHud: boolean,
 }
 
 local function empty(): Tokens
@@ -49,6 +51,7 @@ local function empty(): Tokens
 		rebirthReady = false,
 		seedV9 = false,
 		rebirth6 = false,
+		noHud = false,
 	}
 end
 
@@ -106,6 +109,9 @@ function QaArgs.parse(args: any): Tokens
 			index += 1
 		elseif key == "rebirth6" then
 			tokens.rebirth6 = true
+			index += 1
+		elseif key == "nohud" then
+			tokens.noHud = true
 			index += 1
 		elseif key == "opentree" or key == "fresh" then
 			if key == "fresh" then
@@ -181,6 +187,13 @@ function QaArgs.wantsFresh(isStudio: boolean, args: any): boolean
 		return false
 	end
 	return QaArgs.parse(args).fresh == true
+end
+
+function QaArgs.noHud(isStudio: boolean, args: any): boolean
+	if isStudio ~= true then
+		return false
+	end
+	return QaArgs.parse(args).noHud == true
 end
 
 function QaArgs.reducedMotion(isStudio: boolean, args: any): boolean?

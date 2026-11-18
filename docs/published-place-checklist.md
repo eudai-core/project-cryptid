@@ -97,6 +97,7 @@ Start from the edit session: `playtest op=play args=qa:120:loadfail` (or `foreig
 - `foreignlock` — before load, the existing profile is wrapped in a fresh lock owned by `qa-foreign` (90 seconds). The join then retries and kicks with `The ledger is open elsewhere. Rejoin.` The stored cash stays the previous value. The lock job stays `qa-foreign` until that lease expires.
 - `foreignlock:stale` — the planted lock is already past its lease. The join steals it, prints `PASS spawn`, and keeps the stored cash. The new lock job is this server's JobId, not `qa-foreign`.
 - Confirm no QA cash grant fires in live servers. `qa:<seconds>:cash<N>` sets cash only when `RunService:IsStudio()` is true. A published server must not print `[Cryptid:QA] granted cash`.
+- `nohud` — Studio only. `qa:600:nohud`, or combined as `qa:600:fresh:nohud`. The server sets the player attribute `QaNoHud` and the client hides the goal banner (including the inactive "The wax is not yet cast." action), the Nightly Offering button and panel, the rite card, the cash plaque, and the menu. Onboarding, rewards, and timers keep running. A live server does not set the attribute. There is no remote.
 
 ## 2-player local pass
 

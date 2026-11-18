@@ -3,6 +3,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Motion = require(script.Parent:WaitForChild("Motion"))
+local QaShots = require(script.Parent:WaitForChild("QaShots"))
 local UiFactory = require(script.Parent:WaitForChild("UiFactory"))
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local NumberFormat = require(Shared:WaitForChild("Logic"):WaitForChild("NumberFormat")) :: any
@@ -174,6 +175,7 @@ function CashPlaque.mount(parent: Instance, isReduced: () -> boolean)
 	end
 
 	api.layout(false)
+	QaShots.conceal(frame)
 	return api
 end
 

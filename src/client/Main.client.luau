@@ -12,6 +12,7 @@ local RebirthPanel = require(script.Parent:WaitForChild("RebirthPanel"))
 local RelicsShop = require(script.Parent:WaitForChild("RelicsShop"))
 local HaulPanel = require(script.Parent:WaitForChild("HaulPanel"))
 local OfferingPanel = require(script.Parent:WaitForChild("OfferingPanel"))
+local QaShots = require(script.Parent:WaitForChild("QaShots"))
 local GuideArrow = require(script.Parent:WaitForChild("GuideArrow"))
 local HomeBeam = require(script.Parent:WaitForChild("HomeBeam"))
 local HudMenu = require(script.Parent:WaitForChild("HudMenu"))
@@ -68,6 +69,7 @@ topFade.Transparency = NumberSequence.new({
 	NumberSequenceKeypoint.new(1, 1),
 })
 topFade.Parent = vignetteTop
+QaShots.conceal(vignetteTop)
 
 local function fire(name: string, ...: any)
 	local remote = remotes:WaitForChild(name) :: RemoteEvent
