@@ -50,6 +50,9 @@ end)
 local StealGuard = import("./StealGuard", function()
 	return script.Parent:WaitForChild("StealGuard")
 end)
+local TarotShop = import("./TarotShop", function()
+	return script.Parent:WaitForChild("TarotShop")
+end)
 local Transactions = import("./Transactions", function()
 	return script.Parent:WaitForChild("Transactions")
 end)
@@ -162,6 +165,21 @@ function Snapshot.build(profile: any, lastCredit: number, revision: number, view
 			relicsSpent = view.relicsSpent
 		end
 	end
+	local tarotPaid = false
+	local tarotPolicy = false
+	local tarotReveal = nil
+	if type(view) == "table" then
+		tarotPaid = view.tarotPaidEnabled == true
+		tarotPolicy = view.tarotPolicyAllows == true
+		if type(view.tarotReveal) == "table" then
+			tarotReveal = view.tarotReveal
+		end
+	end
+	local tarot = TarotShop.present(profile, viewNow, {
+		paidEnabled = tarotPaid,
+		policyAllows = tarotPolicy,
+		reveal = tarotReveal,
+	})
 	local rate = Income.perSecond(profile)
 	local steps = {}
 	for index = 1, Return.LADDER_STEPS do
@@ -271,6 +289,7 @@ function Snapshot.build(profile: any, lastCredit: number, revision: number, view
 		},
 		skills = skills,
 		relics = RelicsView.build(profile, viewNow, relicsBought, relicsSpent),
+		tarot = tarot,
 	}
 end
 

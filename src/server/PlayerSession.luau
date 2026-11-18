@@ -12,6 +12,8 @@ local StudioQa = require(script.Parent:WaitForChild("Dev"):WaitForChild("StudioQ
 local StudioQaHooks = require(script.Parent:WaitForChild("Dev"):WaitForChild("StudioQaHooks"))
 local QaGrant = require(script.Parent:WaitForChild("Dev"):WaitForChild("QaGrant"))
 local MonetisationService = require(script.Parent:WaitForChild("MonetisationService"))
+local PolicyWrapper = require(script.Parent:WaitForChild("PolicyWrapper"))
+local TarotService = require(script.Parent:WaitForChild("TarotService"))
 local Plot = require(script.Parent:WaitForChild("Plot"))
 local RateLimiter = require(script.Parent:WaitForChild("RateLimiter"))
 local RemoteGuard = require(script.Parent:WaitForChild("RemoteGuard"))
@@ -24,7 +26,11 @@ local Plots = require(Shared:WaitForChild("Config"):WaitForChild("Plots")) :: an
 local Income = require(Shared:WaitForChild("Logic"):WaitForChild("Income")) :: any
 local Names = require(Shared:WaitForChild("Config"):WaitForChild("Remotes")) :: any
 local ProfileQuery = require(Shared:WaitForChild("Logic"):WaitForChild("ProfileQuery")) :: any
+local PolicyGate = require(Shared:WaitForChild("Logic"):WaitForChild("PolicyGate")) :: any
 local Shop = require(Shared:WaitForChild("Config"):WaitForChild("Shop")) :: any
+local TarotAccess = require(Shared:WaitForChild("Logic"):WaitForChild("TarotAccess")) :: any
+local TarotCases = require(Shared:WaitForChild("Config"):WaitForChild("TarotCases")) :: any
+local TarotShop = require(Shared:WaitForChild("Logic"):WaitForChild("TarotShop")) :: any
 local ShopStock = require(Shared:WaitForChild("Logic"):WaitForChild("ShopStock")) :: any
 local Town = require(Shared:WaitForChild("Config"):WaitForChild("Town")) :: any
 local PedlarBrowse = require(Shared:WaitForChild("Logic"):WaitForChild("PedlarBrowse")) :: any
@@ -175,6 +181,13 @@ local function publish(session: any, credit: number)
 		revealSerial = session.revealSerial or 0,
 		relicsBought = session.relicsBought or 0,
 		relicsSpent = session.relicsSpent or 0,
+		tarotPaidEnabled = TarotAccess.enabled(
+			TarotCases.PAID_TAROT_ENABLED,
+			RunService:IsStudio(),
+			StudioQaHooks.args()
+		),
+		tarotPolicyAllows = session.paidRandom == true,
+		tarotReveal = session.tarotReveal,
 	})
 	local player = session.player
 	player:SetAttribute("Cash", profile.cash)
@@ -786,6 +799,47 @@ local function onReducedMotion(session: any, enabled: any)
 	queueSave(session)
 end
 
+local function tarotContext(session: any): any
+	return TarotService.context(session, shopGate(session, TarotCases.SHOP_ID))
+end
+
+local function onTarotOpen(session: any, caseId: any, requestId: any)
+	if not allowRequest(session) then
+		return
+	end
+	if RemoteArgs.tarotCase(caseId) == nil or RemoteArgs.requestId(requestId) == nil then
+		return
+	end
+	if not allowPurchase(session) then
+		return
+	end
+	local result = TarotShop.open(session.profile, caseId, requestId, tarotContext(session))
+	if type(result.reveal) == "table" then
+		session.tarotReveal = result.reveal
+	end
+	noteShop(session, result.message)
+	if result.code == "ok" then
+		commit(session, true)
+	elseif result.code == "replay" then
+		publish(session, 0)
+	end
+end
+
+local function onTarotBuy(session: any, caseId: any, requestId: any)
+	if not allowRequest(session) then
+		return
+	end
+	if RemoteArgs.tarotCase(caseId) == nil or RemoteArgs.requestId(requestId) == nil then
+		return
+	end
+	if not allowPurchase(session) then
+		return
+	end
+	local decision = TarotShop.buy(session.profile, caseId, requestId, tarotContext(session))
+	noteShop(session, decision.message)
+	TarotService.prompt(session.player, decision)
+end
+
 local function bind(folder: Folder)
 	local function listen(name: string, handler: (any, ...any) -> ())
 		RemoteGuard.bindEvent(Remotes.get(folder, name), function(player: Player, ...: any)
@@ -816,6 +870,8 @@ local function bind(folder: Folder)
 	listen(Names.BUY_SKILL, onBuySkill)
 	listen(Names.SHOP_BUY, onShopBuy)
 	listen(Names.SHOP_SELL, onShopSell)
+	listen(Names.TAROT_OPEN, onTarotOpen)
+	listen(Names.TAROT_BUY, onTarotBuy)
 	listen(Names.OPEN_RELICS, function(session)
 		if not allowRequest(session) then
 			return
@@ -1031,6 +1087,18 @@ function PlayerSession.onPlayer(player: Player): boolean
 	end
 
 	QaGrant.apply(profile, player.UserId)
+	local tarotSample = false
+	if
+		StudioQaHooks.tarotSample() == true
+		and type(profile.tarot) == "table"
+		and type(profile.tarot.tokens) == "table"
+	then
+		local pale = profile.tarot.tokens.pale
+		if type(pale) == "number" and pale + TarotCases.STUDIO_SAMPLE <= TarotCases.CASE_CAP then
+			profile.tarot.tokens.pale = pale + TarotCases.STUDIO_SAMPLE
+			tarotSample = true
+		end
+	end
 
 	local lockExpiresAt = os.time() + Save.LOCK_TTL_SECONDS
 	if type(loaded.lockExpiresAt) == "number" then
@@ -1043,7 +1111,9 @@ function PlayerSession.onPlayer(player: Player): boolean
 		loaded = true,
 		alive = true,
 		leaving = false,
-		dirty = grantedStarter or silentNotice > 0 or armedShop,
+		dirty = grantedStarter or silentNotice > 0 or armedShop or tarotSample,
+		paidRandom = false,
+		tarotReveal = nil,
 		dailyAutoOpen = dailyAutoOpen,
 		silentNotice = silentNotice,
 		lockExpiresAt = lockExpiresAt,
@@ -1086,7 +1156,7 @@ function PlayerSession.onPlayer(player: Player): boolean
 		session.dirty = true
 	end
 	publish(session, 0)
-	if grantedStarter or analyticsDirty then
+	if grantedStarter or analyticsDirty or tarotSample then
 		queueSave(session)
 	end
 	startLoops(session)
@@ -1156,6 +1226,7 @@ end
 
 function PlayerSession.onRemoving(player: Player)
 	RateLimiter.forget(player.UserId)
+	PolicyGate.forget(tostring(player.UserId))
 	local role, session = SessionClose.begin(sessions, detaching, player)
 	if role ~= "owner" or session == nil then
 		return
@@ -1179,10 +1250,15 @@ function PlayerSession.onTownShopOpen(player: Player, shopId: any)
 		grantPedlarOpen(session)
 		return
 	end
+	local entry = ShopAnchors.get(parsed)
+	local gateStep = Shop.GATE_STEP
+	if type(entry) == "table" and entry.plug == "tarot" then
+		gateStep = 0
+	end
 	local opened, at = PedlarBrowse.tryOpen(
 		shopDistance(player, parsed),
 		session.profile.onboarding.step,
-		Shop.GATE_STEP,
+		gateStep,
 		Town.PROMPT_DISTANCE,
 		os.clock(),
 		session.lastTownShopOpenAt,
@@ -1193,6 +1269,13 @@ function PlayerSession.onTownShopOpen(player: Player, shopId: any)
 	end
 	session.lastTownShopOpenAt = at
 	markShopOpen(session, parsed)
+	if type(entry) == "table" and entry.plug == "tarot" then
+		local allowed = PolicyWrapper.allows(player)
+		if session.alive == true then
+			session.paidRandom = allowed
+			publish(session, 0)
+		end
+	end
 end
 
 function PlayerSession.onPedlarOpen(player: Player)
@@ -1234,6 +1317,7 @@ function PlayerSession.shutdown()
 		end,
 		persist = function(player: Player, session: any)
 			RateLimiter.forget(player.UserId)
+			PolicyGate.forget(tostring(player.UserId))
 			closeOwned(player, session, true)
 		end,
 	})

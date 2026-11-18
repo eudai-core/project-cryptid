@@ -50,6 +50,9 @@ end)
 local TownShop = import("./TownShop", function()
 	return script.Parent:WaitForChild("TownShop")
 end)
+local TarotSave = import("./TarotSave", function()
+	return script.Parent:WaitForChild("TarotSave")
+end)
 
 local SOURCES = {
 	starter = true,
@@ -58,6 +61,7 @@ local SOURCES = {
 	pedlar = true,
 	offering = true,
 	relic = true,
+	reading = true,
 }
 
 local Schema = {}
@@ -711,6 +715,11 @@ function Schema.migrate(raw: any, now: number?): any?
 			return nil
 		end
 	end
+	-- Inventory, family pity, and the purchase ledger. Move this call into
+	-- migrateToV10 beside the other additive defaults when that step is present.
+	if TarotSave.apply(profile, raw) ~= true then
+		return nil
+	end
 	profile.dataVersion = Save.DATA_VERSION
 	return profile
 end
@@ -781,6 +790,7 @@ function Schema.newProfile(now: number, starterInstanceId: string): any
 		},
 	}
 	MonetisationProfile.applyDefaults(profile)
+	TarotSave.apply(profile, nil)
 	return profile
 end
 

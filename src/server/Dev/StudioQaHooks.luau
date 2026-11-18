@@ -75,7 +75,18 @@ function StudioQaHooks.unixNow(): number
 	if type(jump) == "number" and jump > 0 and os.clock() - startedAt >= jump then
 		days += 1
 	end
-	return now + days * Return.DAY_SECONDS
+	local shift = spec.clockSeconds
+	if type(shift) ~= "number" or shift < 0 then
+		shift = 0
+	end
+	return now + days * Return.DAY_SECONDS + shift
+end
+
+function StudioQaHooks.tarotSample(): boolean
+	if not RunService:IsStudio() then
+		return false
+	end
+	return tokens().tarot == true
 end
 
 return StudioQaHooks

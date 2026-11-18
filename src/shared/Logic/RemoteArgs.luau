@@ -23,6 +23,9 @@ end)
 local Species = import("../Config/Species", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Species")
 end)
+local TarotCases = import("../Config/TarotCases", function()
+	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("TarotCases")
+end)
 local TownShops = import("../Config/TownShops", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("TownShops")
 end)
@@ -101,6 +104,13 @@ end
 
 function RemoteArgs.flag(value: any): boolean?
 	if type(value) ~= "boolean" then
+		return nil
+	end
+	return value
+end
+
+function RemoteArgs.tarotCase(value: any): string?
+	if type(value) ~= "string" or TarotCases.get(value) == nil then
 		return nil
 	end
 	return value

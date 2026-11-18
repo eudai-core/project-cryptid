@@ -20,6 +20,10 @@ function PolicyGate.reset()
 	cache = {}
 end
 
+function PolicyGate.forget(userKey: string)
+	cache[userKey] = nil
+end
+
 function PolicyGate.allows(userKey: string, fetch: () -> any, sleep: (number) -> ()): boolean
 	local known = cache[userKey]
 	if known == "allowed" then

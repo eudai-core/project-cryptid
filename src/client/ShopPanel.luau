@@ -3,6 +3,7 @@
 local HttpService = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local TarotPanel = require(script.Parent:WaitForChild("TarotPanel"))
 local UiFactory = require(script.Parent:WaitForChild("UiFactory"))
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local NumberFormat = require(Shared:WaitForChild("Logic"):WaitForChild("NumberFormat")) :: any
@@ -133,10 +134,15 @@ function ShopPanel.mount(
 			return
 		end
 		title.Text = entry.displayName
-		local comingSoon = not ShopAnchors.sells(entry)
+		local tent = entry.plug == "tarot"
+		local comingSoon = not tent and not ShopAnchors.sells(entry)
 		soon.Visible = comingSoon
 		list.Visible = not comingSoon
 		clearCards()
+		if tent then
+			TarotPanel.fill(list, snapshotValue, remotes, names, gap)
+			return
+		end
 		if comingSoon then
 			return
 		end

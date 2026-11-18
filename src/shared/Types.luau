@@ -84,6 +84,12 @@ export type Profile = {
 		pity: { pale: number, blood: number },
 		marks: { [string]: number },
 		milestonesClaimed: { [string]: boolean },
+		cases: { [string]: number },
+		familyPity: { [string]: number },
+		ledger: { [string]: { productId: number, grantedAt: number, caseId: string, grants: { string } } },
+		requests: { { id: string, caseId: string, line: string, rarity: string, rewardId: string, cash: number } },
+		known: { [string]: boolean },
+		nonce: number,
 	},
 	bloodMoon: {
 		boughtToday: { utcDay: number, count: number },
