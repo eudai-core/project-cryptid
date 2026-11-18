@@ -107,6 +107,7 @@ local VISUAL_FILES = {
 	"src/server/TownKits/WeepingWell.luau",
 	"src/server/TownKits/ApothecaryTree.luau",
 	"src/server/TownKits/TarotTent.luau",
+	"src/server/TownKits/PlazaDressing.luau",
 }
 
 local function makeInstance(className: string): any
@@ -1822,6 +1823,267 @@ Check.test("every registered kit builds on the town when UnionAsync returns an a
 		end
 		Check.eq(seen >= 1, true, "shop kits")
 	end
+	local function dressingOf(folder: any): any
+		for _, inst in folder:GetDescendants() do
+			if inst.Name == "PlazaDressing" then
+				return inst
+			end
+		end
+		return nil
+	end
+	local function partSamples(part: any): { any }
+		local out = {}
+		local cf = part.CFrame
+		local size = part.Size
+		if cf == nil or size == nil then
+			return out
+		end
+		for _, sx in { -0.5, 0, 0.5 } do
+			for _, sy in { -0.5, 0, 0.5 } do
+				for _, sz in { -0.5, 0, 0.5 } do
+					table.insert(out, cf * roblox.Vector3.new(size.X * sx, size.Y * sy, size.Z * sz))
+				end
+			end
+		end
+		return out
+	end
+	local function inApproach(point: any, origin: any, look: any, length: number, halfWidth: number): boolean
+		if point.Y > 7.2 then
+			return false
+		end
+		local dx = point.X - origin.X
+		local dy = point.Y - origin.Y
+		local dz = point.Z - origin.Z
+		local along = dx * look.X + dy * look.Y + dz * look.Z
+		if along < -0.75 or along > length then
+			return false
+		end
+		local lx = dx - look.X * along
+		local ly = dy - look.Y * along
+		local lz = dz - look.Z * along
+		return math.sqrt(lx * lx + ly * ly + lz * lz) <= halfWidth
+	end
+	local function assertPlaza(folder: any, detail: boolean)
+		local dress = dressingOf(folder)
+		Check.truthy(dress, "PlazaDressing")
+		Check.eq(dress:GetAttribute("TownKit"), "PlazaDressing")
+		Check.eq(dress:GetAttribute("KitDetail"), detail)
+		local lamps = dress:GetAttribute("PlazaLamps")
+		local crystals = dress:GetAttribute("PlazaCrystals")
+		local glow = dress:GetAttribute("PlazaGlow")
+		Check.eq(type(lamps) == "number" and lamps >= 24, true, "lamps " .. tostring(lamps))
+		Check.eq(type(glow) == "number" and glow <= 50, true, "glow " .. tostring(glow))
+		if detail then
+			Check.eq(type(crystals) == "number" and crystals >= 12, true, "crystals " .. tostring(crystals))
+			Check.eq(glow > 0, true)
+		else
+			Check.eq(glow, 0)
+		end
+		local dressedPosts = 0
+		local surface = 0
+		local points = 0
+		local prompts = 0
+		local emitters = 0
+		local particles = 0
+		local humans = 0
+		local mesh = 0
+		local kitParts = 0
+		for _, inst in folder:GetDescendants() do
+			if inst.Name == "LampPost" and inst:GetAttribute("PlazaDressed") == true then
+				dressedPosts += 1
+			end
+		end
+		for _, inst in dress:GetDescendants() do
+			if BASE_PART[inst.ClassName] == true then
+				kitParts += 1
+			end
+			if inst.ClassName == "SurfaceLight" then
+				surface += 1
+				Check.eq(inst.Shadows, false, inst.Name)
+			elseif inst.ClassName == "PointLight" then
+				points += 1
+			elseif inst.ClassName == "ProximityPrompt" then
+				prompts += 1
+			elseif inst.ClassName == "Humanoid" then
+				humans += 1
+			elseif inst.ClassName == "MeshPart" then
+				mesh += 1
+			elseif inst.ClassName == "ParticleEmitter" then
+				emitters += 1
+				local effect = inst:GetAttribute("TownEffect")
+				Check.eq(effect == "PlazaLife" or effect == "PlazaBrazier", true, inst.Name)
+				Check.eq(inst:GetAttribute("TownFlame"), "extra")
+				particles += inst.Rate * inst.Lifetime.Max
+			end
+		end
+		local braziers = dress:GetAttribute("PlazaBraziers")
+		Check.eq(
+			type(braziers) == "number" and braziers >= 6 and braziers <= 8,
+			true,
+			"braziers " .. tostring(braziers)
+		)
+		Check.eq(dressedPosts >= 1, true, "dressed posts")
+		Check.eq(points, 0)
+		Check.eq(surface, glow)
+		Check.eq(surface <= 50, true, tostring(surface))
+		Check.eq(prompts, 0)
+		Check.eq(humans, 0)
+		Check.eq(mesh, 0)
+		local byEffect = {}
+		for _, inst in dress:GetDescendants() do
+			if inst.ClassName == "ParticleEmitter" then
+				local effect = inst:GetAttribute("TownEffect")
+				local row = byEffect[effect]
+				if row == nil then
+					row = { count = 0, particles = 0 }
+					byEffect[effect] = row
+				end
+				row.count += 1
+				row.particles += inst.Rate * inst.Lifetime.Max
+			end
+		end
+		for effect, row in byEffect do
+			local cap = if effect == "PlazaBrazier" then 8 else TownLook.VFX_MAX_EMITTERS
+			Check.eq(row.count <= cap, true, effect .. " " .. tostring(row.count))
+			Check.eq(row.particles <= TownLook.VFX_MAX_PARTICLES, true, effect)
+		end
+		if detail then
+			Check.eq(byEffect.PlazaBrazier ~= nil and byEffect.PlazaBrazier.count == braziers, true)
+			Check.eq(emitters > 0, true)
+		else
+			Check.eq(emitters, 0)
+			Check.eq(byEffect.PlazaBrazier, nil)
+		end
+		local approaches = {}
+		for _, inst in folder:GetDescendants() do
+			if inst.Name == "DoorAnchor" and inst:GetAttribute("TownAnchor") == "Door" and inst.CFrame ~= nil then
+				local look = inst.CFrame.LookVector
+				local half = inst.Size.X * 0.5 + 2
+				if half < 4 then
+					half = 4
+				end
+				table.insert(approaches, {
+					origin = inst.CFrame.Position + look * (inst.Size.Z * 0.5),
+					look = look,
+					length = 10,
+					halfWidth = half,
+					label = "door",
+				})
+			end
+		end
+		for _, name in { "WhisperingWoods", "SunkenMarsh", "BoneQuarry" } do
+			local portal = nil
+			for _, inst in folder:GetDescendants() do
+				if inst.Name == name and inst.ClassName == "Model" then
+					portal = inst
+				end
+			end
+			Check.truthy(portal, name)
+			local cf = portal:GetPivot()
+			table.insert(approaches, {
+				origin = cf.Position,
+				look = cf.LookVector,
+				length = 10,
+				halfWidth = 5.5,
+				label = name,
+			})
+		end
+		local well = nil
+		for _, inst in folder:GetDescendants() do
+			if inst.Name == "WeepingWell" and inst.ClassName == "Model" then
+				well = inst
+			end
+		end
+		Check.truthy(well, "well")
+		local wellAt = well:GetPivot().Position
+		local roads = {}
+		local promptsAt = {}
+		for _, inst in folder:GetDescendants() do
+			local name = inst.Name
+			if inst.Name == "TownRoad" then
+				table.insert(roads, inst)
+			elseif type(name) == "string" and string.sub(name, -13) == "PromptAnchor" and inst.CFrame ~= nil then
+				table.insert(promptsAt, inst.CFrame.Position)
+			end
+		end
+		Check.eq(#approaches >= 6, true, "approaches")
+		for _, inst in dress:GetDescendants() do
+			if BASE_PART[inst.ClassName] ~= true then
+				continue
+			end
+			if inst.Transparency ~= nil and inst.Transparency >= 1 then
+				continue
+			end
+			for _, point in partSamples(inst) do
+				for _, approach in approaches do
+					Check.eq(
+						inApproach(point, approach.origin, approach.look, approach.length, approach.halfWidth),
+						false,
+						inst.Name .. " " .. approach.label
+					)
+				end
+				if point.Y <= 7.2 then
+					local dx = point.X - wellAt.X
+					local dz = point.Z - wellAt.Z
+					Check.eq(dx * dx + dz * dz > 81, true, inst.Name .. " well")
+					for _, promptAt in promptsAt do
+						local px = point.X - promptAt.X
+						local pz = point.Z - promptAt.Z
+						Check.eq(px * px + pz * pz > 16, true, inst.Name .. " prompt")
+					end
+				end
+				if inst.CanCollide == true then
+					for _, road in roads do
+						local localPos = road.CFrame:Inverse() * point
+						local onRoad = math.abs(localPos.X) <= road.Size.X * 0.5
+							and math.abs(localPos.Z) <= road.Size.Z * 0.5
+						Check.eq(onRoad, false, inst.Name .. " road")
+					end
+				end
+			end
+		end
+		local cobble = nil
+		for _, inst in folder:GetDescendants() do
+			if inst.Name == "Cobble" then
+				cobble = inst
+			end
+		end
+		Check.truthy(cobble, "Cobble")
+		Check.eq(materialName(cobble), "Cobblestone")
+		local original = nil
+		for _, inst in folder:GetDescendants() do
+			if inst.Name == "CrimsonBrazier" and inst.ClassName == "Model" then
+				original = inst
+			end
+		end
+		Check.truthy(original, "CrimsonBrazier")
+		print(
+			string.format(
+				"plaza detail=%s lamps=%s new=%s crystals=%s runes=%s braziers=%s glow=%s parts=%d emitters=%d particles=%.2f",
+				tostring(detail),
+				tostring(lamps),
+				tostring(dress:GetAttribute("PlazaNewLamps")),
+				tostring(crystals),
+				tostring(dress:GetAttribute("PlazaRunes")),
+				tostring(braziers),
+				tostring(glow),
+				kitParts,
+				emitters,
+				particles
+			)
+		)
+	end
+	local discovered = TownKits.discover()
+	Check.eq(discovered[#discovered].name, "PlazaDressing")
+	Check.eq(discovered[#discovered].order, 80)
+	local plazaSource = fs.readFile("src/server/TownKits/PlazaDressing.luau")
+	Check.eq(string.find(plazaSource, "Heartbeat", 1, true) ~= nil, true)
+	Check.eq(string.find(plazaSource, "Destroying", 1, true) ~= nil, true)
+	Check.eq(string.find(plazaSource, "task.wait", 1, true), nil)
+	Check.eq(string.find(plazaSource, "task.spawn", 1, true), nil)
+	Check.eq(string.find(plazaSource, 'Instance.new("PointLight")', 1, true), nil)
+	Check.eq(string.find(plazaSource, 'Instance.new("SurfaceLight")', 1, true) ~= nil, true)
+	Check.eq(string.find(plazaSource, "FlameViolet", 1, true), nil)
 	local ok, err = pcall(function()
 		local lowFolder = buildAt(1)
 		local highFolder = buildAt(10)
@@ -1838,6 +2100,23 @@ Check.test("every registered kit builds on the town when UnionAsync returns an a
 		Check.eq(high:GetAttribute("KitAfterParts") > low:GetAttribute("KitAfterParts"), true)
 		assertShopAnchors(lowFolder)
 		assertShopAnchors(highFolder)
+		assertPlaza(lowFolder, false)
+		assertPlaza(highFolder, true)
+		local lowDress = nil
+		local highDress = nil
+		for _, inst in lowFolder:GetDescendants() do
+			if inst.Name == "PlazaDressing" then
+				lowDress = inst
+			end
+		end
+		for _, inst in highFolder:GetDescendants() do
+			if inst.Name == "PlazaDressing" then
+				highDress = inst
+			end
+		end
+		Check.eq(highDress:GetAttribute("KitAfterParts") > lowDress:GetAttribute("KitAfterParts"), true)
+		local Plaza = loadModule("src/server/TownKits/PlazaDressing.luau")
+		Check.eq(Plaza.replace(highFolder, { qualityLevel = 10 }), nil)
 	end)
 	TownKits.strict = false
 	TownKits.forceQuality = nil
