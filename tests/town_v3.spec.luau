@@ -112,6 +112,8 @@ local VISUAL_FILES = {
 	"src/server/TownKits/Lanternwright.luau",
 	"src/server/TownKits/PalePedlar.luau",
 	"src/server/TownKits/PlazaDressing.luau",
+	"src/server/TownKits/MaterialPass.luau",
+	"src/shared/Config/TownMaterials.luau",
 }
 
 local function makeInstance(className: string): any
@@ -2254,8 +2256,16 @@ Check.test("every registered kit builds on the town when UnionAsync returns an a
 		)
 	end
 	local discovered = TownKits.discover()
-	Check.eq(discovered[#discovered].name, "PlazaDressing")
-	Check.eq(discovered[#discovered].order, 80)
+	local plazaKit = nil
+	for _, kit in discovered do
+		if kit.name == "PlazaDressing" then
+			plazaKit = kit
+		end
+	end
+	Check.truthy(plazaKit, "PlazaDressing")
+	Check.eq(plazaKit.order, 80)
+	Check.eq(discovered[#discovered].name, "MaterialPass")
+	Check.eq(discovered[#discovered].order, 1000)
 	local plazaSource = fs.readFile("src/server/TownKits/PlazaDressing.luau")
 	Check.eq(string.find(plazaSource, "Kit.animate", 1, true) ~= nil, true)
 	Check.eq(string.find(plazaSource, "Heartbeat", 1, true), nil)
@@ -2499,6 +2509,73 @@ Check.test("lanternwright takes the free plaza slot and the pedlar counter survi
 			tostring(pedlar:GetAttribute("KitAfterParts")),
 			tostring(pedlar:GetAttribute("KitAfterLights")),
 			tostring(pedlar:GetAttribute("KitAfterEmitters"))
+		)
+	)
+end)
+
+Check.test("all-kit town keeps the material pass inside the census guard", function()
+	local TownMaterials = require("../src/shared/Config/TownMaterials")
+	local MaterialPass = loadModule("src/server/TownKits/MaterialPass.luau")
+	local root = townRoot()
+	local before = countClass(root, "Part") + countClass(root, "WedgePart") + countClass(root, "UnionOperation")
+	Check.eq(MaterialPass.replace(root, { qualityLevel = 10 }), nil)
+	local report = MaterialPass.last
+	local after = countClass(root, "Part") + countClass(root, "WedgePart") + countClass(root, "UnionOperation")
+	Check.eq(after, before)
+	Check.eq(report.variantsApplied, 0)
+	Check.eq(report.natureParts > 0, true, tostring(report.natureParts))
+	Check.eq(report.parts <= 20000, true, tostring(report.parts))
+	Check.eq(report.lights <= 200, true, tostring(report.lights))
+	Check.eq(report.emitters <= 200, true, tostring(report.emitters))
+	Check.eq(report.parts <= TownLook.PART_CAP, true)
+	Check.eq(report.lights <= TownLook.LIGHT_CAP, true)
+	Check.eq(report.emitters <= TownLook.EMITTER_CAP, true)
+	local nature = named(root, TownMaterials.NATURE_FOLDER)
+	Check.truthy(nature, "MaterialNature")
+	local roles = { AgedBrick = 0, MossyCobble = 0, WornDarkTimber = 0, SlateShingle = 0, WeatheredStone = 0, Bone = 0 }
+	for _, inst in descendants(root) do
+		local role = inst:GetAttribute(TownMaterials.ROLE_ATTRIBUTE)
+		if type(role) == "string" then
+			Check.eq(roles[role] ~= nil, true, tostring(role))
+			roles[role] += 1
+		end
+		if materialName(inst) == "Neon" or inst.Name == "Root" or inst:GetAttribute("ShopId") ~= nil then
+			Check.eq(role, nil, tostring(inst.Name))
+		end
+		if inst.ClassName == "SurfaceGui" then
+			Check.eq(inst.Parent:GetAttribute(TownMaterials.ROLE_ATTRIBUTE), nil, "sign")
+		end
+		local variant = inst.MaterialVariant
+		Check.eq(variant == nil or variant == "", true, tostring(inst.Name))
+	end
+	local pedlar = named(root, "PalePedlar")
+	for _, inst in descendants(pedlar) do
+		Check.eq(inst:GetAttribute(TownMaterials.ROLE_ATTRIBUTE), nil, "pedlar " .. tostring(inst.Name))
+	end
+	Check.eq(roles.MossyCobble > 0, true)
+	Check.eq(roles.WornDarkTimber > 0, true)
+	Check.eq(roles.WeatheredStone > 0, true)
+	local service = installRoblox().game:GetService("MaterialService")
+	Check.eq(service:FindFirstChild("AgedBrick").ClassName, "MaterialVariant")
+	Check.eq(service:FindFirstChild("MossyCobble").ClassName, "MaterialVariant")
+	Check.eq(service:FindFirstChild("WornDarkTimber").ClassName, "MaterialVariant")
+	Check.eq(service:FindFirstChild("SlateShingle").ClassName, "MaterialVariant")
+	Check.eq(service:FindFirstChild("WeatheredStone").ClassName, "MaterialVariant")
+	Check.eq(service:FindFirstChild("Bone").ClassName, "MaterialVariant")
+	print(
+		string.format(
+			"all-kit material pass tinted=%d nature=%d parts=%d lights=%d emitters=%d cobble=%d timber=%d stone=%d shingle=%d bone=%d brick=%d",
+			report.tinted,
+			report.natureParts,
+			report.parts,
+			report.lights,
+			report.emitters,
+			roles.MossyCobble,
+			roles.WornDarkTimber,
+			roles.WeatheredStone,
+			roles.SlateShingle,
+			roles.Bone,
+			roles.AgedBrick
 		)
 	)
 end)
