@@ -16,10 +16,18 @@ local function dress(inst: Instance)
 end
 
 function TownDress.start()
-	for _, inst in workspace:GetDescendants() do
-		dress(inst)
+	local warned = false
+	local function safeDress(inst: Instance)
+		local ok, err = pcall(dress, inst)
+		if not ok and not warned then
+			warned = true
+			warn(err)
+		end
 	end
-	workspace.DescendantAdded:Connect(dress)
+	for _, inst in workspace:GetDescendants() do
+		safeDress(inst)
+	end
+	workspace.DescendantAdded:Connect(safeDress)
 end
 
 return TownDress

@@ -33,14 +33,14 @@ function LightingSetup.apply()
 	Lighting.Ambient = Color3.fromHex(TownLook.SKY_AMBIENT)
 	Lighting.OutdoorAmbient = Color3.fromHex(TownLook.SKY_OUTDOOR_AMBIENT)
 	Lighting.ColorShift_Top = Color3.fromHex(TownLook.SKY_COLOR_SHIFT_TOP)
-	Lighting.Brightness = lighting.brightness
-	Lighting.ExposureCompensation = lighting.exposureCompensation
-	Lighting.ClockTime = lighting.clockTime
+	Lighting.Brightness = TownLook.SKY_BRIGHTNESS
+	Lighting.ExposureCompensation = TownLook.SKY_EXPOSURE
+	Lighting.ClockTime = TownLook.SKY_CLOCK_TIME
 	Lighting.GeographicLatitude = lighting.geographicLatitude
 	Lighting.GlobalShadows = lighting.globalShadows
-	Lighting.FogColor = UITheme.color(lighting.fogColor)
-	Lighting.FogStart = lighting.fogStart
-	Lighting.FogEnd = lighting.fogEnd
+	Lighting.FogColor = Color3.fromHex(TownLook.SKY_FOG_COLOR)
+	Lighting.FogStart = TownLook.SKY_FOG_START
+	Lighting.FogEnd = TownLook.SKY_FOG_END
 
 	local atmosphere = effect(Lighting, "Atmosphere")
 	atmosphere.Density = TownLook.SKY_ATMOSPHERE_DENSITY
@@ -53,9 +53,9 @@ function LightingSetup.apply()
 	local bloom = effect(Lighting, "BloomEffect")
 	bloom.Name = "TownBloom"
 	bloom.Enabled = lighting.bloomEnabled
-	bloom.Intensity = lighting.bloomIntensity
-	bloom.Size = lighting.bloomSize
-	bloom.Threshold = lighting.bloomThreshold
+	bloom.Intensity = TownLook.SKY_BLOOM_INTENSITY
+	bloom.Size = TownLook.SKY_BLOOM_SIZE
+	bloom.Threshold = TownLook.SKY_BLOOM_THRESHOLD
 
 	local grade = effect(Lighting, "ColorCorrectionEffect")
 	grade.Name = "TownGrade"

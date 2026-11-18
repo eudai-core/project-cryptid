@@ -63,6 +63,17 @@ local world = table.freeze({
 	Bottle = "C8FFD8",
 	MoonFace = "F3E6C8",
 	MoonGlow = "F4E8FF",
+	DuskViolet = "A56BFF",
+	Magenta = "C4368A",
+	PlazaCobble = "C8BDD4",
+	PlazaRoad = "9A90A8",
+})
+
+-- Shop chrome from the approved town preview. Muted well teal and night violet.
+-- Body text stays on the spec 01 Bone tokens. These are not flame neons.
+local glow = table.freeze({
+	teal = "3C7F78",
+	violet = "6E5C9A",
 })
 
 local TOUCH_PX = 44
@@ -95,6 +106,7 @@ local PEDLAR_CARD_H = GAP_PX * 2
 local UITheme = {
 	palette = palette,
 	world = world,
+	glow = glow,
 	rarity = table.freeze({
 		Common = "BoneDim",
 		Uncommon = "Moss",
@@ -276,6 +288,12 @@ local UITheme = {
 			padW = 220,
 			padH = 96,
 		}),
+		-- Shop prices and tent odds. Bone on Ash, at least the 18px floor.
+		priceLine = table.freeze({
+			desktop = 22,
+			mobile = 18,
+			color = "Bone",
+		}),
 		mobileWidthBreakpoint = 700,
 		overlayTransparency = 0.15,
 		beamWidth = 0.3,
@@ -423,6 +441,9 @@ end
 
 function UITheme.color(token: string): Color3
 	local hex = palette[token]
+	if hex == nil then
+		hex = glow[token]
+	end
 	if hex == nil then
 		hex = world[token]
 	end

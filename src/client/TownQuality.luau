@@ -50,17 +50,31 @@ local function apply()
 end
 
 function TownQuality.start()
-	apply()
+	local warned = false
+	local function guard(fn: () -> ())
+		local ok, err = pcall(fn)
+		if not ok and not warned then
+			warned = true
+			warn(err)
+		end
+	end
+	guard(apply)
 	workspace.DescendantAdded:Connect(function(inst)
-		applyEmitter(inst, qualityLevel())
+		guard(function()
+			applyEmitter(inst, qualityLevel())
+		end)
 	end)
 	Lighting.ChildAdded:Connect(function(inst)
-		if inst:IsA("Sky") then
-			applySky(qualityLevel())
-		end
+		guard(function()
+			if inst:IsA("Sky") then
+				applySky(qualityLevel())
+			end
+		end)
 	end)
 	local settings = UserSettings():GetService("UserGameSettings")
-	settings:GetPropertyChangedSignal("SavedQualityLevel"):Connect(apply)
+	settings:GetPropertyChangedSignal("SavedQualityLevel"):Connect(function()
+		guard(apply)
+	end)
 end
 
 return TownQuality

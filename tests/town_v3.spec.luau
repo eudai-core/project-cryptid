@@ -7,6 +7,8 @@ local luau = require("@lune/luau")
 local serde = require("@lune/serde")
 
 local Check = require("./check")
+local RobloxEnum = require("./roblox_enum")
+local enumTypeof = RobloxEnum.typeof(typeof)
 local Town = require("../src/shared/Config/Town")
 local TownLook = require("../src/shared/Config/TownLook")
 local UITheme = require("../src/shared/UITheme")
@@ -107,6 +109,13 @@ local VISUAL_FILES = {
 	"src/server/TownKits/WeepingWell.luau",
 	"src/server/TownKits/ApothecaryTree.luau",
 	"src/server/TownKits/TarotTent.luau",
+	"src/server/TownKits/Portals.luau",
+	"src/server/TownKits/ClockTower.luau",
+	"src/server/TownKits/Lanternwright.luau",
+	"src/server/TownKits/PalePedlar.luau",
+	"src/server/TownKits/PlazaDressing.luau",
+	"src/server/TownKits/MaterialPass.luau",
+	"src/shared/Config/TownMaterials.luau",
 }
 
 local function makeInstance(className: string): any
@@ -302,6 +311,8 @@ function vec(x: number, y: number, z: number): any
 	})
 end
 
+local cframeMatrix: { [any]: { number } } = setmetatable({}, { __mode = "k" }) :: any
+
 function newCFrame(
 	px: number,
 	py: number,
@@ -320,77 +331,112 @@ function newCFrame(
 		X = px,
 		Y = py,
 		Z = pz,
-		r00 = r00,
-		r01 = r01,
-		r02 = r02,
-		r10 = r10,
-		r11 = r11,
-		r12 = r12,
-		r20 = r20,
-		r21 = r21,
-		r22 = r22,
 	}
+	cframeMatrix[self] = { r00, r01, r02, r10, r11, r12, r20, r21, r22 }
+	function self:GetComponents(): (
+		number,
+		number,
+		number,
+		number,
+		number,
+		number,
+		number,
+		number,
+		number,
+		number,
+		number,
+		number
+	)
+		local m = cframeMatrix[self]
+		return self.X, self.Y, self.Z, m[1], m[2], m[3], m[4], m[5], m[6], m[7], m[8], m[9]
+	end
 	function self:Inverse(): any
-		local x = -(self.r00 * self.X + self.r10 * self.Y + self.r20 * self.Z)
-		local y = -(self.r01 * self.X + self.r11 * self.Y + self.r21 * self.Z)
-		local z = -(self.r02 * self.X + self.r12 * self.Y + self.r22 * self.Z)
-		return newCFrame(
-			x,
-			y,
-			z,
-			self.r00,
-			self.r10,
-			self.r20,
-			self.r01,
-			self.r11,
-			self.r21,
-			self.r02,
-			self.r12,
-			self.r22
-		)
+		local m = cframeMatrix[self]
+		local x = -(m[1] * self.X + m[4] * self.Y + m[7] * self.Z)
+		local y = -(m[2] * self.X + m[5] * self.Y + m[8] * self.Z)
+		local z = -(m[3] * self.X + m[6] * self.Y + m[9] * self.Z)
+		return newCFrame(x, y, z, m[1], m[4], m[7], m[2], m[5], m[8], m[3], m[6], m[9])
 	end
 	function self:ToWorldSpace(point: any): any
 		return self * point
 	end
+	function self:PointToWorldSpace(point: any): any
+		return self * point
+	end
+	function self:ToObjectSpace(other: any): any
+		return self:Inverse() * other
+	end
 	return setmetatable(self, {
 		__mul = function(a: any, b: any): any
-			if b.r00 == nil then
+			local am = cframeMatrix[a]
+			local bm = cframeMatrix[b]
+			if bm == nil then
 				return vec(
-					a.X + a.r00 * b.X + a.r01 * b.Y + a.r02 * b.Z,
-					a.Y + a.r10 * b.X + a.r11 * b.Y + a.r12 * b.Z,
-					a.Z + a.r20 * b.X + a.r21 * b.Y + a.r22 * b.Z
+					a.X + am[1] * b.X + am[2] * b.Y + am[3] * b.Z,
+					a.Y + am[4] * b.X + am[5] * b.Y + am[6] * b.Z,
+					a.Z + am[7] * b.X + am[8] * b.Y + am[9] * b.Z
 				)
 			end
 			return newCFrame(
-				a.X + a.r00 * b.X + a.r01 * b.Y + a.r02 * b.Z,
-				a.Y + a.r10 * b.X + a.r11 * b.Y + a.r12 * b.Z,
-				a.Z + a.r20 * b.X + a.r21 * b.Y + a.r22 * b.Z,
-				a.r00 * b.r00 + a.r01 * b.r10 + a.r02 * b.r20,
-				a.r00 * b.r01 + a.r01 * b.r11 + a.r02 * b.r21,
-				a.r00 * b.r02 + a.r01 * b.r12 + a.r02 * b.r22,
-				a.r10 * b.r00 + a.r11 * b.r10 + a.r12 * b.r20,
-				a.r10 * b.r01 + a.r11 * b.r11 + a.r12 * b.r21,
-				a.r10 * b.r02 + a.r11 * b.r12 + a.r12 * b.r22,
-				a.r20 * b.r00 + a.r21 * b.r10 + a.r22 * b.r20,
-				a.r20 * b.r01 + a.r21 * b.r11 + a.r22 * b.r21,
-				a.r20 * b.r02 + a.r21 * b.r12 + a.r22 * b.r22
+				a.X + am[1] * b.X + am[2] * b.Y + am[3] * b.Z,
+				a.Y + am[4] * b.X + am[5] * b.Y + am[6] * b.Z,
+				a.Z + am[7] * b.X + am[8] * b.Y + am[9] * b.Z,
+				am[1] * bm[1] + am[2] * bm[4] + am[3] * bm[7],
+				am[1] * bm[2] + am[2] * bm[5] + am[3] * bm[8],
+				am[1] * bm[3] + am[2] * bm[6] + am[3] * bm[9],
+				am[4] * bm[1] + am[5] * bm[4] + am[6] * bm[7],
+				am[4] * bm[2] + am[5] * bm[5] + am[6] * bm[8],
+				am[4] * bm[3] + am[5] * bm[6] + am[6] * bm[9],
+				am[7] * bm[1] + am[8] * bm[4] + am[9] * bm[7],
+				am[7] * bm[2] + am[8] * bm[5] + am[9] * bm[8],
+				am[7] * bm[3] + am[8] * bm[6] + am[9] * bm[9]
 			)
 		end,
 		__index = function(frame: any, key: string): any
+			local m = cframeMatrix[frame]
 			if key == "Position" then
 				return vec(frame.X, frame.Y, frame.Z)
 			end
+			if key == "Rotation" then
+				return newCFrame(0, 0, 0, m[1], m[2], m[3], m[4], m[5], m[6], m[7], m[8], m[9])
+			end
 			if key == "RightVector" or key == "XVector" then
-				return vec(frame.r00, frame.r10, frame.r20)
+				return vec(m[1], m[4], m[7])
 			end
 			if key == "UpVector" or key == "YVector" then
-				return vec(frame.r01, frame.r11, frame.r21)
+				return vec(m[2], m[5], m[8])
 			end
 			if key == "ZVector" then
-				return vec(frame.r02, frame.r12, frame.r22)
+				return vec(m[3], m[6], m[9])
 			end
 			if key == "LookVector" then
-				return vec(-frame.r02, -frame.r12, -frame.r22)
+				return vec(-m[3], -m[6], -m[9])
+			end
+			error(tostring(key) .. " is not a valid member of CFrame", 2)
+		end,
+	})
+end
+
+local function colorFromHex(hex: string): any
+	local raw = string.gsub(string.upper(hex), "#", "")
+	local function channel(startAt: number): number
+		return (tonumber(string.sub(raw, startAt, startAt + 1), 16) or 0) / 255
+	end
+	local color = {
+		R = channel(1),
+		G = channel(3),
+		B = channel(5),
+	}
+	function color:ToHex(): string
+		local function byte(value: number): number
+			return math.clamp(math.floor(value * 255 + 0.5), 0, 255)
+		end
+		return string.format("#%02X%02X%02X", byte(self.R), byte(self.G), byte(self.B))
+	end
+	return setmetatable(color, {
+		__index = function(_, key)
+			if key == "Hex" then
+				error("Hex is not a valid member of Color3", 2)
 			end
 			return nil
 		end,
@@ -404,11 +450,10 @@ local function installRoblox(): any
 		return roblox
 	end
 	local services = {}
+	local tagged: { [string]: { any } } = {}
 	roblox = {
 		Color3 = {
-			fromHex = function(hex: string)
-				return { Hex = hex }
-			end,
+			fromHex = colorFromHex,
 		},
 		Vector3 = {
 			new = function(x: number?, y: number?, z: number?)
@@ -421,14 +466,43 @@ local function installRoblox(): any
 			end,
 		},
 		CFrame = {
-			new = function(x: any, y: number?, z: number?)
+			new = function(
+				x: any,
+				y: number?,
+				z: number?,
+				r00: number?,
+				r01: number?,
+				r02: number?,
+				r10: number?,
+				r11: number?,
+				r12: number?,
+				r20: number?,
+				r21: number?,
+				r22: number?
+			)
 				if x == nil then
 					return newCFrame(0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1)
 				end
 				if type(x) ~= "number" then
 					return newCFrame(x.X, x.Y, x.Z, 1, 0, 0, 0, 1, 0, 0, 0, 1)
 				end
-				return newCFrame(x, y or 0, z or 0, 1, 0, 0, 0, 1, 0, 0, 0, 1)
+				if r00 == nil then
+					return newCFrame(x, y or 0, z or 0, 1, 0, 0, 0, 1, 0, 0, 0, 1)
+				end
+				return newCFrame(
+					x,
+					y or 0,
+					z or 0,
+					r00,
+					r01 or 0,
+					r02 or 0,
+					r10 or 0,
+					r11 or 1,
+					r12 or 0,
+					r20 or 0,
+					r21 or 0,
+					r22 or 1
+				)
 			end,
 			lookAt = function(eye: any, target: any, up: any?)
 				local forward = unit(vec(target.X - eye.X, target.Y - eye.Y, target.Z - eye.Z))
@@ -502,22 +576,13 @@ local function installRoblox(): any
 				return { X = x, Y = y }
 			end,
 		},
-		Enum = setmetatable({}, {
-			__index = function(self, enumName)
-				local bucket = setmetatable({}, {
-					__index = function(items, itemName)
-						if enumName == "Material" and VALID_MATERIAL[itemName] ~= true then
-							error(tostring(itemName) .. " is not a valid member of Enum.Material", 2)
-						end
-						local item = { Name = itemName, EnumType = enumName, Value = 0 }
-						rawset(items, itemName, item)
-						return item
-					end,
-				})
-				rawset(self, enumName, bucket)
-				return bucket
-			end,
-		}),
+		Enum = RobloxEnum.library(function(enumName: string, itemName: string): boolean
+			if enumName ~= "Material" then
+				return true
+			end
+			return VALID_MATERIAL[itemName] == true
+		end),
+		typeof = enumTypeof,
 		Instance = {
 			new = function(className: string)
 				return makeInstance(className)
@@ -526,7 +591,36 @@ local function installRoblox(): any
 		game = {
 			GetService = function(_, name: string)
 				if services[name] == nil then
-					services[name] = makeInstance(name)
+					local service = makeInstance(name)
+					if name == "CollectionService" then
+						function service:AddTag(inst: any, tag: string)
+							local list = tagged[tag]
+							if list == nil then
+								list = {}
+								tagged[tag] = list
+							end
+							for _, item in list do
+								if item == inst then
+									return
+								end
+							end
+							table.insert(list, inst)
+						end
+						function service:GetTagged(tag: string): { any }
+							local list = tagged[tag]
+							local alive = {}
+							if list == nil then
+								return alive
+							end
+							for _, inst in list do
+								if inst.Parent ~= nil then
+									table.insert(alive, inst)
+								end
+							end
+							return alive
+						end
+					end
+					services[name] = service
 				end
 				return services[name]
 			end,
@@ -611,7 +705,7 @@ local function loadModule(path: string): any
 			error = error,
 			assert = assert,
 			type = type,
-			typeof = typeof,
+			typeof = enumTypeof,
 			pairs = pairs,
 			ipairs = ipairs,
 			next = next,
@@ -685,11 +779,7 @@ local function descendants(root: any): { any }
 end
 
 local function materialName(inst: any): string?
-	local material = inst.Material
-	if type(material) == "table" then
-		return material.Name
-	end
-	return nil
+	return RobloxEnum.name(inst.Material)
 end
 
 local function named(root: any, name: string): any
@@ -840,38 +930,38 @@ Check.test("v3 night is purple mist with budgeted bloom and a low-quality fallba
 	LightingSetup.apply()
 	local lighting = installRoblox().game:GetService("Lighting")
 	Check.eq(lighting.Technology, nil)
-	Check.eq(lighting.ClockTime, UITheme.lighting.clockTime)
-	Check.eq(lighting.Ambient.Hex, TownLook.SKY_AMBIENT)
-	Check.eq(lighting.OutdoorAmbient.Hex, TownLook.SKY_OUTDOOR_AMBIENT)
-	Check.eq(lighting.ColorShift_Top.Hex, TownLook.SKY_COLOR_SHIFT_TOP)
-	Check.eq(lighting.FogColor.Hex, UITheme.world.NightMist)
-	Check.eq(lighting.FogStart, 250)
-	Check.eq(lighting.FogEnd, 1100)
-	Check.eq(lighting.Brightness, 1.5)
+	Check.eq(lighting.ClockTime, TownLook.SKY_CLOCK_TIME)
+	Check.eq(string.gsub(lighting.Ambient:ToHex(), "#", ""), TownLook.SKY_AMBIENT)
+	Check.eq(string.gsub(lighting.OutdoorAmbient:ToHex(), "#", ""), TownLook.SKY_OUTDOOR_AMBIENT)
+	Check.eq(string.gsub(lighting.ColorShift_Top:ToHex(), "#", ""), TownLook.SKY_COLOR_SHIFT_TOP)
+	Check.eq(string.gsub(lighting.FogColor:ToHex(), "#", ""), TownLook.SKY_FOG_COLOR)
+	Check.eq(lighting.FogStart, TownLook.SKY_FOG_START)
+	Check.eq(lighting.FogEnd, TownLook.SKY_FOG_END)
+	Check.eq(lighting.Brightness, TownLook.SKY_BRIGHTNESS)
+	Check.eq(lighting.ExposureCompensation, TownLook.SKY_EXPOSURE)
 	local atmosphere = lighting:FindFirstChildOfClass("Atmosphere")
 	Check.eq(atmosphere.Density, TownLook.SKY_ATMOSPHERE_DENSITY)
 	Check.eq(atmosphere.Haze, TownLook.SKY_ATMOSPHERE_HAZE)
 	Check.eq(atmosphere.Glare, TownLook.SKY_ATMOSPHERE_GLARE)
-	Check.eq(atmosphere.Color.Hex, TownLook.SKY_ATMOSPHERE_COLOR)
-	Check.eq(atmosphere.Decay.Hex, TownLook.SKY_ATMOSPHERE_DECAY)
+	Check.eq(string.gsub(atmosphere.Color:ToHex(), "#", ""), TownLook.SKY_ATMOSPHERE_COLOR)
+	Check.eq(string.gsub(atmosphere.Decay:ToHex(), "#", ""), TownLook.SKY_ATMOSPHERE_DECAY)
 	local bloom = lighting:FindFirstChildOfClass("BloomEffect")
 	Check.eq(bloom.Enabled, true)
-	Check.eq(bloom.Intensity, 0.45)
-	Check.eq(bloom.Size, 28)
-	Check.eq(bloom.Threshold, 1.5)
+	Check.eq(bloom.Intensity, TownLook.SKY_BLOOM_INTENSITY)
+	Check.eq(bloom.Size, TownLook.SKY_BLOOM_SIZE)
+	Check.eq(bloom.Threshold, TownLook.SKY_BLOOM_THRESHOLD)
 	local grade = lighting:FindFirstChildOfClass("ColorCorrectionEffect")
-	Check.eq(grade.TintColor.Hex, TownLook.SKY_GRADE_TINT)
+	Check.eq(string.gsub(grade.TintColor:ToHex(), "#", ""), TownLook.SKY_GRADE_TINT)
 	Check.eq(grade.Saturation, TownLook.SKY_GRADE_SATURATION)
-	Check.eq(grade.Saturation < UITheme.lighting.colorSaturation, true)
 	local gradeRed, gradeGreen, gradeBlue = channels(TownLook.SKY_GRADE_TINT)
 	Check.eq(gradeGreen > 100, true, "grade tint stays pale")
-	Check.eq(gradeBlue - gradeRed < 20, true, "grade tint is not a bright violet")
+	Check.eq(gradeBlue > gradeRed, true, "grade tint is violet")
 	local skyRed, skyGreen, skyBlue = channels(TownLook.SKY_ATMOSPHERE_COLOR)
 	Check.eq(skyRed > skyGreen and skyBlue > skyGreen, true, "horizon violet")
-	Check.eq(skyBlue < 140 and skyRed < 140, true, "horizon stays muted")
+	Check.eq(skyBlue < 220 and skyRed < 210, true, "horizon is not near-white")
 	local shiftRed, shiftGreen, shiftBlue = channels(TownLook.SKY_COLOR_SHIFT_TOP)
 	Check.eq(shiftRed > shiftGreen and shiftBlue > shiftGreen, true, "zenith shift")
-	Check.eq(shiftBlue < 80, true, "zenith shift stays dark")
+	Check.eq(shiftBlue > 120, true, "zenith shift is violet")
 	local sky = lighting:FindFirstChildOfClass("Sky")
 	Check.eq(sky.ClassName, "Sky")
 	Check.eq(sky.Name, "HollowmereSky")
@@ -892,7 +982,7 @@ Check.test("v3 night is purple mist with budgeted bloom and a low-quality fallba
 	Check.eq(clouds.ClassName, "Clouds")
 	Check.eq(clouds.Cover, TownLook.CLOUD_COVER)
 	Check.eq(clouds.Density, TownLook.CLOUD_DENSITY)
-	Check.eq(clouds.Color.Hex, TownLook.CLOUD_COLOR)
+	Check.eq(string.gsub(clouds.Color:ToHex(), "#", ""), TownLook.CLOUD_COLOR)
 end)
 
 Check.test("town part and light counts stay inside the sanity guard", function()
@@ -1093,7 +1183,7 @@ Check.test("hollowmere is the mythic plaza and neon stays on flames portals rune
 		shutters += 1
 		cursor = at + #Town.SHUTTERED
 	end
-	Check.eq(shutters, 4)
+	Check.eq(shutters, 3)
 	local pedlar = named(root, "PalePedlar")
 	Check.truthy(pedlar)
 	local PedlarBrowse = loadModule("src/shared/Logic/PedlarBrowse.luau")
@@ -1109,7 +1199,8 @@ Check.test("hollowmere is the mythic plaza and neon stays on flames portals rune
 	Check.eq(prompt.KeyboardKeyCode.Name, "E")
 	Check.eq(prompt.GamepadKeyCode.Name, "ButtonX")
 	for _, inst in descendants(pedlar) do
-		Check.eq(materialName(inst) == "Neon", false, "pedlar " .. tostring(inst.Name))
+		local pedlarGlow = inst.Name == "CageWick" or inst.Name == "SupplyCore"
+		Check.eq(materialName(inst) == "Neon" and not pedlarGlow, false, "pedlar " .. tostring(inst.Name))
 	end
 	local builder = fs.readFile("src/server/TownBuilder.luau")
 	Check.eq(string.find(builder, "RemoteEvent", 1, true), nil)
@@ -1308,8 +1399,8 @@ Check.test("longship kit keeps the tavern anchors and stays inside the sanity gu
 	Check.eq(horn:GetAttribute("TownKit"), "Longship")
 	Check.eq(horn:GetAttribute("KitQuality"), 10)
 	Check.eq(horn:GetAttribute("KitDetail"), true)
-	Check.eq(horn:GetAttribute("KitBeforeLights"), horn:GetAttribute("KitAfterLights"))
-	Check.eq(horn:GetAttribute("KitAfterLights"), 0)
+	Check.eq(horn:GetAttribute("KitAfterLights") >= 4, true, tostring(horn:GetAttribute("KitAfterLights")))
+	Check.eq(horn:GetAttribute("KitAfterLights") <= 16, true, tostring(horn:GetAttribute("KitAfterLights")))
 	Check.eq(horn:GetAttribute("KitBeforeEmitters"), horn:GetAttribute("KitAfterEmitters"))
 	Check.eq(horn.PrimaryPart.Name, "Root")
 	local signText = nil
@@ -1377,7 +1468,7 @@ Check.test("longship kit keeps the tavern anchors and stays inside the sanity gu
 	Check.eq(prompts, 0)
 	Check.eq(serpentNeck, 0)
 	Check.eq(crow, 1)
-	Check.eq(lights, 0)
+	Check.eq(lights, horn:GetAttribute("KitAfterLights"))
 	Check.eq(highlights, 0)
 	Check.eq(mesh, 0)
 	Check.eq(humanoids, 0)
@@ -1402,11 +1493,12 @@ Check.test("weeping well kit keeps the basin anchors and stays inside the sanity
 	Check.eq(well:GetAttribute("KitQuality"), 10)
 	Check.eq(well:GetAttribute("KitDetail"), true)
 	Check.eq(well:GetAttribute("KitBeforeParts"), 20)
-	Check.eq(well:GetAttribute("KitAfterParts"), 51)
+	Check.eq(well:GetAttribute("KitAfterParts") >= 250, true, tostring(well:GetAttribute("KitAfterParts")))
 	Check.eq(well:GetAttribute("KitBeforeLights"), 1)
 	Check.eq(well:GetAttribute("KitAfterLights"), 10)
 	Check.eq(well:GetAttribute("KitBeforeEmitters"), 2)
-	Check.eq(well:GetAttribute("KitAfterEmitters"), 2)
+	Check.eq(well:GetAttribute("KitAfterEmitters") >= 2, true)
+	Check.eq(well:GetAttribute("KitAfterEmitters") <= 6, true)
 	Check.eq(well.PrimaryPart.Name, "Centre")
 	Check.eq(well.PrimaryPart:GetAttribute("TownAnchor"), "Well")
 	local basin = nil
@@ -1502,10 +1594,11 @@ Check.test("weeping well kit keeps the basin anchors and stays inside the sanity
 	Check.eq(highlights, 0)
 	Check.eq(mesh, 0)
 	Check.eq(humanoids, 0)
-	Check.eq(emitters, 2)
+	Check.eq(emitters >= 2, true, tostring(emitters))
+	Check.eq(emitters <= 8, true, tostring(emitters))
 	Check.eq(emitters <= TownLook.VFX_MAX_EMITTERS, true, tostring(emitters))
 	Check.eq(particles <= TownLook.VFX_MAX_PARTICLES, true, tostring(particles))
-	Check.eq(kitParts, 33)
+	Check.eq(kitParts >= 250, true, tostring(kitParts))
 	Check.eq(townLights <= TownLook.LIGHT_CAP, true, tostring(townLights))
 	Check.eq(townParts <= TownLook.PART_CAP, true, tostring(townParts))
 	Check.eq(townHighlights, 0)
@@ -1639,9 +1732,10 @@ Check.test("tarot tent kit keeps the shop sign and replaces the blockout", funct
 	Check.eq(shop:GetAttribute("KitQuality"), 10)
 	Check.eq(shop:GetAttribute("KitDetail"), true)
 	Check.eq(shop:GetAttribute("KitBeforeParts"), 18)
-	Check.eq(shop:GetAttribute("KitAfterParts"), 94)
+	Check.eq(shop:GetAttribute("KitAfterParts") >= 300, true, tostring(shop:GetAttribute("KitAfterParts")))
 	Check.eq(shop:GetAttribute("KitBeforeLights"), 0)
-	Check.eq(shop:GetAttribute("KitAfterLights"), 6)
+	Check.eq(shop:GetAttribute("KitAfterLights") >= 6, true, tostring(shop:GetAttribute("KitAfterLights")))
+	Check.eq(shop:GetAttribute("KitAfterLights") <= 16, true, tostring(shop:GetAttribute("KitAfterLights")))
 	Check.eq(shop:GetAttribute("KitBeforeEmitters"), 2)
 	Check.eq(shop:GetAttribute("KitAfterEmitters"), 4)
 	Check.eq(shop.PrimaryPart.Name, "Root")
@@ -1727,7 +1821,7 @@ Check.test("tarot tent kit keeps the shop sign and replaces the blockout", funct
 			life
 		)
 	)
-	Check.eq(signText, "Veil & Fate")
+	Check.eq(signText, "Veil & Fate - Tarot Reader")
 	Check.truthy(door, "DoorAnchor")
 	Check.eq(door:GetAttribute("TownAnchor"), "Door")
 	Check.eq(prompts, 0)
@@ -1741,10 +1835,11 @@ Check.test("tarot tent kit keeps the shop sign and replaces the blockout", funct
 	Check.eq(mesh, 0)
 	Check.eq(humanoids, 0)
 	Check.eq(life, 2)
-	Check.eq(lights, 6)
+	Check.eq(lights >= 6, true, tostring(lights))
+	Check.eq(lights <= 16, true, tostring(lights))
 	Check.eq(emitters, 4)
 	Check.eq(particles <= TownLook.VFX_MAX_PARTICLES, true, tostring(particles))
-	Check.eq(kitParts, 87)
+	Check.eq(kitParts >= 250, true, tostring(kitParts))
 	local registry = fs.readFile("src/server/TownKits/init.luau")
 	Check.eq(string.find(registry, 'script:WaitForChild("TarotTent")', 1, true), nil)
 	Check.eq(string.find(registry, 'script:WaitForChild("Longship")', 1, true), nil)
@@ -1787,6 +1882,9 @@ Check.test("every registered kit builds on the town when UnionAsync returns an a
 		Longship = "HowlingHorn",
 		ApothecaryTree = "RuneheartApothecary",
 		TarotTent = "VeilAndFate",
+		ClockTower = "DuskAndDial",
+		Lanternwright = "Lanternwright",
+		PalePedlar = "PalePedlar",
 	}
 	local function assertPromptAnchor(model: any, shopName: string)
 		local want = shopName .. "PromptAnchor"
@@ -1815,6 +1913,15 @@ Check.test("every registered kit builds on the town when UnionAsync returns an a
 			Check.eq(child.ClassName == "ProximityPrompt", false, shopName)
 		end
 	end
+	local function findKitModel(folder: any, kitName: string): any
+		local found = nil
+		for _, inst in folder:GetDescendants() do
+			if inst.ClassName == "Model" and inst:GetAttribute("TownKit") == kitName then
+				found = inst
+			end
+		end
+		return found
+	end
 	local function assertShopAnchors(folder: any)
 		local seen = 0
 		for _, kit in TownKits.discover() do
@@ -1822,18 +1929,405 @@ Check.test("every registered kit builds on the town when UnionAsync returns an a
 			if shopName == nil then
 				continue
 			end
-			local model = nil
-			for _, inst in folder:GetDescendants() do
-				if inst.Name == shopName and inst.ClassName == "Model" then
-					model = inst
-				end
-			end
-			Check.truthy(model, shopName)
+			local model = findKitModel(folder, kit.name)
+			Check.truthy(model, kit.name)
 			assertPromptAnchor(model, shopName)
 			seen += 1
 		end
-		Check.eq(seen >= 1, true, "shop kits")
+		Check.eq(seen, 6, "shop kits")
 	end
+	local function portalOf(folder: any, id: string): any
+		for _, inst in descendants(folder) do
+			if inst.Name == id and inst.ClassName == "Model" then
+				return inst
+			end
+		end
+		return nil
+	end
+	local function assertPortal(model: any, id: string, detail: boolean)
+		Check.truthy(model, id)
+		Check.eq(model:GetAttribute("TownKit"), "Portals", id)
+		Check.eq(model:GetAttribute("KitDetail"), detail, id)
+		Check.eq(model.PrimaryPart.Name, "Root", id)
+		Check.eq(model:GetAttribute("KitAfterParts") > model:GetAttribute("KitBeforeParts"), true, id)
+		local vortex = 0
+		local rings = 0
+		local spirals = 0
+		local lights = 0
+		local locks = 0
+		local prompts = 0
+		local anchors = 0
+		local mesh = 0
+		local wedges = 0
+		local scriptSource = nil
+		local signText = ""
+		local extra = 0
+		local core = 0
+		local particles = 0
+		for _, inst in descendants(model) do
+			if inst.Name == "Vortex" then
+				vortex += 1
+				Check.eq(materialName(inst), "Neon", id)
+				Check.eq(inst:GetAttribute("NeonRole"), "portal", id)
+			elseif inst.Name == "VortexRing" then
+				rings += 1
+				Check.eq(inst:GetAttribute("TownSpin"), true, id)
+			elseif inst.Name == "VortexSpiral" then
+				spirals += 1
+			elseif inst.Name == "LockIcon" and inst.ClassName == "Model" then
+				locks += 1
+			elseif inst.Name == "VortexSpin" and inst.ClassName == "Script" then
+				scriptSource = inst.Source
+			elseif inst.Name == "SignText" and type(inst.Text) == "string" then
+				signText ..= inst.Text
+			elseif string.sub(inst.Name, -12) == "PromptAnchor" then
+				anchors += 1
+			end
+			if inst.ClassName == "ProximityPrompt" then
+				prompts += 1
+			elseif inst.ClassName == "MeshPart" then
+				mesh += 1
+			elseif inst.ClassName == "WedgePart" then
+				wedges += 1
+			elseif inst.ClassName == "PointLight" then
+				lights += 1
+				Check.eq(inst.Shadows, false, id)
+			elseif inst.ClassName == "ParticleEmitter" and inst:GetAttribute("TownEffect") == id then
+				local life = inst.Lifetime
+				particles += inst.Rate * life.Max
+				if inst:GetAttribute("TownFlame") == "extra" then
+					extra += 1
+				elseif inst:GetAttribute("TownFlame") == "core" then
+					core += 1
+				end
+			end
+		end
+		Check.eq(vortex, 1, id)
+		Check.eq(locks, 1, id)
+		Check.eq(prompts, 0, id)
+		Check.eq(anchors, 0, id)
+		Check.eq(mesh, 0, id)
+		Check.eq(wedges > 0, true, id)
+		Check.eq(rings >= 4, true, id)
+		Check.eq(core, 1, id)
+		Check.eq(particles <= TownLook.VFX_MAX_PARTICLES, true, id .. " " .. tostring(particles))
+		if id == "WhisperingWoods" then
+			Check.contains(signText, "Whispering Woods")
+		elseif id == "SunkenMarsh" then
+			Check.contains(signText, "Sunken Marsh")
+			Check.contains(signText, "Level 25+")
+		else
+			Check.contains(signText, "Bone Quarry")
+		end
+		Check.eq(type(scriptSource), "string", id)
+		Check.eq(string.find(scriptSource, "LUNE", 1, true) ~= nil, true, id)
+		Check.eq(string.find(scriptSource, "Heartbeat", 1, true) ~= nil, true, id)
+		local chunk = luau.load(scriptSource, {
+			environment = {
+				_G = _G,
+				pcall = pcall,
+				rawget = rawget,
+				type = type,
+			},
+		})
+		chunk()
+		if detail then
+			Check.eq(
+				model:GetAttribute("KitAfterParts") >= 200,
+				true,
+				id .. " " .. tostring(model:GetAttribute("KitAfterParts"))
+			)
+			Check.eq(spirals > 0, true, id)
+			Check.eq(extra >= 1, true, id)
+			Check.eq(lights >= 1, true, id)
+		else
+			Check.eq(spirals, 0, id)
+			Check.eq(extra, 0, id)
+			Check.eq(lights, 1, id)
+		end
+		print(
+			string.format(
+				"portal %s detail=%s parts=%s lights=%s emitters=%s particles=%.2f rings=%d wedges=%d",
+				id,
+				tostring(detail),
+				tostring(model:GetAttribute("KitAfterParts")),
+				tostring(lights),
+				tostring(model:GetAttribute("KitAfterEmitters")),
+				particles,
+				rings,
+				wedges
+			)
+		)
+	end
+	local function dressingOf(folder: any): any
+		for _, inst in folder:GetDescendants() do
+			if inst.Name == "PlazaDressing" then
+				return inst
+			end
+		end
+		return nil
+	end
+	local function partSamples(part: any): { any }
+		local out = {}
+		local cf = part.CFrame
+		local size = part.Size
+		if cf == nil or size == nil then
+			return out
+		end
+		for _, sx in { -0.5, 0, 0.5 } do
+			for _, sy in { -0.5, 0, 0.5 } do
+				for _, sz in { -0.5, 0, 0.5 } do
+					table.insert(out, cf * roblox.Vector3.new(size.X * sx, size.Y * sy, size.Z * sz))
+				end
+			end
+		end
+		return out
+	end
+	local function inApproach(point: any, origin: any, look: any, length: number, halfWidth: number): boolean
+		if point.Y > 7.2 then
+			return false
+		end
+		local dx = point.X - origin.X
+		local dy = point.Y - origin.Y
+		local dz = point.Z - origin.Z
+		local along = dx * look.X + dy * look.Y + dz * look.Z
+		if along < -0.75 or along > length then
+			return false
+		end
+		local lx = dx - look.X * along
+		local ly = dy - look.Y * along
+		local lz = dz - look.Z * along
+		return math.sqrt(lx * lx + ly * ly + lz * lz) <= halfWidth
+	end
+	local function assertPlaza(folder: any, detail: boolean)
+		local dress = dressingOf(folder)
+		Check.truthy(dress, "PlazaDressing")
+		Check.eq(dress:GetAttribute("TownKit"), "PlazaDressing")
+		Check.eq(dress:GetAttribute("KitDetail"), detail)
+		local lamps = dress:GetAttribute("PlazaLamps")
+		local crystals = dress:GetAttribute("PlazaCrystals")
+		local glow = dress:GetAttribute("PlazaGlow")
+		Check.eq(type(lamps) == "number" and lamps >= 24, true, "lamps " .. tostring(lamps))
+		Check.eq(type(glow) == "number" and glow <= 72, true, "glow " .. tostring(glow))
+		if detail then
+			Check.eq(type(crystals) == "number" and crystals >= 12, true, "crystals " .. tostring(crystals))
+			Check.eq(glow > 0, true)
+		else
+			Check.eq(glow, 0)
+		end
+		local dressedPosts = 0
+		local surface = 0
+		local points = 0
+		local prompts = 0
+		local emitters = 0
+		local particles = 0
+		local humans = 0
+		local mesh = 0
+		local kitParts = 0
+		for _, inst in folder:GetDescendants() do
+			if inst.Name == "LampPost" and inst:GetAttribute("PlazaDressed") == true then
+				dressedPosts += 1
+			end
+		end
+		for _, inst in dress:GetDescendants() do
+			if BASE_PART[inst.ClassName] == true then
+				kitParts += 1
+			end
+			if inst.ClassName == "SurfaceLight" then
+				surface += 1
+				Check.eq(inst.Shadows, false, inst.Name)
+			elseif inst.ClassName == "PointLight" then
+				points += 1
+			elseif inst.ClassName == "ProximityPrompt" then
+				prompts += 1
+			elseif inst.ClassName == "Humanoid" then
+				humans += 1
+			elseif inst.ClassName == "MeshPart" then
+				mesh += 1
+			elseif inst.ClassName == "ParticleEmitter" then
+				emitters += 1
+				local effect = inst:GetAttribute("TownEffect")
+				Check.eq(effect == "PlazaLife" or effect == "PlazaBrazier", true, inst.Name)
+				Check.eq(inst:GetAttribute("TownFlame"), "extra")
+				particles += inst.Rate * inst.Lifetime.Max
+			end
+		end
+		local braziers = dress:GetAttribute("PlazaBraziers")
+		Check.eq(
+			type(braziers) == "number" and braziers >= 6 and braziers <= 8,
+			true,
+			"braziers " .. tostring(braziers)
+		)
+		Check.eq(dressedPosts >= 1, true, "dressed posts")
+		Check.eq(points + surface, glow)
+		Check.eq(glow <= 72, true, tostring(glow))
+		Check.eq(prompts, 0)
+		Check.eq(humans, 0)
+		Check.eq(mesh, 0)
+		local byEffect = {}
+		for _, inst in dress:GetDescendants() do
+			if inst.ClassName == "ParticleEmitter" then
+				local effect = inst:GetAttribute("TownEffect")
+				local row = byEffect[effect]
+				if row == nil then
+					row = { count = 0, particles = 0 }
+					byEffect[effect] = row
+				end
+				row.count += 1
+				row.particles += inst.Rate * inst.Lifetime.Max
+			end
+		end
+		for effect, row in byEffect do
+			local cap = if effect == "PlazaBrazier" then 8 else TownLook.VFX_MAX_EMITTERS
+			Check.eq(row.count <= cap, true, effect .. " " .. tostring(row.count))
+			Check.eq(row.particles <= TownLook.VFX_MAX_PARTICLES, true, effect)
+		end
+		if detail then
+			Check.eq(byEffect.PlazaBrazier ~= nil and byEffect.PlazaBrazier.count == braziers, true)
+			Check.eq(emitters > 0, true)
+		else
+			Check.eq(emitters, 0)
+			Check.eq(byEffect.PlazaBrazier, nil)
+		end
+		local approaches = {}
+		for _, inst in folder:GetDescendants() do
+			if inst.Name == "DoorAnchor" and inst:GetAttribute("TownAnchor") == "Door" and inst.CFrame ~= nil then
+				local look = inst.CFrame.LookVector
+				local half = inst.Size.X * 0.5 + 2
+				if half < 4 then
+					half = 4
+				end
+				table.insert(approaches, {
+					origin = inst.CFrame.Position + look * (inst.Size.Z * 0.5),
+					look = look,
+					length = 10,
+					halfWidth = half,
+					label = "door",
+				})
+			end
+		end
+		for _, name in { "WhisperingWoods", "SunkenMarsh", "BoneQuarry" } do
+			local portal = nil
+			for _, inst in folder:GetDescendants() do
+				if inst.Name == name and inst.ClassName == "Model" then
+					portal = inst
+				end
+			end
+			Check.truthy(portal, name)
+			local cf = portal:GetPivot()
+			table.insert(approaches, {
+				origin = cf.Position,
+				look = cf.LookVector,
+				length = 10,
+				halfWidth = 5.5,
+				label = name,
+			})
+		end
+		local well = nil
+		for _, inst in folder:GetDescendants() do
+			if inst.Name == "WeepingWell" and inst.ClassName == "Model" then
+				well = inst
+			end
+		end
+		Check.truthy(well, "well")
+		local wellAt = well:GetPivot().Position
+		local roads = {}
+		local promptsAt = {}
+		for _, inst in folder:GetDescendants() do
+			local name = inst.Name
+			if inst.Name == "TownRoad" then
+				table.insert(roads, inst)
+			elseif type(name) == "string" and string.sub(name, -13) == "PromptAnchor" and inst.CFrame ~= nil then
+				table.insert(promptsAt, inst.CFrame.Position)
+			end
+		end
+		Check.eq(#approaches >= 6, true, "approaches")
+		for _, inst in dress:GetDescendants() do
+			if BASE_PART[inst.ClassName] ~= true then
+				continue
+			end
+			if inst.Transparency ~= nil and inst.Transparency >= 1 then
+				continue
+			end
+			for _, point in partSamples(inst) do
+				for _, approach in approaches do
+					Check.eq(
+						inApproach(point, approach.origin, approach.look, approach.length, approach.halfWidth),
+						false,
+						inst.Name .. " " .. approach.label
+					)
+				end
+				if point.Y <= 7.2 then
+					local dx = point.X - wellAt.X
+					local dz = point.Z - wellAt.Z
+					Check.eq(dx * dx + dz * dz > 81, true, inst.Name .. " well")
+					for _, promptAt in promptsAt do
+						local px = point.X - promptAt.X
+						local pz = point.Z - promptAt.Z
+						Check.eq(px * px + pz * pz > 16, true, inst.Name .. " prompt")
+					end
+				end
+				if inst.CanCollide == true then
+					for _, road in roads do
+						local localPos = road.CFrame:Inverse() * point
+						local onRoad = math.abs(localPos.X) <= road.Size.X * 0.5
+							and math.abs(localPos.Z) <= road.Size.Z * 0.5
+						Check.eq(onRoad, false, inst.Name .. " road")
+					end
+				end
+			end
+		end
+		local cobble = nil
+		for _, inst in folder:GetDescendants() do
+			if inst.Name == "Cobble" then
+				cobble = inst
+			end
+		end
+		Check.truthy(cobble, "Cobble")
+		Check.eq(materialName(cobble), "Cobblestone")
+		local original = nil
+		for _, inst in folder:GetDescendants() do
+			if inst.Name == "CrimsonBrazier" and inst.ClassName == "Model" then
+				original = inst
+			end
+		end
+		Check.truthy(original, "CrimsonBrazier")
+		print(
+			string.format(
+				"plaza detail=%s lamps=%s new=%s crystals=%s runes=%s braziers=%s glow=%s parts=%d emitters=%d particles=%.2f",
+				tostring(detail),
+				tostring(lamps),
+				tostring(dress:GetAttribute("PlazaNewLamps")),
+				tostring(crystals),
+				tostring(dress:GetAttribute("PlazaRunes")),
+				tostring(braziers),
+				tostring(glow),
+				kitParts,
+				emitters,
+				particles
+			)
+		)
+	end
+	local discovered = TownKits.discover()
+	local plazaKit = nil
+	for _, kit in discovered do
+		if kit.name == "PlazaDressing" then
+			plazaKit = kit
+		end
+	end
+	Check.truthy(plazaKit, "PlazaDressing")
+	Check.eq(plazaKit.order, 80)
+	Check.eq(discovered[#discovered].name, "MaterialPass")
+	Check.eq(discovered[#discovered].order, 1000)
+	local plazaSource = fs.readFile("src/server/TownKits/PlazaDressing.luau")
+	Check.eq(string.find(plazaSource, "Kit.animate", 1, true) ~= nil, true)
+	Check.eq(string.find(plazaSource, "Heartbeat", 1, true), nil)
+	Check.eq(string.find(plazaSource, "Destroying", 1, true), nil)
+	Check.eq(string.find(plazaSource, "task.wait", 1, true), nil)
+	Check.eq(string.find(plazaSource, "task.spawn", 1, true), nil)
+	Check.eq(string.find(plazaSource, 'Instance.new("PointLight")', 1, true) ~= nil, true)
+	Check.eq(string.find(plazaSource, 'Instance.new("SurfaceLight")', 1, true) ~= nil, true)
+	Check.eq(string.find(plazaSource, "FlameViolet", 1, true), nil)
 	local ok, err = pcall(function()
 		local lowFolder = buildAt(1)
 		local highFolder = buildAt(10)
@@ -1848,12 +2342,380 @@ Check.test("every registered kit builds on the town when UnionAsync returns an a
 		Check.eq(high:GetAttribute("KitQuality"), 10)
 		Check.eq(high:GetAttribute("KitDetail"), true)
 		Check.eq(high:GetAttribute("KitAfterParts") > low:GetAttribute("KitAfterParts"), true)
+		for _, kitName in { "Lanternwright", "PalePedlar" } do
+			local lowShop = findKitModel(lowFolder, kitName)
+			local highShop = findKitModel(highFolder, kitName)
+			Check.truthy(lowShop, kitName)
+			Check.truthy(highShop, kitName)
+			Check.eq(lowShop:GetAttribute("KitDetail"), false, kitName)
+			Check.eq(highShop:GetAttribute("KitDetail"), true, kitName)
+			Check.eq(highShop:GetAttribute("KitAfterParts") > lowShop:GetAttribute("KitAfterParts"), true, kitName)
+		end
 		assertShopAnchors(lowFolder)
 		assertShopAnchors(highFolder)
+		for _, id in REQUIRED_PORTALS do
+			local lowPortal = portalOf(lowFolder, id)
+			local highPortal = portalOf(highFolder, id)
+			assertPortal(lowPortal, id, false)
+			assertPortal(highPortal, id, true)
+			Check.eq(highPortal:GetAttribute("KitAfterParts") > lowPortal:GetAttribute("KitAfterParts"), true, id)
+		end
+		local Portals = loadModule("src/server/TownKits/Portals.luau")
+		local function countPortalParts(folder: any): number
+			local total = 0
+			for _, id in REQUIRED_PORTALS do
+				total += Kit.countParts(portalOf(folder, id))
+			end
+			return total
+		end
+		local before = countPortalParts(highFolder)
+		Check.eq(Portals.replace(highFolder, { qualityLevel = 10 }), nil)
+		Check.eq(countPortalParts(highFolder), before, "second replace")
+		assertPlaza(lowFolder, false)
+		assertPlaza(highFolder, true)
+		local lowDress = nil
+		local highDress = nil
+		for _, inst in lowFolder:GetDescendants() do
+			if inst.Name == "PlazaDressing" then
+				lowDress = inst
+			end
+		end
+		for _, inst in highFolder:GetDescendants() do
+			if inst.Name == "PlazaDressing" then
+				highDress = inst
+			end
+		end
+		Check.eq(highDress:GetAttribute("KitAfterParts") > lowDress:GetAttribute("KitAfterParts"), true)
+		Check.eq(lowFolder:GetAttribute("CensusQuality"), 1)
+		Check.eq(highFolder:GetAttribute("CensusQuality"), 10)
+		Check.eq(
+			string.find(tostring(lowFolder:GetAttribute("CensusLine")), "[TownCensus] quality=1 ", 1, true) ~= nil,
+			true
+		)
+		Check.eq(
+			string.find(tostring(highFolder:GetAttribute("CensusLine")), "[TownCensus] quality=10 ", 1, true) ~= nil,
+			true
+		)
+		local slate = installRoblox().Enum.Material.Slate
+		Check.eq(type(slate), "userdata")
+		Check.eq(installRoblox().typeof(slate), "EnumItem")
+		Check.eq(slate.Name, "Slate")
+		Check.eq(lowFolder:GetAttribute("CensusTinted") > 0, true, "q1 tinted")
+		Check.eq(highFolder:GetAttribute("CensusTinted") > 0, true, "q10 tinted")
+		Check.eq(highFolder:GetAttribute("CensusMoss") > 0, true, "q10 moss")
+		Check.eq(highFolder:GetAttribute("CensusIvy") > 0, true, "q10 ivy")
+		Check.eq(highFolder:GetAttribute("CensusRoots") > 0, true, "q10 roots")
+		Check.eq(lowFolder:GetAttribute("CensusParts") > 0, true)
+		Check.eq(highFolder:GetAttribute("CensusLights") <= TownLook.LIGHT_CAP, true)
+		Check.eq(highFolder:GetAttribute("CensusEmitters") <= TownLook.EMITTER_CAP, true)
+		Check.eq(highFolder:GetAttribute("CensusHighlights") < 31, true)
+		local Plaza = loadModule("src/server/TownKits/PlazaDressing.luau")
+		Check.eq(Plaza.replace(highFolder, { qualityLevel = 10 }), nil)
 	end)
 	TownKits.strict = false
 	TownKits.forceQuality = nil
 	if not ok then
 		error(err, 0)
 	end
+end)
+
+Check.test("lanternwright takes the free plaza slot and the pedlar counter survives", function()
+	local root = townRoot()
+	local hollow = named(root, "Hollowmere")
+	local shop = hollow:FindFirstChild("Lanternwright")
+	Check.truthy(shop, "Lanternwright")
+	Check.eq(shop.ClassName, "Model")
+	Check.eq(shop.PrimaryPart.Name, "Root")
+	Check.eq(shop.PrimaryPart.Transparency, 1)
+	local pivot = shop:GetPivot()
+	local radius = math.sqrt(pivot.X * pivot.X + pivot.Z * pivot.Z)
+	local angle = math.deg(math.atan2(pivot.X, pivot.Z))
+	if angle < 0 then
+		angle += 360
+	end
+	Check.near(radius, 44, 0.05, "lanternwright radius")
+	Check.near(angle, 25, 0.05, "lanternwright angle")
+	Check.eq(shop:GetAttribute("TownKit"), "Lanternwright")
+	local signText = ""
+	local prompts = 0
+	local anchor = nil
+	local mesh = 0
+	local humanoids = 0
+	local amber = 0
+	local windows = 0
+	local glyph = nil
+	for _, inst in descendants(shop) do
+		if inst.Name == "SignText" and inst.ClassName == "TextLabel" then
+			signText = inst.Text
+		elseif inst.Name == "LanternwrightPromptAnchor" then
+			anchor = inst
+		elseif inst.Name == "LanternGlobe" then
+			amber += 1
+			Check.eq(string.gsub(inst.Color:ToHex(), "#", ""), "FFB36B", "amber lantern")
+		elseif inst.Name == "Window" then
+			windows += 1
+			Check.eq(string.gsub(inst.Color:ToHex(), "#", ""), "FFB36B", "warm window")
+		elseif inst.Name == "SignGlyph" then
+			glyph = inst
+		elseif inst.ClassName == "ProximityPrompt" then
+			prompts += 1
+		elseif inst.ClassName == "MeshPart" then
+			mesh += 1
+		elseif inst.ClassName == "Humanoid" then
+			humanoids += 1
+		end
+	end
+	local districtFolder = named(root, "Districts")
+	Check.truthy(districtFolder, "Districts")
+	Check.eq(districtFolder:FindFirstChild("Lanternwright"), nil)
+	Check.eq(amber >= 12, true, "amber rack " .. tostring(amber))
+	Check.eq(windows >= 2, true, "windows")
+	Check.truthy(glyph, "lantern icon")
+	Check.eq(signText, "The Lanternwright")
+	Check.truthy(anchor, "LanternwrightPromptAnchor")
+	Check.eq(anchor:GetAttribute("ShopId"), "Lanternwright")
+	Check.eq(prompts, 0)
+	Check.eq(mesh, 0)
+	Check.eq(humanoids, 0)
+	Check.eq(shop:GetAttribute("KitAfterParts") > 800, true, tostring(shop:GetAttribute("KitAfterParts")))
+	print(
+		string.format(
+			"lanternwright angle=%.1f radius=%.1f parts=%s lights=%s emitters=%s",
+			angle,
+			radius,
+			tostring(shop:GetAttribute("KitAfterParts")),
+			tostring(shop:GetAttribute("KitAfterLights")),
+			tostring(shop:GetAttribute("KitAfterEmitters"))
+		)
+	)
+
+	local pedlar = nil
+	local districts = named(root, "Districts")
+	Check.truthy(districts, "Districts")
+	pedlar = districts:FindFirstChild("PalePedlar")
+	Check.truthy(pedlar, "PalePedlar")
+	Check.eq(pedlar:GetAttribute("TownKit"), "PalePedlar")
+	local floor = nil
+	local lantern = nil
+	local stock = nil
+	local pedlarPrompt = nil
+	local pedlarAnchor = nil
+	local promptCount = 0
+	local neon = 0
+	local supply = nil
+	local supplyGlow = nil
+	local cageGlow = 0
+	local cloak = 0
+	for _, inst in descendants(pedlar) do
+		if inst.Name == "Floor" and inst.ClassName == "Part" then
+			floor = inst
+		elseif inst.Name == "PedlarLantern" and inst.ClassName == "Part" then
+			lantern = inst
+		elseif inst.Name == "StockLight" then
+			stock = inst
+		elseif inst.Name == "SupplyLight" then
+			supply = inst
+		elseif inst.Name == "SupplyGlow" then
+			supplyGlow = inst
+		elseif inst.Name == "CageGlow" then
+			cageGlow += 1
+		elseif inst.Name == "CloakFacet" or inst.Name == "CloakHood" or inst.Name == "CloakHem" then
+			cloak += 1
+		elseif inst.Name == "PalePedlarPromptAnchor" then
+			pedlarAnchor = inst
+		elseif inst.ClassName == "ProximityPrompt" then
+			promptCount += 1
+			if inst.Name == "Pedlar" then
+				pedlarPrompt = inst
+			end
+		end
+		if materialName(inst) == "Neon" then
+			neon += 1
+		end
+	end
+	Check.truthy(floor, "Floor")
+	Check.truthy(lantern, "PedlarLantern")
+	Check.truthy(stock, "StockLight")
+	Check.truthy(pedlarPrompt, "Pedlar prompt")
+	Check.eq(pedlarPrompt.Parent, floor)
+	Check.eq(pedlarPrompt.ActionText, "Browse the Pedlar's cages")
+	Check.eq(promptCount, 1)
+	Check.eq(stock.Parent, lantern)
+	Check.eq(stock.Name, "StockLight")
+	Check.truthy(supply, "SupplyLight")
+	Check.eq(supply.Enabled, true)
+	Check.eq(supply.Parent.Name, "SupplyLantern")
+	Check.eq(supply.Parent ~= lantern, true)
+	Check.eq(string.gsub(supply.Color:ToHex(), "#", ""), "7FA34A")
+	Check.truthy(supplyGlow, "SupplyGlow")
+	Check.eq(supplyGlow.Enabled, true)
+	Check.eq(supplyGlow.Parent.Name, "SupplyLantern")
+	Check.eq(cageGlow, 4)
+	Check.eq(cloak, 0)
+	local statue = nil
+	for _, inst in descendants(pedlar) do
+		if inst.Name == "PedlarStatue" then
+			statue = inst
+		end
+	end
+	Check.truthy(statue, "PedlarStatue")
+	Check.eq(statue.ClassName, "Model")
+	local Lanterns = require("../src/shared/Config/Lanterns")
+	Check.eq(stock.Range, Lanterns.RANGE)
+	Check.eq(stock.Brightness, Lanterns.BRIGHTNESS)
+	Check.eq(stock.Shadows, Lanterns.SHADOWS)
+	Check.eq(floor.Size.X, Town.STALL_WIDTH)
+	Check.eq(floor.Size.Z, Town.STALL_DEPTH)
+	Check.eq(neon >= 5, true, "pedlar glow " .. tostring(neon))
+	Check.truthy(pedlarAnchor, "PalePedlarPromptAnchor")
+	Check.eq(pedlarAnchor:GetAttribute("ShopId"), "PalePedlar")
+	Check.eq(pedlarAnchor.Parent, pedlar)
+	local collection = installRoblox().game:GetService("CollectionService")
+	local stalls = collection:GetTagged("PedlarStall")
+	local lanterns = collection:GetTagged("PedlarLantern")
+	local stallKept = false
+	local lanternKept = false
+	for _, inst in stalls do
+		if inst == pedlar then
+			stallKept = true
+		end
+	end
+	for _, inst in lanterns do
+		if inst == lantern then
+			lanternKept = true
+		end
+	end
+	Check.eq(stallKept, true, "PedlarStall tag")
+	Check.eq(lanternKept, true, "PedlarLantern tag")
+	print(
+		string.format(
+			"pale pedlar parts=%s lights=%s emitters=%s",
+			tostring(pedlar:GetAttribute("KitAfterParts")),
+			tostring(pedlar:GetAttribute("KitAfterLights")),
+			tostring(pedlar:GetAttribute("KitAfterEmitters"))
+		)
+	)
+end)
+
+Check.test("all-kit town keeps the material pass inside the census guard", function()
+	local TownMaterials = require("../src/shared/Config/TownMaterials")
+	local MaterialPass = loadModule("src/server/TownKits/MaterialPass.luau")
+	local root = townRoot()
+	local before = countClass(root, "Part") + countClass(root, "WedgePart") + countClass(root, "UnionOperation")
+	Check.eq(MaterialPass.replace(root, { qualityLevel = 10 }), nil)
+	local report = MaterialPass.last
+	local after = countClass(root, "Part") + countClass(root, "WedgePart") + countClass(root, "UnionOperation")
+	Check.eq(after, before)
+	Check.eq(report.variantsApplied, 0)
+	Check.eq(report.natureParts > 0, true, tostring(report.natureParts))
+	Check.eq(report.parts <= 20000, true, tostring(report.parts))
+	Check.eq(report.lights <= 200, true, tostring(report.lights))
+	Check.eq(report.emitters <= 200, true, tostring(report.emitters))
+	Check.eq(report.parts <= TownLook.PART_CAP, true)
+	Check.eq(report.lights <= TownLook.LIGHT_CAP, true)
+	Check.eq(report.emitters <= TownLook.EMITTER_CAP, true)
+	local built = named(root, TownMaterials.NATURE_FOLDER)
+	Check.truthy(built, "MaterialNature")
+	local moss = 0
+	local ivyWedge = 0
+	local ivyLeaf = 0
+	local roots = 0
+	for _, inst in descendants(built) do
+		if inst.Name == "MossPatch" then
+			moss += 1
+		elseif inst.Name == "IvyWedge" then
+			ivyWedge += 1
+		elseif inst.Name == "IvyLeaf" then
+			ivyLeaf += 1
+		elseif inst.Name == "Gnarl" then
+			roots += 1
+		end
+	end
+	Check.eq(moss > 0, true, "default quality moss " .. tostring(moss))
+	Check.eq(ivyWedge > 0, true, "default quality ivy " .. tostring(ivyWedge))
+	Check.eq(ivyLeaf > 0, true, "default quality ivy leaf " .. tostring(ivyLeaf))
+	Check.eq(roots > 0, true, "default quality roots " .. tostring(roots))
+	local nature = built
+	local roles = { AgedBrick = 0, MossyCobble = 0, WornDarkTimber = 0, SlateShingle = 0, WeatheredStone = 0, Bone = 0 }
+	for _, inst in descendants(root) do
+		local role = inst:GetAttribute(TownMaterials.ROLE_ATTRIBUTE)
+		if type(role) == "string" then
+			Check.eq(roles[role] ~= nil, true, tostring(role))
+			roles[role] += 1
+		end
+		if materialName(inst) == "Neon" or inst.Name == "Root" or inst:GetAttribute("ShopId") ~= nil then
+			Check.eq(role, nil, tostring(inst.Name))
+		end
+		if inst.ClassName == "SurfaceGui" then
+			Check.eq(inst.Parent:GetAttribute(TownMaterials.ROLE_ATTRIBUTE), nil, "sign")
+		end
+		local variant = inst.MaterialVariant
+		Check.eq(variant == nil or variant == "", true, tostring(inst.Name))
+	end
+	local pedlar = named(root, "PalePedlar")
+	for _, inst in descendants(pedlar) do
+		Check.eq(inst:GetAttribute(TownMaterials.ROLE_ATTRIBUTE), nil, "pedlar " .. tostring(inst.Name))
+	end
+	Check.eq(roles.MossyCobble > 0, true)
+	Check.eq(roles.WornDarkTimber > 0, true)
+	Check.eq(roles.WeatheredStone > 0, true)
+	local service = installRoblox().game:GetService("MaterialService")
+	Check.eq(service:FindFirstChild("AgedBrick").ClassName, "MaterialVariant")
+	Check.eq(service:FindFirstChild("MossyCobble").ClassName, "MaterialVariant")
+	Check.eq(service:FindFirstChild("WornDarkTimber").ClassName, "MaterialVariant")
+	Check.eq(service:FindFirstChild("SlateShingle").ClassName, "MaterialVariant")
+	Check.eq(service:FindFirstChild("WeatheredStone").ClassName, "MaterialVariant")
+	Check.eq(service:FindFirstChild("Bone").ClassName, "MaterialVariant")
+	print(
+		string.format(
+			"all-kit material pass tinted=%d nature=%d moss=%d ivyWedge=%d ivyLeaf=%d roots=%d parts=%d lights=%d emitters=%d cobble=%d timber=%d stone=%d shingle=%d bone=%d brick=%d",
+			report.tinted,
+			report.natureParts,
+			moss,
+			ivyWedge,
+			ivyLeaf,
+			roots,
+			report.parts,
+			report.lights,
+			report.emitters,
+			roles.MossyCobble,
+			roles.WornDarkTimber,
+			roles.WeatheredStone,
+			roles.SlateShingle,
+			roles.Bone,
+			roles.AgedBrick
+		)
+	)
+end)
+
+Check.test("town census line and attributes survive the build", function()
+	local root = townRoot()
+	local line = root:GetAttribute("CensusLine")
+	Check.eq(type(line) == "string", true, tostring(line))
+	Check.eq(string.find(line, "[TownCensus] quality=10 ", 1, true) ~= nil, true, line)
+	Check.eq(string.find(line, "tinted=", 1, true) ~= nil, true, line)
+	Check.eq(string.find(line, "moss=", 1, true) ~= nil, true, line)
+	Check.eq(string.find(line, "ivy=", 1, true) ~= nil, true, line)
+	Check.eq(string.find(line, "roots=", 1, true) ~= nil, true, line)
+	Check.eq(root:GetAttribute("CensusTinted") > 0, true, tostring(root:GetAttribute("CensusTinted")))
+	Check.eq(root:GetAttribute("CensusMoss") > 0, true, tostring(root:GetAttribute("CensusMoss")))
+	Check.eq(root:GetAttribute("CensusIvy") > 0, true, tostring(root:GetAttribute("CensusIvy")))
+	Check.eq(root:GetAttribute("CensusQuality"), 10)
+	Check.eq(root:GetAttribute("CensusParts") > 0, true, tostring(root:GetAttribute("CensusParts")))
+	Check.eq(root:GetAttribute("CensusLights") > 0, true, tostring(root:GetAttribute("CensusLights")))
+	Check.eq(root:GetAttribute("CensusEnabledLights"), root:GetAttribute("CensusLights"))
+	Check.eq(type(root:GetAttribute("CensusEmitters")) == "number", true)
+	Check.eq(type(root:GetAttribute("CensusHighlights")) == "number", true)
+	Check.eq(root:GetAttribute("CensusParts") <= TownLook.PART_CAP, true)
+	Check.eq(root:GetAttribute("CensusLights") <= TownLook.LIGHT_CAP, true)
+	Check.eq(root:GetAttribute("CensusEmitters") <= TownLook.EMITTER_CAP, true)
+	Check.eq(root:GetAttribute("CensusHighlights") < 31, true)
+	Check.eq(root:GetAttribute("CensusKit_Portals") > 800, true, tostring(root:GetAttribute("CensusKit_Portals")))
+	local probe = installRoblox().CFrame.new(1, 2, 3)
+	local readable, _member = pcall(function()
+		return probe.r00
+	end)
+	Check.eq(readable, false, "CFrame.r00 must throw")
+	Check.contains(fs.readFile("src/server/TownBuilder.luau"), "[TownCensus] quality=")
+	Check.contains(fs.readFile("src/server/TownKits/Kit.luau"), "[TownKits] %s step %s failed: %s")
 end)

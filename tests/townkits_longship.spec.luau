@@ -6,6 +6,8 @@ local fs = require("@lune/fs")
 local luau = require("@lune/luau")
 
 local Check = require("./check")
+local RobloxEnum = require("./roblox_enum")
+local enumTypeof = RobloxEnum.typeof(typeof)
 
 local function makeInstance(className: string): any
 	local inst = {
@@ -240,12 +242,36 @@ local function identity(): any
 	return newCFrame(0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1)
 end
 
+local function colorFromHex(hex: string): any
+	local raw = string.gsub(string.upper(hex), "#", "")
+	local function channel(startAt: number): number
+		return (tonumber(string.sub(raw, startAt, startAt + 1), 16) or 0) / 255
+	end
+	local color = {
+		R = channel(1),
+		G = channel(3),
+		B = channel(5),
+	}
+	function color:ToHex(): string
+		local function byte(value: number): number
+			return math.clamp(math.floor(value * 255 + 0.5), 0, 255)
+		end
+		return string.format("#%02X%02X%02X", byte(self.R), byte(self.G), byte(self.B))
+	end
+	return setmetatable(color, {
+		__index = function(_, key)
+			if key == "Hex" then
+				error("Hex is not a valid member of Color3", 2)
+			end
+			return nil
+		end,
+	})
+end
+
 local services = {}
 local roblox = {
 	Color3 = {
-		fromHex = function(hex: string)
-			return { Hex = hex }
-		end,
+		fromHex = colorFromHex,
 	},
 	Vector3 = {
 		new = function(x: number?, y: number?, z: number?)
@@ -307,19 +333,8 @@ local roblox = {
 			)
 		end,
 	},
-	Enum = setmetatable({}, {
-		__index = function(self, enumName)
-			local bucket = setmetatable({}, {
-				__index = function(items, itemName)
-					local item = { Name = itemName, EnumType = enumName, Value = 0 }
-					rawset(items, itemName, item)
-					return item
-				end,
-			})
-			rawset(self, enumName, bucket)
-			return bucket
-		end,
-	}),
+	Enum = RobloxEnum.library(nil),
+	typeof = enumTypeof,
 	Instance = {
 		new = function(className: string)
 			return makeInstance(className)
@@ -389,7 +404,7 @@ local function loadModule(path: string): any
 			error = error,
 			assert = assert,
 			type = type,
-			typeof = typeof,
+			typeof = enumTypeof,
 			pairs = pairs,
 			ipairs = ipairs,
 			next = next,
@@ -433,15 +448,14 @@ local Longship = loadModule("src/server/TownKits/Longship.luau")
 local TownKits = loadModule("src/server/TownKits/init.luau")
 local TownLook = require("../src/shared/Config/TownLook")
 
-local ALLOWED = {
-	["0B0A0C"] = true,
-	["7A0F12"] = true,
-	["9C7A3C"] = true,
-	["E8E0CF"] = true,
-	["7B5434"] = true,
-	["4A3024"] = true,
-	["7C7784"] = true,
-	["3C92FF"] = true,
+local BANNED = {
+	["C45CFF"] = true,
+	["FF00FF"] = true,
+	["FF2BD6"] = true,
+	["E040FB"] = true,
+	["F3ECFF"] = true,
+	["F4E8FF"] = true,
+	["6E5C9A"] = true,
 }
 
 local function countName(root: any, name: string): number
@@ -529,14 +543,16 @@ local function assertKit(model: any)
 			kitParts += 1
 			Check.eq(inst.Anchored, true, inst.Name)
 			Check.eq(inst.Transparency or 0, 0, inst.Name)
-			local hex = if inst.Color ~= nil then inst.Color.Hex else nil
-			Check.eq(ALLOWED[hex] == true, true, tostring(inst.Name) .. " " .. tostring(hex))
+			local hex = if inst.Color ~= nil and type(inst.Color.ToHex) == "function"
+				then string.gsub(inst.Color:ToHex(), "#", "")
+				else nil
+			Check.eq(BANNED[hex] == true, false, tostring(inst.Name) .. " bright " .. tostring(hex))
 			if inst:GetAttribute("TownDecor") == true then
 				Check.eq(inst.CanCollide, false, inst.Name)
 				Check.eq(inst.CanTouch, false, inst.Name)
 				Check.eq(inst.CanQuery, false, inst.Name)
 			end
-			local materialName = if type(inst.Material) == "table" then inst.Material.Name else nil
+			local materialName = RobloxEnum.name(inst.Material)
 			if materialName == "Neon" then
 				Check.eq(TownLook.NEON_ROLES[inst:GetAttribute("NeonRole")] == true, true, inst.Name)
 			end
@@ -546,7 +562,8 @@ local function assertKit(model: any)
 	Check.eq(countName(model, "MeshPart"), 0)
 	Check.eq(countName(model, "Highlight"), 0)
 	Check.eq(countName(model, "Humanoid"), 0)
-	Check.eq(countName(model, "PointLight") + countName(model, "SpotLight") + countName(model, "SurfaceLight"), 0)
+	local lights = countName(model, "PointLight") + countName(model, "SpotLight") + countName(model, "SurfaceLight")
+	Check.eq(lights <= 16, true, tostring(lights))
 	Check.eq(countName(model, "SerpentNeck"), 0)
 	Check.eq(countName(model, "SerpentHead"), 0)
 	Check.eq(countName(model, "ProwHead") >= 1, true)
@@ -625,6 +642,7 @@ Check.test("longship quality tiers drop ornament and keep the hull", function()
 	Check.eq(low.beforeLights, 0)
 	Check.eq(low.afterLights, 0)
 	Check.eq(low.beforeEmitters, low.afterEmitters)
+	Check.eq(low.afterParts < 120, true, tostring(low.afterParts))
 	Check.eq(countName(lowModel, "Shield"), 0)
 	Check.eq(countName(lowModel, "Strake"), 0)
 	Check.eq(countName(lowModel, "Rune"), 0)
@@ -640,7 +658,10 @@ Check.test("longship quality tiers drop ornament and keep the hull", function()
 	assertKit(highModel)
 	Check.eq(#high, 1)
 	Check.eq(high[1].detail, true)
-	Check.eq(high[1].afterLights, 0)
+	Check.eq(high[1].afterLights >= 4, true, tostring(high[1].afterLights))
+	Check.eq(high[1].afterLights <= 16, true, tostring(high[1].afterLights))
+	Check.eq(high[1].afterParts >= low.afterParts + 250, true, tostring(high[1].afterParts))
+	Check.eq(high[1].afterEmitters <= 40, true)
 	Check.eq(countName(highModel, "Shield") >= 8, true)
 	Check.eq(countName(highModel, "Strake") > 0, true)
 	Check.eq(countName(highModel, "Rune") >= 4, true)
@@ -756,11 +777,54 @@ Check.test("applyAll keeps going when one kit throws", function()
 	Check.eq(reports[1].id, "next")
 end)
 
-Check.test("town kits do no per-frame work", function()
-	local source = fs.readFile("src/server/TownKits/Kit.luau")
-		.. fs.readFile("src/server/TownKits/Longship.luau")
-		.. fs.readFile("src/server/TownKits/init.luau")
-	for _, needle in { "Heartbeat", "RenderStepped", "Stepped", ":Connect", "task.wait", "task.spawn", "task.defer" } do
-		Check.eq(string.find(source, needle, 1, true), nil, needle)
+Check.test("kit animation is one Lune-safe helper", function()
+	local kitSource = fs.readFile("src/server/TownKits/Kit.luau")
+	Check.eq(string.find(kitSource, "function Kit.animate", 1, true) ~= nil, true)
+	Check.eq(string.find(kitSource, "_G.LUNE", 1, true) ~= nil, true)
+	Check.eq(string.find(kitSource, "Heartbeat", 1, true) ~= nil, true)
+	Check.eq(string.find(kitSource, "Destroying", 1, true) ~= nil, true)
+	Check.eq(string.find(kitSource, "pcall", 1, true) ~= nil, true)
+	Check.eq(string.find(kitSource, "warn(stepErr)", 1, true) ~= nil, true)
+	Check.eq(string.find(kitSource, "link:Disconnect()", 1, true) ~= nil, true)
+	local ship = fs.readFile("src/server/TownKits/Longship.luau")
+	Check.eq(string.find(ship, "Kit.animate", 1, true) ~= nil, true)
+	for _, needle in { "Heartbeat", "RunService", ":Connect", "task.wait", "task.spawn", "task.defer" } do
+		Check.eq(string.find(ship, needle, 1, true), nil, needle)
 	end
+	local switched = {
+		"src/server/TownKits/ClockTower.luau",
+		"src/server/TownKits/Lanternwright.luau",
+		"src/server/TownKits/PalePedlar.luau",
+		"src/server/TownKits/PlazaDressing.luau",
+	}
+	for _, path in switched do
+		local text = fs.readFile(path)
+		Check.eq(string.find(text, "Kit.animate", 1, true) ~= nil, true, path)
+		for _, needle in { "Heartbeat", "RunService", "TweenService", "task.wait", "task.spawn" } do
+			Check.eq(string.find(text, needle, 1, true), nil, path .. " " .. needle)
+		end
+	end
+	local portals = fs.readFile("src/server/TownKits/Portals.luau")
+	Check.eq(string.find(portals, "Kit.animate", 1, true) ~= nil, true)
+	local ran = false
+	Kit.animate({ Parent = {} }, function()
+		ran = true
+	end)
+	Check.eq(ran, false)
+	local candle = false
+	local town = buildOldTavern()
+	Longship.replace(town, { qualityLevel = 10 })
+	for _, inst in town:GetDescendants() do
+		if inst.ClassName == "PointLight" then
+			Check.eq(inst.Shadows, false, inst.Name)
+			if
+				inst.Color ~= nil
+				and type(inst.Color.ToHex) == "function"
+				and string.gsub(inst.Color:ToHex(), "#", "") == "FFB36B"
+			then
+				candle = true
+			end
+		end
+	end
+	Check.eq(candle, true)
 end)

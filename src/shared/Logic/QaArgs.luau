@@ -9,6 +9,9 @@
 -- `relics` opens the shop gate once the rite has reached it.
 -- `rebirthready` fills the tier-1 rite requirements. Studio only. No remote.
 -- `seedv9` writes a v9 save before load. `rebirth6` writes a v10 save at six rites.
+-- `tarot` marks a Pale deck sample. `tarotblood` marks a Blood deck sample.
+-- `tarotpaid` marks the paid tent framework. Callers still require Studio.
+-- `nohud` asks Studio to hide client overlays. Callers still require Studio.
 
 local QaArgs = {}
 
@@ -16,14 +19,19 @@ export type Tokens = {
 	offlineSeconds: number,
 	utcDays: number,
 	utcJumpSeconds: number,
+	clockSeconds: number,
 	openTree: boolean,
 	reducedMotion: string,
 	fresh: boolean,
 	relics: boolean,
 	analytics: boolean,
+	tarot: boolean,
+	tarotBlood: boolean,
+	tarotPaid: boolean,
 	rebirthReady: boolean,
 	seedV9: boolean,
 	rebirth6: boolean,
+	noHud: boolean,
 }
 
 local function empty(): Tokens
@@ -31,14 +39,19 @@ local function empty(): Tokens
 		offlineSeconds = 0,
 		utcDays = 0,
 		utcJumpSeconds = 0,
+		clockSeconds = 0,
 		openTree = false,
 		reducedMotion = "",
 		fresh = false,
 		relics = false,
 		analytics = false,
+		tarot = false,
+		tarotBlood = false,
+		tarotPaid = false,
 		rebirthReady = false,
 		seedV9 = false,
 		rebirth6 = false,
+		noHud = false,
 	}
 end
 
@@ -66,8 +79,24 @@ function QaArgs.parse(args: any): Tokens
 	local index = 3
 	while index <= #parts do
 		local key = parts[index]
+		local clockPlus = string.match(key, "^clock%+(%d+)$")
 		if key == "relics" then
 			tokens.relics = true
+			index += 1
+		elseif key == "tarot" then
+			tokens.tarot = true
+			index += 1
+		elseif key == "tarotblood" then
+			tokens.tarotBlood = true
+			index += 1
+		elseif key == "tarotpaid" then
+			tokens.tarotPaid = true
+			index += 1
+		elseif clockPlus ~= nil then
+			local amount = whole(clockPlus)
+			if amount ~= nil then
+				tokens.clockSeconds = amount
+			end
 			index += 1
 		elseif key == "analytics" then
 			tokens.analytics = true
@@ -80,6 +109,9 @@ function QaArgs.parse(args: any): Tokens
 			index += 1
 		elseif key == "rebirth6" then
 			tokens.rebirth6 = true
+			index += 1
+		elseif key == "nohud" then
+			tokens.noHud = true
 			index += 1
 		elseif key == "opentree" or key == "fresh" then
 			if key == "fresh" then
@@ -115,6 +147,13 @@ function QaArgs.parse(args: any): Tokens
 	return tokens
 end
 
+function QaArgs.tarotBlood(isStudio: boolean, args: any): boolean
+	if isStudio ~= true then
+		return false
+	end
+	return QaArgs.parse(args).tarotBlood == true
+end
+
 function QaArgs.seedV9(isStudio: boolean, args: any): boolean
 	if isStudio ~= true then
 		return false
@@ -148,6 +187,13 @@ function QaArgs.wantsFresh(isStudio: boolean, args: any): boolean
 		return false
 	end
 	return QaArgs.parse(args).fresh == true
+end
+
+function QaArgs.noHud(isStudio: boolean, args: any): boolean
+	if isStudio ~= true then
+		return false
+	end
+	return QaArgs.parse(args).noHud == true
 end
 
 function QaArgs.reducedMotion(isStudio: boolean, args: any): boolean?
