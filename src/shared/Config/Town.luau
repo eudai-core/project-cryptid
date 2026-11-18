@@ -23,6 +23,9 @@ local Town = {
 	WELL_CANDLES = 8,
 	WELL_CANDLE_RADIUS = 6.4,
 	PROMPT_DISTANCE = 10,
+	-- Past the prompt, so a panel does not shut on the activation edge.
+	PANEL_HYSTERESIS = 2,
+	PANEL_POLL_SECONDS = 0.25,
 	PEDLAR_ID = "PalePedlar",
 	PEDLAR_HOST = "Floor",
 	PEDLAR_PROMPT_NAME = "Pedlar",

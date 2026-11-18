@@ -5,6 +5,18 @@
 -- productId and price are unset. TBD: pending Eudai approval.
 -- Paid contents, weights, pity thresholds, and the event window are placeholders.
 
+local function import(lunePath: string, getRoblox: () -> any): any
+	-- selene: allow(global_usage)
+	if _G.LUNE == true then
+		return require(lunePath)
+	end
+	return require(getRoblox())
+end
+
+local Monetisation = import("./Monetisation", function()
+	return script.Parent:WaitForChild("Monetisation")
+end)
+
 local PERCENT_BASIS = 10000
 
 -- TBD: pending Eudai approval. Placeholder pity thresholds.
@@ -239,7 +251,8 @@ end
 
 local TarotCases = {
 	-- Paid cases stay off until prices and product ids are approved.
-	PAID_TAROT_ENABLED = false,
+	-- The switch lives on Monetisation. This copy stays equal to it.
+	PAID_TAROT_ENABLED = Monetisation.PAID_TAROT_ENABLED,
 	PERCENT_BASIS = PERCENT_BASIS,
 	PLACEHOLDER_CASH = PLACEHOLDER_CASH,
 	EVENT_START = EVENT_START,
