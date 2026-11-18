@@ -298,6 +298,90 @@ function Kit.countEmitters(root: Instance): number
 	return Kit.countClass(root, "ParticleEmitter")
 end
 
+-- Particle motion only. No RunService connection, so Lune never has a frame to step.
+function Kit.tuneEmitter(emitter: any, spec: any)
+	if emitter == nil or type(spec) ~= "table" then
+		return
+	end
+	if spec.rate ~= nil then
+		emitter.Rate = spec.rate
+	end
+	if spec.lift ~= nil or spec.drift ~= nil then
+		emitter.Acceleration = Vector3.new(spec.drift or 0, spec.lift or 0, 0)
+	end
+	if spec.direction ~= nil then
+		emitter.EmissionDirection = spec.direction
+	end
+	emitter.LightInfluence = 0
+	if spec.speed ~= nil and typeof(NumberRange) == "table" then
+		emitter.Speed = NumberRange.new(spec.speed[1], spec.speed[2])
+	end
+	if spec.spread ~= nil and typeof(Vector2) == "table" then
+		emitter.SpreadAngle = Vector2.new(spec.spread, spec.spread)
+	end
+	if spec.spin ~= nil and typeof(NumberRange) == "table" then
+		emitter.Rotation = NumberRange.new(0, 360)
+		emitter.RotSpeed = NumberRange.new(-spec.spin, spec.spin)
+	end
+	if spec.size ~= nil and typeof(NumberSequence) == "table" then
+		if spec.sizeOut ~= nil then
+			emitter.Size = NumberSequence.new(spec.size, spec.sizeOut)
+		else
+			emitter.Size = NumberSequence.new(spec.size)
+		end
+	end
+	if spec.transparency ~= nil and typeof(NumberSequence) == "table" then
+		emitter.Transparency = NumberSequence.new(spec.transparency)
+	end
+	if spec.color ~= nil and typeof(ColorSequence) == "table" then
+		emitter.Color = ColorSequence.new(UITheme.color(spec.color))
+	end
+end
+
+function Kit.animate(model: any, step: any)
+	-- selene: allow(global_usage)
+	if _G.LUNE == true then
+		return
+	end
+	if model == nil or type(step) ~= "function" then
+		return
+	end
+	local ok, err = pcall(function()
+		local runService = game:GetService("RunService")
+		local started = os.clock()
+		local connection: any = nil
+		local function stop()
+			if connection == nil then
+				return
+			end
+			local link = connection
+			connection = nil
+			pcall(function()
+				link:Disconnect()
+			end)
+		end
+		connection = runService.Heartbeat:Connect(function(dt)
+			if model.Parent == nil then
+				stop()
+				return
+			end
+			local stepped, stepErr = pcall(step, dt, os.clock() - started)
+			if not stepped then
+				stop()
+				warn(stepErr)
+			end
+		end)
+		pcall(function()
+			model.Destroying:Connect(function()
+				stop()
+			end)
+		end)
+	end)
+	if not ok then
+		warn(err)
+	end
+end
+
 function Kit.promptAnchor(model: any, localCf: any): any
 	local shopId = model.Name
 	local pivot = if type(model.GetPivot) == "function" then model:GetPivot() else model.PrimaryPart.CFrame

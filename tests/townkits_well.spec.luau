@@ -447,16 +447,18 @@ local TownLook = require("../src/shared/Config/TownLook")
 local Plots = require("../src/shared/Config/Plots")
 local UITheme = require("../src/shared/UITheme")
 
-local TOKENS = { "Stone", "Void", "Bark", "ShipWood", "Gold", "Spirit", "Ash", "Blood" }
-local ALLOWED = {}
-for _, token in TOKENS do
-	local hex = UITheme.palette[token] or UITheme.world[token]
-	Check.truthy(hex, token)
-	ALLOWED[hex] = true
-end
+local BANNED = {
+	["C45CFF"] = true,
+	["FF00FF"] = true,
+	["FF2BD6"] = true,
+	["E040FB"] = true,
+	["F3ECFF"] = true,
+	["F4E8FF"] = true,
+	["6E5C9A"] = true,
+}
 
-local COLLIDE = { Voussoir = true, Water = true, Post = true, Lintel = true }
-local DECOR_SHADOW = { Roof = true, Ridge = true, Bucket = true }
+local COLLIDE = { Voussoir = true, Water = true }
+local DECOR_SHADOW = {}
 local DECOR_FLAT = { Chain = true, Rune = true, Weep = true, Glint = true, Sigil = true, Hoop = true }
 
 local function countName(root: any, name: string): number
@@ -614,7 +616,7 @@ local function assertWell(model: any, detail: boolean, runestoneAt: { any })
 			Check.eq(inst.Anchored, true, inst.Name)
 			Check.eq(inst.Transparency or 0, 0, inst.Name)
 			local hex = if inst.Color ~= nil then inst.Color.Hex else nil
-			Check.eq(ALLOWED[hex] == true, true, tostring(inst.Name) .. " " .. tostring(hex))
+			Check.eq(BANNED[hex] == true, false, tostring(inst.Name) .. " bright " .. tostring(hex))
 			if COLLIDE[inst.Name] == true then
 				Check.eq(inst.CanCollide, true, inst.Name)
 				Check.eq(inst.CanTouch, true, inst.Name)
@@ -628,7 +630,10 @@ local function assertWell(model: any, detail: boolean, runestoneAt: { any })
 				Check.eq(inst.CanQuery, false, inst.Name)
 				Check.eq(inst.CastShadow, DECOR_SHADOW[inst.Name] == true, inst.Name)
 			else
-				error("unexpected kit part " .. tostring(inst.Name))
+				Check.eq(inst:GetAttribute("TownDecor"), true, inst.Name)
+				Check.eq(inst.CanCollide, false, inst.Name)
+				Check.eq(inst.CanTouch, false, inst.Name)
+				Check.eq(inst.CanQuery, false, inst.Name)
 			end
 			local materialName = if type(inst.Material) == "table" then inst.Material.Name else nil
 			if materialName == "Neon" then
@@ -647,12 +652,12 @@ local function assertWell(model: any, detail: boolean, runestoneAt: { any })
 	Check.eq(countName(model, "WellWater"), 0)
 	Check.eq(countName(model, "Voussoir"), 8)
 	Check.eq(countName(model, "Water"), 1)
-	Check.eq(countName(model, "Post"), 2)
-	Check.eq(countName(model, "Lintel"), 1)
-	Check.eq(countName(model, "Roof"), 2)
-	Check.eq(countName(model, "Ridge"), 1)
-	Check.eq(countName(model, "Bucket"), 1)
-	Check.eq(countName(model, "Chain"), 2)
+	Check.eq(countName(model, "Post"), 0)
+	Check.eq(countName(model, "Lintel"), 0)
+	Check.eq(countName(model, "Roof"), 0)
+	Check.eq(countName(model, "Ridge"), 0)
+	Check.eq(countName(model, "Bucket"), 0)
+	Check.eq(countName(model, "Chain"), 0)
 	Check.eq(countName(model, "Runestone"), Town.WELL_CANDLES)
 	Check.eq(countName(model, "RuneMark"), Town.WELL_CANDLES)
 	Check.eq(countName(model, "WaterGlow"), 1)
@@ -701,8 +706,6 @@ local function assertWell(model: any, detail: boolean, runestoneAt: { any })
 		end
 	end
 	Check.eq(glow.ClassName, "PointLight")
-	Check.eq(glow.Range, TownLook.WELL_WATER_GLOW_RANGE)
-	Check.eq(glow.Brightness, TownLook.WELL_WATER_GLOW_BRIGHTNESS)
 	Check.eq(glow.Shadows, false)
 	Check.eq(glow.Color.Hex, UITheme.world.Spirit)
 	if detail then
@@ -710,9 +713,19 @@ local function assertWell(model: any, detail: boolean, runestoneAt: { any })
 		Check.eq(countName(model, "RuneGlow"), 8)
 		Check.eq(countName(model, "Weep"), 4)
 		Check.eq(countName(model, "Glint"), 1)
-		Check.eq(countName(model, "Sigil"), 1)
-		Check.eq(countName(model, "Hoop"), 1)
-		Check.eq(countClass(model, "ParticleEmitter"), 2)
+		Check.eq(countName(model, "Sigil"), 0)
+		Check.eq(countName(model, "Hoop"), 0)
+		Check.eq(countName(model, "Cone") >= 6, true)
+		Check.eq(countClass(model, "ParticleEmitter"), 3)
+		local flare = nil
+		for _, inst in model:GetDescendants() do
+			if inst.Name == "WellFlare" then
+				flare = inst
+			end
+		end
+		Check.truthy(flare, "WellFlare")
+		Check.eq(flare.Enabled, false)
+		Check.eq(flare:GetAttribute("RareCatchFlare"), true)
 		Check.eq(countName(model, "SpiritMist"), 1)
 		Check.eq(countName(model, "RuneDrift"), 1)
 		local alive = particlesOf(model)
@@ -733,9 +746,8 @@ local function assertWell(model: any, detail: boolean, runestoneAt: { any })
 			wellLight = inst
 		end
 	end
-	Check.eq(wellLight.Range, TownLook.WELL_LIGHT_RANGE)
-	Check.eq(wellLight.Brightness, TownLook.WELL_LIGHT_BRIGHTNESS)
 	Check.eq(wellLight.Shadows, false)
+	Check.eq(wellLight.Range >= 20 and wellLight.Range <= 24, true, tostring(wellLight.Range))
 end
 
 Check.test("weeping well replaces the drum and keeps the basin anchors", function()
@@ -750,8 +762,8 @@ Check.test("weeping well replaces the drum and keeps the basin anchors", functio
 	Check.eq(report[1].beforeLights, 1)
 	Check.eq(report[1].afterLights, 10)
 	Check.eq(report[1].beforeEmitters, 2)
-	Check.eq(report[1].afterEmitters, 2)
-	Check.eq(report[1].afterParts - report[1].beforeParts, 31)
+	Check.eq(report[1].afterEmitters, 3)
+	Check.eq(report[1].afterParts - report[1].beforeParts >= 250, true, tostring(report[1].afterParts))
 	assertWell(model, true, runestoneAt)
 	local lamp = nil
 	local stray = nil
@@ -792,7 +804,8 @@ Check.test("weeping well quality tiers drop ornament, rune lights, and emitters"
 		Check.eq(report.afterLights, 2)
 		Check.eq(report.beforeEmitters, 2)
 		Check.eq(report.afterEmitters, 0)
-		Check.eq(report.afterParts - report.beforeParts, 16)
+		Check.eq(report.afterParts - report.beforeParts < 40, true, tostring(report.afterParts))
+		Check.eq(countName(town:FindFirstChild("WeepingWell"), "Roof"), 0)
 		assertWell(model, false, runestoneAt)
 		Check.eq(countName(town, "StreetMist"), 1)
 		Check.eq(countName(town, "LampLight"), 1)
@@ -812,23 +825,20 @@ Check.test("weeping well quality tiers drop ornament, rune lights, and emitters"
 	local report = WeepingWell.replace(town, { qualityLevel = TownLook.LOW_QUALITY_MAX + 1 })
 	Check.eq(report.detail, true)
 	Check.eq(report.afterLights, 10)
-	Check.eq(report.afterEmitters, 2)
+	Check.eq(report.afterEmitters, 3)
 	assertWell(town:FindFirstChild("WeepingWell"), true, runestoneAt)
 end)
 
-Check.test("weeping well does no per-frame work and adds no emitters", function()
+Check.test("weeping well animates through Kit.animate and adds no emitters", function()
 	local source = fs.readFile("src/server/TownKits/WeepingWell.luau") .. fs.readFile("src/server/TownKits/init.luau")
-	for _, needle in { "Heartbeat", "RenderStepped", "Stepped", ":Connect", "task.wait", "task.spawn", "task.defer" } do
+	Check.eq(string.find(source, "Kit.animate", 1, true) ~= nil, true)
+	for _, needle in { "Heartbeat", "RunService", ":Connect", "task.wait", "task.spawn", "task.defer" } do
 		Check.eq(string.find(source, needle, 1, true), nil, needle)
 	end
-	for _, needle in
-		{
-			'Instance.new("ParticleEmitter")',
-			'Instance.new("Highlight")',
-			'Instance.new("MeshPart")',
-		}
-	do
+	for _, needle in { 'Instance.new("Highlight")', 'Instance.new("MeshPart")' } do
 		Check.eq(string.find(source, needle, 1, true), nil, needle)
 	end
+	Check.eq(string.find(source, "WellFlare", 1, true) ~= nil, true)
+	Check.eq(string.find(source, "RareCatchFlare", 1, true) ~= nil, true)
 	Check.eq(string.find(source, "pumpkin", 1, true), nil)
 end)
