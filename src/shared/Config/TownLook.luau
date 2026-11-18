@@ -1,9 +1,11 @@
 --!strict
 
 local TownLook = {
-	-- Runaway sanity guards only. There is no part or light budget; do not thin a building to stay under them.
+	-- Runaway sanity guards only. There is no part, light, or emitter budget; do not thin a building to stay under them.
 	PART_CAP = 20000,
 	LIGHT_CAP = 200,
+	EMITTER_CAP = 200,
+	-- Per-effect weight. Not a town-wide emitter cap.
 	VFX_MAX_EMITTERS = 6,
 	VFX_MAX_PARTICLES = 120,
 	LOW_QUALITY_MAX = 4,
@@ -27,6 +29,18 @@ local TownLook = {
 	VORTEX_SWIRL_LIFE = 1.4,
 	VORTEX_SPARK_RATE = 10,
 	VORTEX_SPARK_LIFE = 1,
+	APOTHECARY_LIGHT = table.freeze({
+		eye = table.freeze({ range = 14, brightness = 0.8 }),
+		flame = table.freeze({ range = 9, brightness = 0.5 }),
+		rune = table.freeze({ range = 5, brightness = 0.28 }),
+		lantern = table.freeze({ range = 7, brightness = 0.4 }),
+	}),
+	APOTHECARY_VFX = table.freeze({
+		lift = 0.45,
+		spore = table.freeze({ rate = 4, life = 2.4, speed = 0.45, size = 0.38, spread = 30 }),
+		firefly = table.freeze({ rate = 3, life = 2.2, speed = 0.75, size = 0.16, spread = 46 }),
+		steam = table.freeze({ rate = 6, life = 1.5, speed = 1.05, size = 0.48, spread = 16 }),
+	}),
 	CROW_COUNT = 3,
 	NEON_ROLES = table.freeze({
 		flame = true,

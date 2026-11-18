@@ -110,3 +110,9 @@ Split 17a sky + cobbles / 17b building shapes / 17c life + VFX approved; start a
 - H: 0 standing Highlights in town; pool only the rare-cryptid aura; no outlines on crows or eyes.
 Handover note: a World Builder bot may take over #17 visual work; keep this file current.
 OWNER: Cryptid World Builder (a73259d6) from 11 Nov 06:30. Handed over by the Architect.
+
+## 17b-3 Runeheart Apothecary (kit stack)
+
+The blockout cylinder is replaced by `src/server/TownKits/ApothecaryTree.luau`, registered after the longship and the well. `TownBuilder` is not edited. The model name stays `RuneheartApothecary`. The sign, the two green flames, the crow, and the invisible `Root` pivot stay. A `DoorAnchor` (`TownAnchor = Door`) receives any proximity prompt.
+
+Later rulings on this stack replace the 364/24 budget and the 6-emitter town cap with runaway guards: 20000 parts, 200 lights, 200 emitters. Per-effect particle weight stays 120. Quality 1–4 drops ornament, the extra lights, and the three life emitters (spores, fireflies, door steam). Those emitters are also `TownFlame = extra`, so the client quality pass disables them. No spec 16 screen changes. Rule 8 is kept by not adding a figure.
