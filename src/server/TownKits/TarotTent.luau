@@ -50,9 +50,9 @@ local CORNER_POLES = {
 }
 local SCALLOP_X = { -3.15, -2.15, -1.15, 1.15, 2.15, 3.15 }
 local CARDS = {
-	{ x = -2.45, yaw = 28, roll = -12 },
-	{ x = -1.75, yaw = 8, roll = -4 },
-	{ x = -1.1, yaw = -12, roll = 6 },
+	{ x = -2.45, yaw = 38, roll = -32 },
+	{ x = -1.75, yaw = 8, roll = 22 },
+	{ x = -1.1, yaw = -24, roll = -16 },
 }
 
 local function distance(a: any, b: any): number
@@ -129,8 +129,11 @@ local function addLife(parent: Instance, name: string, spec: any, token: string)
 	emitter.Speed = NumberRange.new(spec.speed * 0.5, spec.speed)
 	emitter.SpreadAngle = Vector2.new(spec.spread, spec.spread)
 	emitter.Rotation = NumberRange.new(0, 360)
-	emitter.RotSpeed = NumberRange.new(-12, 12)
-	emitter.Acceleration = Vector3.new(0, TownLook.TAROT_VFX.lift, 0)
+	local spin = if type(spec.spin) == "number" then spec.spin else 12
+	emitter.RotSpeed = NumberRange.new(-spin, spin)
+	local lift = if type(spec.lift) == "number" then spec.lift else TownLook.TAROT_VFX.lift
+	local drift = if type(spec.drift) == "number" then spec.drift else 0
+	emitter.Acceleration = Vector3.new(drift, lift, 0)
 	emitter.EmissionDirection = Enum.NormalId.Top
 	emitter.LightInfluence = 0
 	emitter.Color = ColorSequence.new(UITheme.color(token))
@@ -243,12 +246,12 @@ local function buildCloth(parent: Instance, pivot: any)
 		})
 		place(parent, pivot, {
 			name = "SideFold",
-			size = Vector3.new(5.6, 1.25, 1.25),
-			cf = CFrame.new(side * 3.55, 3.05, -0.15) * CFrame.Angles(0, math.rad(90), 0),
-			material = CLOTH,
-			color = "TentCloth",
+			size = Vector3.new(5.8, 0.16, 0.16),
+			cf = CFrame.new(side * 4.02, 4.35, -0.15) * CFrame.Angles(0, math.rad(90), 0),
+			material = METAL,
+			color = "Gold",
 			decor = true,
-			shadow = true,
+			shadow = false,
 			shape = Enum.PartType.Cylinder,
 		})
 		place(parent, pivot, {
@@ -409,7 +412,7 @@ local function buildSigil(parent: Instance, pivot: any)
 		shape = Enum.PartType.Ball,
 	})
 	local lanternGlow = TownLook.TAROT_LIGHT.lantern
-	addGlow(wick, "LanternGlow", lanternGlow.range, lanternGlow.brightness, "Gold")
+	addGlow(wick, "LanternGlow", lanternGlow.range, lanternGlow.brightness * 1.9, "Gold")
 	place(parent, pivot, {
 		name = "Finial",
 		size = Vector3.new(0.7, 0.7, 0.7),
@@ -506,8 +509,8 @@ local function buildDetail(parent: Instance, pivot: any)
 	end
 	place(parent, pivot, {
 		name = "Crystal",
-		size = Vector3.new(1.05, 1.05, 1.05),
-		cf = CFrame.new(1.25, 1.4, -0.7),
+		size = Vector3.new(1.28, 1.28, 1.28),
+		cf = CFrame.new(1.25, 1.45, -0.7),
 		material = GLASS,
 		color = "Bone",
 		decor = true,
@@ -516,13 +519,14 @@ local function buildDetail(parent: Instance, pivot: any)
 	})
 	local core = place(parent, pivot, {
 		name = "CrystalCore",
-		size = Vector3.new(0.38, 0.38, 0.38),
-		cf = CFrame.new(1.25, 1.4, -0.82),
-		material = GLASS,
+		size = Vector3.new(0.52, 0.52, 0.52),
+		cf = CFrame.new(1.25, 1.45, -0.82),
+		material = NEON,
 		color = "Rift",
 		decor = true,
 		shadow = false,
 		shape = Enum.PartType.Ball,
+		neonRole = "rune",
 	})
 	place(parent, pivot, {
 		name = "CrystalStand",
@@ -545,7 +549,7 @@ local function buildDetail(parent: Instance, pivot: any)
 		shape = Enum.PartType.Cylinder,
 	})
 	local crystalGlow = TownLook.TAROT_LIGHT.crystal
-	addGlow(core, "CrystalGlow", crystalGlow.range, crystalGlow.brightness, "Rift")
+	addGlow(core, "CrystalGlow", crystalGlow.range + 3, 1.45, "Rift")
 	for _, side in { -1, 1 } do
 		place(parent, pivot, {
 			name = "Sconce",
@@ -568,7 +572,7 @@ local function buildDetail(parent: Instance, pivot: any)
 			shape = Enum.PartType.Ball,
 		})
 		local sconceGlow = TownLook.TAROT_LIGHT.sconce
-		addGlow(sconceWick, "SconceGlow", sconceGlow.range, sconceGlow.brightness, "Gold")
+		addGlow(sconceWick, "SconceGlow", sconceGlow.range, 0.9, "Gold")
 	end
 	place(parent, pivot, {
 		name = "Moon",
@@ -681,18 +685,32 @@ local function buildDetail(parent: Instance, pivot: any)
 		shadow = false,
 	})
 	local vfx = TownLook.TAROT_VFX
-	addLife(burner, "IncenseSmoke", vfx.incense, "Bone")
-	local wick = findNamed(parent, "Wick", "Part")
-	if wick ~= nil then
-		addLife(wick, "MoteDrift", vfx.mote, "Gold")
-	end
+	addLife(burner, "IncenseSmoke", {
+		rate = vfx.incense.rate,
+		life = vfx.incense.life,
+		speed = vfx.incense.speed,
+		size = 0.72,
+		spread = vfx.incense.spread,
+		lift = 1.75,
+		spin = 16,
+	}, "Bone")
+	addLife(core, "MoteDrift", {
+		rate = 6,
+		life = 2.6,
+		speed = 0.55,
+		size = 0.3,
+		spread = 68,
+		spin = 84,
+		lift = 0.55,
+		drift = 0.22,
+	}, "Gold")
 end
 
 local function lightFlames(model: Instance)
 	local glow = TownLook.TAROT_LIGHT.flame
 	for _, inst in model:GetDescendants() do
 		if inst.Name == "Flame" and inst.ClassName == "Part" and inst:GetAttribute(Kit.PART_ATTRIBUTE) ~= true then
-			addGlow(inst, "FlameGlow", glow.range, glow.brightness, "Gold")
+			addGlow(inst, "FlameGlow", glow.range, glow.brightness * 2.3, "Gold")
 		end
 	end
 end

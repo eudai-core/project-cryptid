@@ -22,6 +22,7 @@ local WOOD = UITheme.materials.wood
 local BONE = UITheme.materials.candle
 local STONE = UITheme.materials.altar
 local METAL = UITheme.materials.iron
+local GLASS = UITheme.materials.glass
 local NEON = UITheme.materials.neon
 
 local BLOCKOUT = {
@@ -461,12 +462,19 @@ local function buildProw(parent: Instance, pivot: any, detail: boolean)
 end
 
 local function buildDetail(parent: Instance, pivot: any)
-	local seamCourses = {}
-	for _, t in SEAM_T do
-		table.insert(seamCourses, { t0 = t, t1 = t, width = 0.32 })
+	local darkCourses = {}
+	local paleCourses = {}
+	for index, t in SEAM_T do
+		local course = { t0 = t, t1 = t, width = 0.32 }
+		if index % 2 == 0 then
+			table.insert(paleCourses, course)
+		else
+			table.insert(darkCourses, course)
+		end
 	end
 	for _, region in { VAULT, BOW_A, BOW_B, STERN } do
-		addCourses(parent, pivot, region, seamCourses, "Strake", 0.16, WOOD, "Bark", true, false, 0.62)
+		addCourses(parent, pivot, region, darkCourses, "Strake", 0.16, WOOD, "Bark", true, false, 0.58)
+		addCourses(parent, pivot, region, paleCourses, "Strake", 0.16, WOOD, "ShipWood", true, false, 0.74)
 	end
 	addRibs(parent, pivot, VAULT, { -1, 5 })
 	addRibs(parent, pivot, BOW_A, { -9.6 })
@@ -514,16 +522,113 @@ local function buildDetail(parent: Instance, pivot: any)
 			})
 		end
 	end
-	for _, spot in { Vector3.new(-3.3, 6.7, -9.5), Vector3.new(3.3, 6.7, -9.5), Vector3.new(0, 7.9, -9.7) } do
+	local lanterns = {
+		{ x = -6.05, z = -4.2, swing = 0.72 },
+		{ x = 6.05, z = 1.4, swing = -0.66 },
+		{ x = -6.05, z = 6.6, swing = 0.5 },
+		{ x = 6.05, z = -6.4, swing = -0.58 },
+	}
+	for _, lamp in lanterns do
+		local top = Vector3.new(lamp.x, 5.55, lamp.z)
+		local hung = Vector3.new(lamp.x + lamp.swing, 3.95, lamp.z)
+		cylinderBetween(parent, pivot, "LanternChain", top, hung, 0.07, METAL, "Gold", true, false)
+		local tilt = lamp.swing * 0.42
 		place(parent, pivot, {
 			name = "LanternHousing",
-			size = Vector3.new(0.55, 1.15, 0.55),
-			cf = CFrame.new(spot) * CFrame.Angles(0, 0, math.rad(90)),
+			size = Vector3.new(0.95, 0.62, 0.62),
+			cf = CFrame.new(hung) * CFrame.Angles(0, 0, math.rad(90) + tilt),
 			material = METAL,
 			color = "Gold",
 			decor = true,
 			shadow = false,
 			shape = Enum.PartType.Cylinder,
+		})
+		place(parent, pivot, {
+			name = "LanternGlass",
+			size = Vector3.new(0.72, 0.4, 0.4),
+			cf = CFrame.new(hung) * CFrame.Angles(0, 0, math.rad(90) + tilt),
+			material = GLASS,
+			color = "Bone",
+			decor = true,
+			shadow = false,
+			shape = Enum.PartType.Cylinder,
+		})
+		place(parent, pivot, {
+			name = "LanternWick",
+			size = Vector3.new(0.22, 0.22, 0.22),
+			cf = CFrame.new(hung.X, hung.Y + 0.08, hung.Z),
+			material = NEON,
+			color = "Gold",
+			decor = true,
+			shadow = false,
+			shape = Enum.PartType.Ball,
+			neonRole = "flame",
+		})
+	end
+	cylinderBetween(
+		parent,
+		pivot,
+		"Chimney",
+		Vector3.new(1.7, 14.4, 14.6),
+		Vector3.new(1.45, 18.5, 14.2),
+		1.05,
+		"Brick",
+		"Stone",
+		true,
+		true
+	)
+	place(parent, pivot, {
+		name = "ChimneyPot",
+		size = Vector3.new(0.48, 1.55, 1.55),
+		cf = CFrame.new(1.42, 18.85, 14.15) * CFrame.Angles(0, 0, math.rad(90)),
+		material = METAL,
+		color = "Gold",
+		decor = true,
+		shadow = true,
+		shape = Enum.PartType.Cylinder,
+	})
+	place(parent, pivot, {
+		name = "ChimneyLip",
+		size = Vector3.new(0.14, 1.9, 1.9),
+		cf = CFrame.new(1.4, 19.15, 14.12) * CFrame.Angles(0, 0, math.rad(90)),
+		material = METAL,
+		color = "Gold",
+		decor = true,
+		shadow = false,
+		shape = Enum.PartType.Cylinder,
+	})
+	cylinderBetween(
+		parent,
+		pivot,
+		"Spit",
+		Vector3.new(4.15, 2.55, -12.6),
+		Vector3.new(7.05, 2.55, -12.6),
+		0.1,
+		METAL,
+		"Gold",
+		true,
+		false
+	)
+	place(parent, pivot, {
+		name = "Roast",
+		size = Vector3.new(1.35, 0.48, 0.48),
+		cf = CFrame.new(5.6, 2.55, -12.6),
+		material = BONE,
+		color = "Bark",
+		decor = true,
+		shadow = false,
+		shape = Enum.PartType.Cylinder,
+	})
+	for index = -3, 3 do
+		place(parent, pivot, {
+			name = "Filigree",
+			size = Vector3.new(0.14, 0.14, 0.14),
+			cf = CFrame.new(index * 0.85, 2.38, -4.32),
+			material = METAL,
+			color = "Gold",
+			decor = true,
+			shadow = false,
+			shape = Enum.PartType.Ball,
 		})
 	end
 	place(parent, pivot, {
@@ -535,6 +640,33 @@ local function buildDetail(parent: Instance, pivot: any)
 		decor = true,
 		shadow = false,
 	})
+end
+
+local function dressChimney(model: Instance)
+	local pot = findNamed(model, "ChimneyPot", "Part")
+	if pot == nil then
+		return
+	end
+	for _, inst in model:GetDescendants() do
+		if inst.ClassName ~= "ParticleEmitter" then
+			continue
+		end
+		if inst:GetAttribute("TownEffect") ~= "TavernFlame" or inst:GetAttribute("TownFlame") ~= "extra" then
+			continue
+		end
+		inst.Parent = pot
+		Kit.tuneEmitter(inst, {
+			lift = 3.4,
+			speed = { 0.7, 1.5 },
+			spread = 16,
+			spin = 22,
+			size = 1.2,
+			sizeOut = 2.1,
+			transparency = 0.42,
+			color = "Bone",
+			direction = Enum.NormalId.Top,
+		})
+	end
 end
 
 local function repositionKept(model: Instance, pivot: any)
@@ -632,6 +764,7 @@ function Longship.replace(townFolder: Instance, refs: any): any
 	buildProw(folder, pivot, detail)
 	if detail then
 		buildDetail(folder, pivot)
+		dressChimney(model)
 	end
 	repositionKept(model, pivot)
 

@@ -242,7 +242,7 @@ local function addGlow(parent: Instance, name: string, range: number, brightness
 	light.Parent = parent
 end
 
-local function addLife(parent: Instance, name: string, spec: any)
+local function addLife(parent: Instance, name: string, spec: any, token: string?)
 	local emitter = Instance.new("ParticleEmitter")
 	emitter.Name = name
 	emitter.Rate = spec.rate
@@ -250,13 +250,15 @@ local function addLife(parent: Instance, name: string, spec: any)
 	emitter.Speed = NumberRange.new(spec.speed * 0.5, spec.speed)
 	emitter.SpreadAngle = Vector2.new(spec.spread, spec.spread)
 	emitter.Rotation = NumberRange.new(0, 360)
-	emitter.RotSpeed = NumberRange.new(-18, 18)
-	emitter.Acceleration = Vector3.new(0, TownLook.APOTHECARY_VFX.lift, 0)
+	local spin = if type(spec.spin) == "number" then spec.spin else 18
+	emitter.RotSpeed = NumberRange.new(-spin, spin)
+	local lift = if type(spec.lift) == "number" then spec.lift else TownLook.APOTHECARY_VFX.lift
+	emitter.Acceleration = Vector3.new(0, lift, 0)
 	emitter.EmissionDirection = Enum.NormalId.Top
 	emitter.LightInfluence = 0
-	emitter.Color = ColorSequence.new(UITheme.color("Rift"))
+	emitter.Color = ColorSequence.new(UITheme.color(if token ~= nil then token else "Rift"))
 	emitter.Size = NumberSequence.new(spec.size)
-	emitter.Transparency = NumberSequence.new(0.35)
+	emitter.Transparency = NumberSequence.new(0.28)
 	emitter.Enabled = true
 	emitter:SetAttribute("TownEffect", "ApothecaryLife")
 	emitter:SetAttribute("TownFlame", "extra")
@@ -442,7 +444,7 @@ local function buildDetail(parent: Instance, pivot: any, door: Instance)
 			neonRole = "rune",
 		})
 		local glow = TownLook.APOTHECARY_LIGHT.rune
-		addGlow(rune, "RuneGlow", glow.range, glow.brightness, "Rift")
+		addGlow(rune, "RuneGlow", glow.range, glow.brightness * 2.2, "Rift")
 	end
 	for _, mark in KNOT_MARKS do
 		place(parent, pivot, {
@@ -490,6 +492,79 @@ local function buildDetail(parent: Instance, pivot: any, door: Instance)
 			shadow = false,
 			shape = Enum.PartType.Cylinder,
 		})
+		place(parent, pivot, {
+			name = "Orb",
+			size = Vector3.new(0.34, 0.34, 0.34),
+			cf = CFrame.new(at),
+			material = NEON,
+			color = "Rift",
+			decor = true,
+			shadow = false,
+			shape = Enum.PartType.Ball,
+			neonRole = "rune",
+		})
+	end
+	local orbs = {
+		Vector3.new(-6.6, 12.55, -1.85),
+		Vector3.new(7.05, 12.85, 0.45),
+		Vector3.new(2.35, 16.55, -5.55),
+		Vector3.new(-2.15, 16.15, 5.45),
+	}
+	for _, at in orbs do
+		cylinderBetween(
+			parent,
+			pivot,
+			"OrbCord",
+			at + Vector3.new(0, 1.05, 0),
+			at + Vector3.new(0, 0.2, 0),
+			0.06,
+			METAL,
+			"Gold",
+			true,
+			false
+		)
+		place(parent, pivot, {
+			name = "Orb",
+			size = Vector3.new(0.62, 0.62, 0.62),
+			cf = CFrame.new(at),
+			material = NEON,
+			color = "Rift",
+			decor = true,
+			shadow = false,
+			shape = Enum.PartType.Ball,
+			neonRole = "rune",
+		})
+	end
+	local herbs = {
+		{ at = Vector3.new(-4.9, 11.15, -1.45), drop = 1.4 },
+		{ at = Vector3.new(5.25, 11.5, -0.55), drop = 1.55 },
+		{ at = Vector3.new(-7.7, 15.15, -2.15), drop = 1.2 },
+		{ at = Vector3.new(8.15, 15.55, 1.35), drop = 1.25 },
+		{ at = Vector3.new(0.35, 17.7, -4.2), drop = 1.1 },
+	}
+	for _, herb in herbs do
+		local tip = herb.at - Vector3.new(0, herb.drop, 0)
+		cylinderBetween(parent, pivot, "HerbCord", herb.at, tip, 0.05, METAL, "Gold", true, false)
+		place(parent, pivot, {
+			className = "WedgePart",
+			name = "Herb",
+			size = Vector3.new(0.35, 0.7, 0.22),
+			cf = CFrame.new(tip) * CFrame.Angles(0.4, 0.6, 0.2),
+			material = BONE,
+			color = "RiftDim",
+			decor = true,
+			shadow = false,
+		})
+		place(parent, pivot, {
+			className = "WedgePart",
+			name = "Herb",
+			size = Vector3.new(0.28, 0.55, 0.18),
+			cf = CFrame.new(tip + Vector3.new(0.12, 0.08, 0.05)) * CFrame.Angles(-0.3, -0.4, 0.5),
+			material = WOOD,
+			color = "Bark",
+			decor = true,
+			shadow = false,
+		})
 	end
 	local lanternGlow = TownLook.APOTHECARY_LIGHT.lantern
 	for _, at in LANTERNS do
@@ -507,18 +582,36 @@ local function buildDetail(parent: Instance, pivot: any, door: Instance)
 			name = "Wick",
 			size = Vector3.new(0.28, 0.28, 0.28),
 			cf = CFrame.new(at + Vector3.new(0, 0.1, 0)),
-			material = GLASS,
+			material = NEON,
 			color = "Rift",
 			decor = true,
 			shadow = false,
 			shape = Enum.PartType.Ball,
+			neonRole = "flame",
 		})
-		addGlow(wick, "LanternGlow", lanternGlow.range, lanternGlow.brightness, "Rift")
+		addGlow(wick, "LanternGlow", lanternGlow.range, lanternGlow.brightness * 2.15, "Rift")
 	end
+	local extraTufts = {
+		{ at = Vector3.new(-9.5, 18.15, -2.35), size = 1.7 },
+		{ at = Vector3.new(9.9, 18.55, 1.75), size = 1.85 },
+		{ at = Vector3.new(0.15, 22.35, -0.35), size = 1.55 },
+	}
 	for _, tuft in TUFTS do
 		place(parent, pivot, {
 			name = "Canopy",
 			size = Vector3.new(tuft.size, tuft.size * 0.82, tuft.size * 0.9),
+			cf = CFrame.new(tuft.at),
+			material = BONE,
+			color = "RiftDim",
+			decor = true,
+			shadow = true,
+			shape = Enum.PartType.Ball,
+		})
+	end
+	for _, tuft in extraTufts do
+		place(parent, pivot, {
+			name = "Canopy",
+			size = Vector3.new(tuft.size, tuft.size * 0.78, tuft.size * 0.86),
 			cf = CFrame.new(tuft.at),
 			material = BONE,
 			color = "RiftDim",
@@ -551,23 +644,49 @@ local function buildDetail(parent: Instance, pivot: any, door: Instance)
 		shadow = false,
 		neonRole = "rune",
 	})
+	for _, tilt in { -0.42, 0.42 } do
+		place(parent, pivot, {
+			name = "Mullion",
+			size = Vector3.new(0.1, 2.15, 0.1),
+			cf = CFrame.new(outwardAt(9.55, tilt, 0.9)) * CFrame.Angles(0, 0, tilt),
+			material = METAL,
+			color = "Gold",
+			decor = true,
+			shadow = false,
+		})
+	end
 	local vfx = TownLook.APOTHECARY_VFX
 	local crown = findNamed(parent, "CrownTip", "Part")
 	if crown ~= nil then
-		addLife(crown, "SporeDrift", vfx.spore)
+		addLife(crown, "SporeDrift", vfx.spore, "Rift")
 	end
 	local reach = findNamed(parent, "Reach", "Part")
 	if reach ~= nil then
-		addLife(reach, "Firefly", vfx.firefly)
+		addLife(reach, "Firefly", {
+			rate = 7,
+			life = 2.4,
+			speed = 1.15,
+			size = 0.22,
+			spread = 62,
+			spin = 48,
+			lift = 0.9,
+		}, "Rift")
 	end
-	addLife(door, "PotionSteam", vfx.steam)
+	addLife(door, "PotionSteam", {
+		rate = vfx.steam.rate,
+		life = vfx.steam.life,
+		speed = vfx.steam.speed,
+		size = vfx.steam.size,
+		spread = vfx.steam.spread,
+		lift = 1.4,
+	}, "Bone")
 end
 
 local function lightFlames(model: Instance)
 	local glow = TownLook.APOTHECARY_LIGHT.flame
 	for _, inst in model:GetDescendants() do
 		if inst.Name == "Flame" and inst.ClassName == "Part" and inst:GetAttribute(Kit.PART_ATTRIBUTE) ~= true then
-			addGlow(inst, "FlameGlow", glow.range, glow.brightness, "FlameGreen")
+			addGlow(inst, "FlameGlow", glow.range, glow.brightness * 2.2, "FlameGreen")
 		end
 	end
 end
