@@ -56,6 +56,9 @@ end)
 local TownShop = import("./TownShop", function()
 	return script.Parent:WaitForChild("TownShop")
 end)
+local TarotSave = import("./TarotSave", function()
+	return script.Parent:WaitForChild("TarotSave")
+end)
 
 local SOURCES = {
 	starter = true,
@@ -64,6 +67,7 @@ local SOURCES = {
 	pedlar = true,
 	offering = true,
 	relic = true,
+	reading = true,
 }
 
 local Schema = {}
@@ -679,7 +683,10 @@ local function migrateToV10(profile: any, raw: any, version: number, _now: numbe
 		profile.rebirths = count
 		profile.familiarId = familiarId
 		profile.everHeld1M = raw.everHeld1M
-		return applyWares(profile, raw)
+		if applyWares(profile, raw) ~= true then
+			return false
+		end
+		return TarotSave.apply(profile, raw)
 	end
 	local earned = profile.totalEarned
 	if type(earned) ~= "number" or not Money.isFinite(earned) or earned < 0 then
@@ -695,7 +702,10 @@ local function migrateToV10(profile: any, raw: any, version: number, _now: numbe
 	profile.rebirths = 0
 	profile.familiarId = ""
 	profile.everHeld1M = held
-	return applyWares(profile, raw)
+	if applyWares(profile, raw) ~= true then
+		return false
+	end
+	return TarotSave.apply(profile, raw)
 end
 
 local MIGRATION_STEPS: { { to: number, apply: (any, any, number, number) -> boolean } } = {
@@ -830,6 +840,7 @@ function Schema.newProfile(now: number, starterInstanceId: string): any
 		},
 	}
 	MonetisationProfile.applyDefaults(profile)
+	TarotSave.apply(profile, nil)
 	return profile
 end
 

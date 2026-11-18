@@ -2,17 +2,22 @@
 
 local MarketplaceService = game:GetService("MarketplaceService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local Analytics = require(script.Parent:WaitForChild("Analytics"))
+local PolicyWrapper = require(script.Parent:WaitForChild("PolicyWrapper"))
+local StudioQaHooks = require(script.Parent:WaitForChild("Dev"):WaitForChild("StudioQaHooks"))
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Monetisation = require(Shared:WaitForChild("Config"):WaitForChild("Monetisation"))
+local TarotCases = require(Shared:WaitForChild("Config"):WaitForChild("TarotCases"))
 local Bundles = require(Shared:WaitForChild("Logic"):WaitForChild("Bundles"))
 local Passes = require(Shared:WaitForChild("Logic"):WaitForChild("Passes"))
 local Receipts = require(Shared:WaitForChild("Logic"):WaitForChild("Receipts"))
 local RelicsPip = require(Shared:WaitForChild("Logic"):WaitForChild("RelicsPip"))
 local Schema = require(Shared:WaitForChild("Logic"):WaitForChild("Schema"))
-local PolicyWrapper = require(script.Parent:WaitForChild("PolicyWrapper"))
+local TarotAccess = require(Shared:WaitForChild("Logic"):WaitForChild("TarotAccess"))
+local TarotReceipts = require(Shared:WaitForChild("Logic"):WaitForChild("TarotReceipts"))
 
 local MonetisationService = {}
 
@@ -93,6 +98,10 @@ function MonetisationService.onOpen(session: any)
 	api.publish(session, 0)
 end
 
+function MonetisationService.promptProduct(player: Player, productId: number)
+	MarketplaceService:PromptProductPurchase(player, productId)
+end
+
 function MonetisationService.onBuy(session: any, key: any)
 	if api == nil or session == nil or type(key) ~= "string" then
 		return
@@ -164,13 +173,32 @@ local function onReceipt(receipt: any): Enum.ProductPurchaseDecision
 		log = function(message: string)
 			warn(message)
 		end,
+		tarot = function(receiptInfo, heldProfile, receiptDeps)
+			return TarotReceipts.process(receiptInfo, heldProfile, {
+				paidEnabled = TarotAccess.enabled(
+					TarotCases.PAID_TAROT_ENABLED,
+					RunService:IsStudio(),
+					StudioQaHooks.args()
+				),
+				policy = function()
+					return PolicyWrapper.allows(session.player)
+				end,
+				findCase = TarotCases.byProductId,
+				now = receiptDeps.now,
+				save = receiptDeps.save,
+			})
+		end,
 	})
 	if result.decision == Receipts.GRANTED and result.fresh == true then
-		api.spend(session, result.spent)
-		api.publish(session, result.cash)
-		pcall(function()
-			Analytics.live():purchase(session.player, session, Monetisation.productById(receipt.ProductId))
-		end)
+		if result.tarot == true then
+			api.publish(session, 0)
+		else
+			api.spend(session, result.spent)
+			api.publish(session, result.cash)
+			pcall(function()
+				Analytics.live():purchase(session.player, session, Monetisation.productById(receipt.ProductId))
+			end)
+		end
 	end
 	if result.decision == Receipts.GRANTED then
 		return Enum.ProductPurchaseDecision.PurchaseGranted

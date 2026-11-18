@@ -293,6 +293,16 @@ local function firstEmptyPad(profile: any): number?
 	return nil
 end
 
+function Transactions.grantReading(profile: any, instanceId: string, speciesId: string, now: number): boolean
+	if type(instanceId) ~= "string" or type(speciesId) ~= "string" or Species.get(speciesId) == nil then
+		return false
+	end
+	if not Money.isFinite(now) or now < 0 then
+		return false
+	end
+	return addCryptid(profile, instanceId, speciesId, "reading", math.floor(now))
+end
+
 function Transactions.grantOffering(profile: any, speciesId: string, now: number, newId: string): (boolean, string)
 	if type(speciesId) ~= "string" or Species.get(speciesId) == nil then
 		return false, "species"

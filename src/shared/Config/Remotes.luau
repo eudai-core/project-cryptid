@@ -22,6 +22,8 @@ local Remotes = {
 	BUY_RELIC = "RequestRelic",
 	SHOP_BUY = "RequestShopBuy",
 	SHOP_SELL = "RequestShopSell",
+	TAROT_OPEN = "RequestTarotOpen",
+	TAROT_BUY = "RequestTarotBuy",
 	REBIRTH = "RequestRebirth",
 }
 

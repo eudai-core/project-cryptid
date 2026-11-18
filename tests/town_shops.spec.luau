@@ -160,7 +160,7 @@ Check.test("anchor paths match the kit contract", function()
 	Check.eq(ShopAnchors.pathText(pedlar.fallbackPath), "Districts.PalePedlar.PalePedlarPromptAnchor")
 	Check.eq(pedlar.actionText, "Browse")
 	Check.eq(pedlar.mode, "pedlar")
-	Check.eq(ShopAnchors.get("VeilAndFate").mode, "soon")
+	Check.eq(ShopAnchors.get("VeilAndFate").mode, "tarot")
 	Check.eq(ShopAnchors.get("VeilAndFate").plug, "tarot")
 	Check.eq(ShopAnchors.get("WeepingWell"), nil)
 	Check.eq(ShopAnchors.get("WhisperingWoods"), nil)
@@ -333,7 +333,7 @@ Check.test("every counter validates a cash purchase and keeps it through save an
 		local profile = purse()
 		local earned = profile.totalEarned
 		local cryptids = profile.cryptids
-		if entry.mode == "soon" then
+		if not ShopAnchors.sells(entry) then
 			local refused = TownShop.buy(profile, entry.shopId, "wick_salve", "soon-" .. entry.shopId, 1, openGate())
 			Check.eq(refused.code, "soon", entry.shopId)
 			Check.eq(profile.cash, Economy.PAD_COST[8], entry.shopId)

@@ -46,9 +46,9 @@ local LIST = table.freeze({
 		shopId = "VeilAndFate",
 		displayName = "Veil & Fate",
 		actionText = "Enter",
-		mode = "soon",
+		mode = "tarot",
 		catalogueId = "VeilAndFate",
-		-- The tarot pull request plugs in here. It stays a coming-soon panel until then.
+		-- The tent panel. Cash catalogues stay off this stall.
 		plug = "tarot",
 		promptKind = "TownShop",
 		anchorPath = table.freeze({ "Hollowmere", "VeilAndFate", "VeilAndFatePromptAnchor" }),
