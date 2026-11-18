@@ -12,6 +12,7 @@ local Remotes = {
 	REDUCED_MOTION = "RequestSetReducedMotion",
 	RETURN_TO_LAIR = "RequestReturnToLair",
 	PEDLAR_BUY = "RequestPedlarBuy",
+	REQUEST_PEDLAR_OPEN = "RequestPedlarOpen",
 	BIND_AT_ONCE = "RequestSetBindAtOnce",
 	CLAIM_HAUL = "RequestClaimHaul",
 	CLAIM_DAILY = "RequestClaimDaily",
@@ -19,6 +20,7 @@ local Remotes = {
 	BUY_SKILL = "RequestBuySkill",
 	OPEN_RELICS = "RequestOpenRelics",
 	BUY_RELIC = "RequestRelic",
+	REBIRTH = "RequestRebirth",
 }
 
 return table.freeze(Remotes)

@@ -8,11 +8,13 @@ local RunService = game:GetService("RunService")
 local CashPlaque = require(script.Parent:WaitForChild("CashPlaque"))
 local GoalBanner = require(script.Parent:WaitForChild("GoalBanner"))
 local RarityTease = require(script.Parent:WaitForChild("RarityTease"))
+local RebirthPanel = require(script.Parent:WaitForChild("RebirthPanel"))
 local RelicsShop = require(script.Parent:WaitForChild("RelicsShop"))
 local HaulPanel = require(script.Parent:WaitForChild("HaulPanel"))
 local OfferingPanel = require(script.Parent:WaitForChild("OfferingPanel"))
 local GuideArrow = require(script.Parent:WaitForChild("GuideArrow"))
 local HomeBeam = require(script.Parent:WaitForChild("HomeBeam"))
+local HudMenu = require(script.Parent:WaitForChild("HudMenu"))
 local Interactions = require(script.Parent:WaitForChild("Interactions"))
 local LairBanners = require(script.Parent:WaitForChild("LairBanners"))
 local PedlarShop = require(script.Parent:WaitForChild("PedlarShop"))
@@ -21,15 +23,12 @@ local TownDress = require(script.Parent:WaitForChild("TownDress"))
 local TownQuality = require(script.Parent:WaitForChild("TownQuality"))
 local ReturnButton = require(script.Parent:WaitForChild("ReturnButton"))
 local SealToast = require(script.Parent:WaitForChild("SealToast"))
-local ThemeBind = require(script.Parent:WaitForChild("ThemeBind"))
-local UiFactory = require(script.Parent:WaitForChild("UiFactory"))
+local TitheSlab = require(script.Parent:WaitForChild("TitheSlab"))
 local WorldBoards = require(script.Parent:WaitForChild("WorldBoards"))
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Economy = require(Shared:WaitForChild("Config"):WaitForChild("Economy")) :: any
-local HudSlots = require(Shared:WaitForChild("Logic"):WaitForChild("HudSlots")) :: any
 local GameInfo = require(Shared:WaitForChild("GameInfo")) :: any
-local Plots = require(Shared:WaitForChild("Config"):WaitForChild("Plots")) :: any
 local Names = require(Shared:WaitForChild("Config"):WaitForChild("Remotes")) :: any
 local QaArgs = require(Shared:WaitForChild("Logic"):WaitForChild("QaArgs")) :: any
 local UITheme = require(Shared:WaitForChild("UITheme")) :: any
@@ -91,36 +90,15 @@ end, function()
 	fire(Names.SKIP)
 end)
 
-local hud = Plots.RETURN_BUTTON
-ReturnButton.mount(gui, function()
+local returnButton = ReturnButton.mount(gui, function()
 	fire(Names.RETURN_TO_LAIR)
 end)
 SealToast.mount(gui, player)
 
-local steady = UiFactory.button(gui, UITheme.text.minSize)
-steady.Name = "ReducedMotion"
-steady.AnchorPoint = Vector2.new(0, 1)
-steady.Position = UDim2.new(0, HudSlots.origin(1), 1, -hud.margin)
-steady.Size = UDim2.fromOffset(hud.width, hud.steadyHeight)
-steady.BackgroundColor3 = UITheme.color("Soot")
-steady.TextColor3 = UITheme.color("BoneDim")
-ThemeBind.apply(steady, "body", UITheme.text.minSize)
-local steadyStroke = steady:FindFirstChildOfClass("UIStroke")
-if steadyStroke ~= nil then
-	steadyStroke.Color = UITheme.color("BoneDim")
-end
-
-local function paintSteady()
-	steady.Text = if reduced then "Steady gaze: On" else "Steady gaze: Off"
-end
-paintSteady()
-steady.Activated:Connect(function()
-	fire(Names.REDUCED_MOTION, not reduced)
-end)
-
 local snapshotValue = player:WaitForChild("CryptidState"):WaitForChild("Snapshot") :: StringValue
 local latestSnapshot: any = nil
 local skillTree: any = nil
+local menu: any = nil
 
 local function readNumber(name: string): number
 	local value = player:GetAttribute(name)
@@ -146,10 +124,15 @@ local relics = RelicsShop.mount(gui, isReduced, function()
 end, function(key: string)
 	fire(Names.BUY_RELIC, key)
 end)
+local rite = RebirthPanel.mount(gui, isReduced, function(familiarUid: string)
+	fire(Names.REBIRTH, familiarUid)
+end)
 
 local function applyAttributes()
 	reduced = player:GetAttribute("ReducedMotion") == true
-	paintSteady()
+	if menu ~= nil then
+		menu.setCalm(reduced)
+	end
 	plaque.apply(
 		readNumber("Cash"),
 		readNumber("IncomePerSecond"),
@@ -200,6 +183,7 @@ local function applySnapshot(text: string)
 	haul.apply(decoded.haul)
 	offering.apply(decoded.daily, haul.isOpen())
 	relics.apply(decoded.relics)
+	rite.apply(decoded)
 	WorldBoards.refresh(decoded)
 	layout()
 end
@@ -209,10 +193,14 @@ layout = function()
 	local mobile = viewport.X < UITheme.shape.mobileWidthBreakpoint
 	local bannerHeight = banner.layout(mobile)
 	plaque.layout(mobile, bannerHeight + UITheme.shape.plaqueGapPx)
+	if menu ~= nil then
+		menu.layout(bannerHeight)
+	end
 	tease.layout(mobile)
 	haul.layout(mobile)
 	offering.layout(mobile)
 	relics.layout(mobile)
+	rite.layout(mobile)
 end
 
 camera:GetPropertyChangedSignal("ViewportSize"):Connect(layout)
@@ -274,11 +262,28 @@ end
 
 local skill = SkillTree.mount(gui, player, isReduced)
 skillTree = skill
+menu = HudMenu.mount(gui, function()
+	fire(Names.REDUCED_MOTION, not reduced)
+end, {
+	offeringButton = offering.button,
+	offeringPip = offering.pip,
+	returnButton = returnButton,
+	rites = skill.rites,
+})
+menu.setCalm(reduced)
+layout()
 if RunService:IsStudio() then
 	local StudioTestService = game:GetService("StudioTestService") :: any
 	local ok, studioArgs = pcall(function()
 		return StudioTestService:GetTestArgs()
 	end)
+	if ok and QaArgs.rebirthReady(true, studioArgs) then
+		local function openRite()
+			rite.open()
+		end
+		player:GetAttributeChangedSignal("StateRevision"):Connect(openRite)
+		task.defer(openRite)
+	end
 	if ok and QaArgs.openTree(true, studioArgs) then
 		local function openWhenReady()
 			skill.open()
@@ -290,12 +295,12 @@ if RunService:IsStudio() then
 		task.defer(openWhenReady)
 	end
 end
-local pedlar = PedlarShop.mount(gui, player, remotes :: Folder, Names, isReduced)
+PedlarShop.mount(gui, player, remotes :: Folder, Names, isReduced)
 TownDress.start()
 TownQuality.start()
 Interactions.start(player, remotes :: Folder, Names, beginCatch, {
-	onPedlar = pedlar.open,
 	onShrine = skill.open,
+	onRite = rite.open,
 })
 GuideArrow.start(player)
 LairBanners.start(player)
@@ -303,6 +308,7 @@ HomeBeam.start(player)
 WorldBoards.start(function()
 	return latestSnapshot
 end)
+TitheSlab.start()
 
 if player:GetAttribute("StateRevision") ~= nil then
 	applyAttributes()

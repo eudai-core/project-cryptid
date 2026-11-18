@@ -10,6 +10,7 @@ local LairVisual = require(script.Parent:WaitForChild("LairVisual"))
 local PlotBuilder = require(script.Parent:WaitForChild("PlotBuilder"))
 local PlotSignals = require(script.Parent:WaitForChild("PlotSignals"))
 local BoneAltar = require(Shared:WaitForChild("Config"):WaitForChild("BoneAltar")) :: any
+local RebirthRules = require(Shared:WaitForChild("Config"):WaitForChild("Rebirth")) :: any
 local Monetisation = require(Shared:WaitForChild("Config"):WaitForChild("Monetisation")) :: any
 local Onboarding = require(Shared:WaitForChild("Config"):WaitForChild("Onboarding")) :: any
 local NumberFormat = require(Shared:WaitForChild("Logic"):WaitForChild("NumberFormat")) :: any
@@ -97,6 +98,7 @@ local function setPrompts(plot: any, userId: number)
 		plate:SetAttribute("OwnerUserId", userId)
 	end
 	apply(plot.altarPrompt)
+	apply(plot.ritePrompt)
 	apply(plot.wildPrompt)
 	for _, pad in plot.pads do
 		apply(pad.prompt)
@@ -518,6 +520,10 @@ function Plot.sync(plot: any, profile: any, guideValue: ObjectValue)
 	plot.wildPrompt.ActionText = "Catch"
 	local wildSpecies = Species.get(Species.WILD_ID)
 	plot.wildPrompt.ObjectText = wildSpecies.displayName
+
+	plot.ritePrompt:SetAttribute("Available", profile.everHeld1M == true)
+	plot.ritePrompt.ActionText = RebirthRules.PROMPT
+	plot.ritePrompt.ObjectText = RebirthRules.TITLE
 
 	local nextAltar = profile.upgrades.boneAltar + 1
 	local altarCost = BoneAltar.cost(nextAltar, BoneAltar.rebirths(profile))

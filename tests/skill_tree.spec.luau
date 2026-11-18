@@ -115,11 +115,12 @@ Check.test("QA3 K, the rites button, and the shrine open it; Esc, B, and close s
 	Check.contains(client, "Enum.KeyCode[SkillConfig.GAMEPAD_OPEN]")
 	Check.contains(client, "Enum.KeyCode[SkillConfig.GAMEPAD_CLOSE]")
 	Check.contains(client, "SkillConfig.CLOSE_LABEL")
-	Check.contains(client, "HudSlots.ritesOrigin")
+	Check.contains(client, "rites = rites")
+	local main = fs.readFile("src/client/Main.client.luau")
+	Check.contains(main, "rites = skill.rites")
 	Check.contains(client, "characterAlive")
 	Check.contains(client, "Humanoid")
 	Check.contains(client, "closeTree")
-	local main = fs.readFile("src/client/Main.client.luau")
 	Check.contains(main, "onShrine = skill.open")
 end)
 
@@ -382,7 +383,7 @@ Check.test("the rites circle text stays inside the fonts we draw", function()
 end)
 
 Check.test("QA16 owned rites survive a mock rejoin", function()
-	Check.eq(Save.DATA_VERSION, 9)
+	Check.eq(Save.DATA_VERSION, 10)
 	local legacy = Schema.newProfile(10, "starter")
 	legacy.dataVersion = 4
 	legacy.skills = nil

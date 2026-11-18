@@ -26,7 +26,11 @@ Check.test("QA15 palette tokens match the spec", function()
 	Check.eq(UITheme.rarity.Common, "BoneDim")
 	Check.eq(UITheme.rarity.Epic, "Blood")
 	Check.eq(UITheme.rarity.Legendary, "GoldBright")
-	Check.eq(UITheme.rarity.Mythic, "Rift")
+	Check.eq(UITheme.rarity.Mythic, "GoldBright")
+	Check.eq(UITheme.palette[UITheme.rarity.Mythic], "C9A55A")
+	for name, token in UITheme.rarity do
+		Check.eq(token == "Rift", false, name)
+	end
 	Check.eq(UITheme.shape.cornerPx, 4)
 	Check.eq(UITheme.shape.plaqueSize.desktop.w, 320)
 	Check.eq(UITheme.shape.plaqueSize.desktop.h, 72)

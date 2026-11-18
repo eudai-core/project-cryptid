@@ -47,18 +47,28 @@ local BY_ID: { [string]: SpeciesRecord } = {
 	fresno_nightcrawler = record("fresno_nightcrawler", "Fresno Nightcrawler", 3, 50),
 	hidebehind = record("hidebehind", "Hidebehind", 4, 75),
 	hodag = record("hodag", "Hodag", 5, nil),
-	uncommon_01 = record("uncommon_01", "Placeholder Uncommon", 15, nil, "Uncommon"),
-	uncommon_02 = record("uncommon_02", "Placeholder Uncommon II", 15, nil, "Uncommon"),
-	rare_01 = record("rare_01", "Placeholder Rare", 45, nil, "Rare"),
-	rare_02 = record("rare_02", "Placeholder Rare II", 45, nil, "Rare"),
-	epic_01 = record("epic_01", "Placeholder Epic", 160, nil, "Epic"),
-	epic_02 = record("epic_02", "Placeholder Epic II", 160, nil, "Epic"),
-	legendary_01 = record("legendary_01", "Placeholder Legendary", 600, nil, "Legendary"),
-	legendary_02 = record("legendary_02", "Placeholder Legendary II", 600, nil, "Legendary"),
-	mythic_01 = record("mythic_01", "Placeholder Mythic", 2500, nil, "Mythic"),
-	mythic_02 = record("mythic_02", "Placeholder Mythic II", 2500, nil, "Mythic"),
+	uncommon_01 = record("uncommon_01", "Jackalope", 15, nil, "Uncommon"),
+	uncommon_02 = record("uncommon_02", "Dover Demon", 15, nil, "Uncommon"),
+	loveland_frogman = record("loveland_frogman", "Loveland Frogman", 15, nil, "Uncommon"),
+	rare_01 = record("rare_01", "Beast of Bray Road", 45, nil, "Rare"),
+	rare_02 = record("rare_02", "Beast of Bray Road", 45, nil, "Rare"),
+	epic_01 = record("epic_01", "Jersey Devil", 160, nil, "Epic"),
+	epic_02 = record("epic_02", "Loch Ness Serpent", 160, nil, "Epic"),
+	legendary_01 = record("legendary_01", "Legendary", 600, nil, "Legendary"),
+	legendary_02 = record("legendary_02", "Legendary", 600, nil, "Legendary"),
+	mythic_01 = record("mythic_01", "Mythic", 2500, nil, "Mythic"),
+	mythic_02 = record("mythic_02", "Mythic", 2500, nil, "Mythic"),
 	snallygaster = record("snallygaster", "Snallygaster", Return.SNALLYGASTER_INCOME, nil, "Uncommon"),
 	flatwoods_monster = record("flatwoods_monster", "Flatwoods Monster", Return.FLATWOODS_INCOME, nil, "Rare"),
+}
+
+local MODEL_ID: { [string]: string } = {
+	uncommon_01 = "jackalope",
+	uncommon_02 = "dover_demon",
+	rare_01 = "beast_of_bray_road",
+	rare_02 = "beast_of_bray_road",
+	epic_01 = "jersey_devil",
+	epic_02 = "loch_ness_serpent",
 }
 
 local Species = {
@@ -85,6 +95,14 @@ local Species = {
 
 function Species.get(id: string): SpeciesRecord?
 	return BY_ID[id]
+end
+
+function Species.modelId(id: string): string
+	local mapped = MODEL_ID[id]
+	if mapped ~= nil then
+		return mapped
+	end
+	return id
 end
 
 function Species.ids(): { string }

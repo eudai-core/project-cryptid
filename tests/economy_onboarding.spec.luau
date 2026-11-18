@@ -67,7 +67,7 @@ Check.test("species and economy match spec 01", function()
 	Check.eq(Onboarding.GOAL_ONE_SECONDS, 5)
 	Check.eq(Onboarding.SKIP_LABEL, "Skip the rite")
 	Check.eq(Onboarding.BIND_HINT, "Carve a circle to bind it.")
-	Check.eq(Save.DATA_VERSION, 9)
+	Check.eq(Save.DATA_VERSION, 10)
 	Check.eq(Save.AUTOSAVE_SECONDS, 60)
 	Check.eq(Save.KICK_LOAD_FAILED, "The ledger would not open. Your progress is safe. Rejoin.")
 end)
@@ -608,6 +608,10 @@ Check.test("funnel step is the goal plus one and a skip logs no catch", function
 	Check.eq(caught[1].stepName, "Caught Hodag")
 	Check.eq(caught[1].eventName, Analytics.CATCH_EVENT)
 	Check.eq(caught[1].catch, true)
+	local finished = fresh()
+	finished.onboarding.step = 8
+	finished.onboarding.skipped = false
+	Check.eq(Analytics.onboarded(finished), "Onboarded - Yes")
 	local skipped = Analytics.eventsForTransition(3, 8, true)
 	Check.eq(#skipped, 0)
 	for _, event in skipped do
@@ -616,12 +620,15 @@ Check.test("funnel step is the goal plus one and a skip logs no catch", function
 	end
 	local profile = fresh()
 	profile.onboarding.step = 3
+	Check.eq(Analytics.onboarded(profile), "Onboarded - No")
 	local serial = 0
 	local _ok, _reason, events = Transactions.skip(profile, 4, function()
 		serial += 1
 		return "skip-hodag-" .. tostring(serial)
 	end)
 	Check.eq(profile.onboarding.step, 8)
+	Check.eq(profile.onboarding.skipped, true)
+	Check.eq(Analytics.onboarded(profile), "Onboarded - Yes")
 	Check.eq(#events, 0)
 	Check.eq(ProfileQuery.countSpecies(profile, Species.WILD_ID), 1)
 end)
@@ -672,7 +679,7 @@ Check.test("v5 in-progress rites recompute onto the v2 chain and finished rites 
 	mid.pads["2"] = "fresno"
 	mid.pads["3"] = "hide"
 	local migrated = Schema.migrate(mid)
-	Check.eq(migrated.dataVersion, 9)
+	Check.eq(migrated.dataVersion, 10)
 	Check.eq(migrated.onboarding.step, 3)
 	Check.eq(migrated.cash, 40)
 	Check.eq(migrated.upgrades.boneAltar, 1)
