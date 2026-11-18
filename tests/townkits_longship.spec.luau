@@ -360,6 +360,9 @@ local function modulePath(fromFile: string, spec: string): string
 end
 
 local function sandboxRequire(spec: string): any
+	if string.sub(spec, 1, 6) == "@lune/" then
+		return require(spec)
+	end
 	local caller = debug.info(2, "s")
 	local fromFile = string.match(caller, '^%[string "(.*)"%]$') or caller
 	local path = modulePath(fromFile, spec)
@@ -574,7 +577,23 @@ local function assertKit(model: any)
 	Check.eq(spawn.Name, "TavernApproach")
 	Check.eq(spawn.Parent, model)
 	Check.eq(door:GetAttribute("TownAnchor"), "Door")
+	Check.eq(door:GetAttribute("ShopId"), nil)
 	Check.eq(door.CFrame.Position.Z < -8, true, tostring(door.CFrame.Position.Z))
+	local promptAnchor = nil
+	for _, inst in model:GetDescendants() do
+		if inst.Name == "HowlingHornPromptAnchor" then
+			promptAnchor = inst
+		end
+	end
+	Check.truthy(promptAnchor)
+	Check.eq(promptAnchor.Parent, model)
+	Check.eq(promptAnchor.Transparency, 1)
+	Check.eq(promptAnchor.Anchored, true)
+	Check.eq(promptAnchor.CanCollide, false)
+	Check.eq(promptAnchor.CanTouch, false)
+	Check.eq(promptAnchor.CanQuery, false)
+	Check.eq(promptAnchor:GetAttribute("ShopId"), "HowlingHorn")
+	Check.eq(promptAnchor:GetAttribute("TownAnchor"), nil)
 	local headZ = nil
 	local headY = nil
 	for _, inst in model:GetDescendants() do
@@ -662,7 +681,7 @@ Check.test("longship hull union is one cached call with a part fallback", functi
 		union.Material = base.Material
 		union.Color = base.Color
 		union.Anchored = true
-		return union
+		return { union }
 	end
 
 	local firstTown = buildOldTavern()
@@ -690,6 +709,51 @@ Check.test("longship hull union is one cached call with a part fallback", functi
 		Check.eq(hull:GetAttribute("TownKitPart"), true)
 		Check.eq(hull:GetAttribute("TownDecor"), nil)
 	end
+end)
+
+Check.test("tryUnion falls back when UnionAsync errors or returns no part", function()
+	Kit.clearGeometryCache()
+	local geo = roblox.game:GetService("GeometryService")
+	function geo:UnionAsync()
+		error("csg failed")
+	end
+	local failed = buildOldTavern()
+	local failedReport = Longship.replace(failed, { qualityLevel = 1 })
+	Check.eq(failedReport ~= nil, true)
+	Check.eq(countName(failed:FindFirstChild("HowlingHorn"), "Shell") >= 1, true)
+	Check.eq(countName(failed:FindFirstChild("HowlingHorn"), "Hull"), 0)
+
+	Kit.clearGeometryCache()
+	function geo:UnionAsync()
+		return {}
+	end
+	local empty = buildOldTavern()
+	Longship.replace(empty, { qualityLevel = 1 })
+	Check.eq(countName(empty:FindFirstChild("HowlingHorn"), "Shell") >= 1, true)
+	Check.eq(countName(empty:FindFirstChild("HowlingHorn"), "Hull"), 0)
+end)
+
+Check.test("applyAll keeps going when one kit throws", function()
+	local continued = false
+	local removeBoom = TownKits._push({
+		replace = function()
+			error("kit blew up")
+		end,
+	})
+	local removeNext = TownKits._push({
+		replace = function()
+			continued = true
+			return { id = "next" }
+		end,
+	})
+	TownKits.strict = false
+	local reports, failures = TownKits.applyAll(roblox.Instance.new("Folder"), {})
+	removeBoom()
+	removeNext()
+	Check.eq(continued, true)
+	Check.eq(#failures, 1)
+	Check.eq(#reports, 1)
+	Check.eq(reports[1].id, "next")
 end)
 
 Check.test("town kits do no per-frame work", function()

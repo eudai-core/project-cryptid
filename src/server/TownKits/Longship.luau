@@ -639,6 +639,7 @@ function Longship.replace(townFolder: Instance, refs: any): any
 	for _, prompt in prompts do
 		prompt.Parent = if door ~= nil then door else model
 	end
+	Kit.promptAnchor(model, CFrame.new(0, 3, -13.6))
 
 	local afterParts = Kit.countParts(model)
 	local afterLights = Kit.countLights(model)
@@ -664,5 +665,9 @@ function Longship.replace(townFolder: Instance, refs: any): any
 		afterEmitters = afterEmitters,
 	}
 end
+
+Longship.name = "Longship"
+Longship.order = 0
+Longship.isKit = true
 
 return Longship
