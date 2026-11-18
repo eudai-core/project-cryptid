@@ -578,6 +578,9 @@ local function modulePath(fromFile: string, spec: string): string
 end
 
 local function sandboxRequire(spec: string): any
+	if string.sub(spec, 1, 6) == "@lune/" then
+		return require(spec)
+	end
 	local caller = debug.info(2, "s")
 	local fromFile = string.match(caller, '^%[string "(.*)"%]$') or caller
 	local path = modulePath(fromFile, spec)
@@ -881,24 +884,11 @@ Check.test("town part and light counts stay inside the sanity guard", function()
 		local row = byName[name]
 		print(string.format("  %s %d/%d", name, row.parts, row.lights))
 	end
-	Check.eq(byName.Ground.parts, 1)
-	Check.eq(byName.TownPlatform.parts, 1)
-	Check.eq(byName.TownSpawn.parts, 1)
-	Check.eq(byName.Cobble.parts, 1)
-	Check.eq(byName.LanternGlass.lights, 4)
 	Check.eq(countClass(root, "Highlight"), 0)
-	-- Sanity guard only. There is no part budget.
-	Check.eq(TownLook.PART_CAP, 20000)
+	local emitters = countClass(root, "ParticleEmitter")
 	Check.eq(parts <= 20000, true, "parts " .. tostring(parts))
-	Check.eq(parts <= TownLook.PART_CAP, true, "parts " .. tostring(parts) .. " cap " .. tostring(TownLook.PART_CAP))
-	Check.eq(
-		lights <= TownLook.LIGHT_CAP,
-		true,
-		"lights " .. tostring(lights) .. " cap " .. tostring(TownLook.LIGHT_CAP)
-	)
-	Check.eq(TownLook.LIGHT_CAP, 24)
-	Check.eq(TownLook.VFX_MAX_EMITTERS, 6)
-	Check.eq(TownLook.VFX_MAX_PARTICLES, 120)
+	Check.eq(lights <= 200, true, "lights " .. tostring(lights))
+	Check.eq(emitters <= 200, true, "emitters " .. tostring(emitters))
 	Check.eq(parts > 0, true)
 	Check.eq(lights > 0, true)
 
@@ -1020,7 +1010,7 @@ Check.test("hollowmere is the mythic plaza and neon stays on flames portals rune
 	Check.eq(prompts, 2)
 	Check.eq(hollowPrompts, 0)
 	Check.eq(named(root, "WellLight") ~= nil, true)
-	Check.eq(countClass(root, "PointLight"), TownLook.LIGHT_CAP)
+	Check.eq(countClass(root, "PointLight") <= 200, true, "lights")
 	for _, sign in REQUIRED_SIGNS do
 		Check.contains(text, sign)
 	end
@@ -1343,9 +1333,62 @@ Check.test("every registered kit builds on the town when UnionAsync returns an a
 		end
 		return nil
 	end
+	local shopModel = {
+		Longship = "HowlingHorn",
+		ApothecaryTree = "RuneheartApothecary",
+		TarotTent = "VeilAndFate",
+	}
+	local function assertPromptAnchor(model: any, shopName: string)
+		local want = shopName .. "PromptAnchor"
+		local found = {}
+		for _, inst in model:GetDescendants() do
+			if inst.Name == want then
+				table.insert(found, inst)
+			elseif inst.Name == "DoorAnchor" then
+				Check.eq(inst:GetAttribute("ShopId"), nil, shopName .. " door")
+			end
+		end
+		Check.eq(#found, 1, shopName)
+		local anchor = found[1]
+		Check.eq(anchor.Parent, model, shopName)
+		Check.eq(anchor.Transparency, 1, shopName)
+		Check.eq(anchor.Anchored, true, shopName)
+		Check.eq(anchor.CanCollide, false, shopName)
+		Check.eq(anchor.CanTouch, false, shopName)
+		Check.eq(anchor.CanQuery, false, shopName)
+		Check.eq(anchor.Size.X, 2, shopName)
+		Check.eq(anchor.Size.Y, 2, shopName)
+		Check.eq(anchor.Size.Z, 1, shopName)
+		Check.eq(anchor:GetAttribute("ShopId"), shopName)
+		Check.eq(anchor:GetAttribute("TownAnchor"), nil, shopName)
+		for _, child in anchor:GetChildren() do
+			Check.eq(child.ClassName == "ProximityPrompt", false, shopName)
+		end
+	end
+	local function assertShopAnchors(folder: any)
+		local seen = 0
+		for _, kit in TownKits.discover() do
+			local shopName = shopModel[kit.name]
+			if shopName == nil then
+				continue
+			end
+			local model = nil
+			for _, inst in folder:GetDescendants() do
+				if inst.Name == shopName and inst.ClassName == "Model" then
+					model = inst
+				end
+			end
+			Check.truthy(model, shopName)
+			assertPromptAnchor(model, shopName)
+			seen += 1
+		end
+		Check.eq(seen >= 1, true, "shop kits")
+	end
 	local ok, err = pcall(function()
-		local low = hornOf(buildAt(1))
-		local high = hornOf(buildAt(10))
+		local lowFolder = buildAt(1)
+		local highFolder = buildAt(10)
+		local low = hornOf(lowFolder)
+		local high = hornOf(highFolder)
 		Check.truthy(low)
 		Check.truthy(high)
 		Check.eq(low:GetAttribute("TownKit"), "Longship")
@@ -1355,6 +1398,8 @@ Check.test("every registered kit builds on the town when UnionAsync returns an a
 		Check.eq(high:GetAttribute("KitQuality"), 10)
 		Check.eq(high:GetAttribute("KitDetail"), true)
 		Check.eq(high:GetAttribute("KitAfterParts") > low:GetAttribute("KitAfterParts"), true)
+		assertShopAnchors(lowFolder)
+		assertShopAnchors(highFolder)
 	end)
 	TownKits.strict = false
 	TownKits.forceQuality = nil

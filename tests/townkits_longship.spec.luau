@@ -360,6 +360,9 @@ local function modulePath(fromFile: string, spec: string): string
 end
 
 local function sandboxRequire(spec: string): any
+	if string.sub(spec, 1, 6) == "@lune/" then
+		return require(spec)
+	end
 	local caller = debug.info(2, "s")
 	local fromFile = string.match(caller, '^%[string "(.*)"%]$') or caller
 	local path = modulePath(fromFile, spec)
@@ -574,7 +577,23 @@ local function assertKit(model: any)
 	Check.eq(spawn.Name, "TavernApproach")
 	Check.eq(spawn.Parent, model)
 	Check.eq(door:GetAttribute("TownAnchor"), "Door")
+	Check.eq(door:GetAttribute("ShopId"), nil)
 	Check.eq(door.CFrame.Position.Z < -8, true, tostring(door.CFrame.Position.Z))
+	local promptAnchor = nil
+	for _, inst in model:GetDescendants() do
+		if inst.Name == "HowlingHornPromptAnchor" then
+			promptAnchor = inst
+		end
+	end
+	Check.truthy(promptAnchor)
+	Check.eq(promptAnchor.Parent, model)
+	Check.eq(promptAnchor.Transparency, 1)
+	Check.eq(promptAnchor.Anchored, true)
+	Check.eq(promptAnchor.CanCollide, false)
+	Check.eq(promptAnchor.CanTouch, false)
+	Check.eq(promptAnchor.CanQuery, false)
+	Check.eq(promptAnchor:GetAttribute("ShopId"), "HowlingHorn")
+	Check.eq(promptAnchor:GetAttribute("TownAnchor"), nil)
 	local headZ = nil
 	local headY = nil
 	for _, inst in model:GetDescendants() do

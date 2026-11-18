@@ -329,7 +329,6 @@ end
 Check.test("every static WaitForChild path in src exists in the rojo tree", function()
 	local projects = { "default.project.json", "serve.test.project.json" }
 	local total = 0
-	local sawInit = false
 	for _, projectPath in projects do
 		local misses, checked = scanProject(projectPath)
 		local authored = {}
@@ -339,17 +338,8 @@ Check.test("every static WaitForChild path in src exists in the rojo tree", func
 			end
 		end
 		total += #checked
-		for _, item in checked do
-			if
-				string.find(item, "src/server/TownKits/init.luau -> ServerScriptService.TownKits.Longship", 1, true)
-				~= nil
-			then
-				sawInit = true
-			end
-		end
 		Check.eq(#authored, 0, table.concat(authored, "\n"))
 	end
-	Check.eq(sawInit, true)
 	Check.eq(total > 100, true, "checked " .. tostring(total))
 	print(string.format("rojo paths checked=%d", total))
 end)

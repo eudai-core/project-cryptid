@@ -298,4 +298,25 @@ function Kit.countEmitters(root: Instance): number
 	return Kit.countClass(root, "ParticleEmitter")
 end
 
+function Kit.promptAnchor(model: any, localCf: any): any
+	local shopId = model.Name
+	local pivot = if type(model.GetPivot) == "function" then model:GetPivot() else model.PrimaryPart.CFrame
+	local anchor = Kit.spawn({
+		name = shopId .. "PromptAnchor",
+		size = Vector3.new(2, 2, 1),
+		cf = pivot * localCf,
+		material = UITheme.materials.wood,
+		color = "Void",
+		decor = true,
+		shadow = false,
+		parent = model,
+	})
+	anchor.Transparency = 1
+	anchor:SetAttribute("ShopId", shopId)
+	anchor:SetAttribute(Kit.PART_ATTRIBUTE, nil)
+	return anchor
+end
+
+Kit.isKit = false
+
 return Kit
