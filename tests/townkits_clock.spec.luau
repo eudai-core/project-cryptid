@@ -607,7 +607,12 @@ local function assertTower(model: any, detail: boolean)
 	end
 	Check.eq(kitParts >= 280, true, "kit parts " .. tostring(kitParts))
 	if detail then
-		Check.eq(kitParts >= 2000, true, "detail kit parts " .. tostring(kitParts))
+		Check.eq(kitParts >= 6000, true, "detail kit parts " .. tostring(kitParts))
+		Check.eq(countName(model, "MinuteTick"), 48)
+		Check.eq(countName(model, "Bezel"), 24)
+		Check.eq(countName(model, "Dentil"), 104)
+	else
+		Check.eq(countName(model, "Dentil"), 0)
 	end
 	Check.eq(maxY > 19, true, tostring(maxY))
 	Check.eq(spread > 3.2 and spread < 8, true, tostring(spread))
@@ -801,12 +806,16 @@ Check.test("clock tower is discovered and applyAll builds it", function()
 		if report.id == "DuskAndDial" then
 			hit = true
 			Check.eq(report.detail, true)
-			Check.eq(report.afterParts >= 2000, true, tostring(report.afterParts))
+			Check.eq(report.afterParts >= 6000, true, tostring(report.afterParts))
 		end
 	end
 	Check.eq(hit, true)
 	local source = fs.readFile("src/server/TownKits/ClockTower.luau")
 	Check.eq(string.find(source, 'script.Parent:WaitForChild("Kit")', 1, true) ~= nil, true)
+	Check.eq(string.find(source, "local function animate", 1, true) ~= nil, true)
+	Check.eq(string.find(source, "Destroying", 1, true) ~= nil, true)
+	Check.eq(string.find(source, "Heartbeat", 1, true) ~= nil, true)
+	Check.eq(string.find(source, "_G.LUNE", 1, true) ~= nil, true)
 	Check.eq(string.find(source, "ServerScriptService", 1, true), nil)
 	Check.eq(string.find(source, "FlameViolet", 1, true), nil)
 	Check.eq(string.find(source, "MoonGlow", 1, true), nil)

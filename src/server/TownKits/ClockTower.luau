@@ -39,8 +39,8 @@ local SIGN_LOCAL = CFrame.new(0, 4.55, -3.9)
 local CROW_LOCAL = CFrame.new(-0.9, 15, -1.3)
 local CLOCK_Y = 10.35
 local SHAFT_TOP = 12.32
-local FINE_COURSE = 0.26
-local FINE_BRICK = 0.42
+local FINE_COURSE = 0.16
+local FINE_BRICK = 0.24
 local COARSE_COURSE = 0.82
 local COARSE_BRICK = 1.12
 local TONES = { "Wall", "Soot", "Void", "Ash", "Stone", "Wall", "Soot" }
@@ -506,6 +506,36 @@ local function buildDial(parent: Instance, pivot: any): any
 			shape = Enum.PartType.Ball,
 		})
 	end
+	for n = 0, 59 do
+		if n % 5 ~= 0 then
+			local theta = n * (math.pi / 30)
+			place(parent, pivot, {
+				name = "MinuteTick",
+				size = Vector3.new(0.035, 0.08, 0.04),
+				cf = hubLocal
+					* CFrame.new(math.sin(theta) * 1.78, math.cos(theta) * 1.78, -0.04)
+					* CFrame.Angles(0, 0, -theta),
+				material = METAL,
+				color = "Gold",
+				decor = true,
+				shadow = false,
+			})
+		end
+	end
+	for n = 0, 23 do
+		local theta = n * (math.pi / 12)
+		place(parent, pivot, {
+			name = "Bezel",
+			size = Vector3.new(0.14, 0.08, 0.08),
+			cf = hubLocal
+				* CFrame.new(math.sin(theta) * 2.22, math.cos(theta) * 2.22, -0.02)
+				* CFrame.Angles(0, 0, -theta),
+			material = METAL,
+			color = "GoldBright",
+			decor = true,
+			shadow = false,
+		})
+	end
 	local hour = place(parent, pivot, {
 		name = "HourHand",
 		size = Vector3.new(0.1, 0.85, 0.06),
@@ -748,7 +778,7 @@ local function buildSpire(parent: Instance, pivot: any, detail: boolean)
 	if not detail then
 		return
 	end
-	local rows = 14
+	local rows = 22
 	for face = 0, 3 do
 		local yaw = face * (math.pi * 0.5)
 		for row = 0, rows - 1 do
@@ -756,7 +786,7 @@ local function buildSpire(parent: Instance, pivot: any, detail: boolean)
 			local y = baseY + t * rise
 			local outward = run * (1 - t) + 0.08
 			local half = width * 0.5 * (1 - t) * 0.92
-			local count = math.max(math.floor((half * 2) / 0.34), 2)
+			local count = math.max(math.floor((half * 2) / 0.2), 2)
 			local brick = (half * 2) / count
 			local shift = if row % 2 == 0 then 0 else brick * 0.5
 			for index = 0, count - 1 do
@@ -896,6 +926,25 @@ local function buildChains(parent: Instance, pivot: any)
 	end
 end
 
+local function buildDentils(parent: Instance, pivot: any)
+	local count = 26
+	for face = 0, 3 do
+		local yaw = face * (math.pi * 0.5)
+		for index = 0, count - 1 do
+			local along = -2.7 + (index + 0.5) * (5.4 / count)
+			place(parent, pivot, {
+				name = "Dentil",
+				size = Vector3.new(0.12, 0.14, 0.16),
+				cf = CFrame.Angles(0, yaw, 0) * CFrame.new(along, 12.18, -2.98),
+				material = STONE,
+				color = if index % 2 == 0 then "BoneDim" else "Stone",
+				decor = true,
+				shadow = true,
+			})
+		end
+	end
+end
+
 local function buildLife(parent: Instance, pivot: any)
 	local burner = place(parent, pivot, {
 		name = "MoteHost",
@@ -933,7 +982,19 @@ local function buildLife(parent: Instance, pivot: any)
 	addLife(fog, "BaseFog", 6, 2, 0.25, 0.7, 40, "BoneDim")
 end
 
-local function bindMotion(rig: any)
+local function readNow(dt: number): number
+	local stampedOk, stamped = pcall(function()
+		return workspace:GetServerTimeNow()
+	end)
+	if stampedOk and type(stamped) == "number" then
+		return stamped
+	end
+	return os.clock() + dt
+end
+
+-- Same contract as the forthcoming Kit.animate(model, fn(dt, t)).
+-- The integration branch will switch this call over. Do not edit Kit.luau for it.
+local function animate(model: Instance, step: (number, number) -> ())
 	-- selene: allow(global_usage)
 	if _G.LUNE == true then
 		return
@@ -949,13 +1010,34 @@ local function bindMotion(rig: any)
 		return
 	end
 	local connection: any = nil
-	local function stepClock()
-		local now = os.clock()
-		local stampedOk, stamped = pcall(function()
-			return workspace:GetServerTimeNow()
-		end)
-		if stampedOk and type(stamped) == "number" then
-			now = stamped
+	local function disconnect()
+		if connection ~= nil then
+			connection:Disconnect()
+			connection = nil
+		end
+	end
+	local function onStep(dt: number)
+		local moved = pcall(step, dt, readNow(dt))
+		if not moved then
+			disconnect()
+		end
+	end
+	local connected = pcall(function()
+		connection = heartbeat:Connect(onStep)
+	end)
+	if not connected then
+		connection = nil
+		return
+	end
+	pcall(function()
+		model.Destroying:Connect(disconnect)
+	end)
+end
+
+local function driveClock(model: Instance, rig: any)
+	animate(model, function(dt: number, now: number)
+		if type(dt) ~= "number" then
+			return
 		end
 		local minute = 60
 		local seconds = now % minute
@@ -965,29 +1047,18 @@ local function bindMotion(rig: any)
 		local minuteAngle = -turn * ((minutes + seconds / minute) / minute)
 		local hourAngle = -turn * ((hours + (minutes + seconds / minute) / minute) / 12)
 		local swing = math.sin(now * 1.35) * 0.38
-		local moved = pcall(function()
-			rig.hour.CFrame = rig.hub * CFrame.Angles(0, 0, hourAngle) * rig.hourLocal
-			rig.minute.CFrame = rig.hub * CFrame.Angles(0, 0, minuteAngle) * rig.minuteLocal
-			local swung = CFrame.Angles(0, 0, swing)
-			rig.rod.CFrame = rig.pendPivot * swung * rig.rodLocal
-			rig.bob.CFrame = rig.pendPivot * swung * rig.bobLocal
-			for _, gear in rig.gears do
-				local spin = CFrame.Angles(now * gear.rate, 0, 0)
-				for _, item in gear.parts do
-					item.part.CFrame = gear.cf * spin * item.localCf
-				end
+		rig.hour.CFrame = rig.hub * CFrame.Angles(0, 0, hourAngle) * rig.hourLocal
+		rig.minute.CFrame = rig.hub * CFrame.Angles(0, 0, minuteAngle) * rig.minuteLocal
+		local swung = CFrame.Angles(0, 0, swing)
+		rig.rod.CFrame = rig.pendPivot * swung * rig.rodLocal
+		rig.bob.CFrame = rig.pendPivot * swung * rig.bobLocal
+		for _, gear in rig.gears do
+			local spin = CFrame.Angles(now * gear.rate, 0, 0)
+			for _, item in gear.parts do
+				item.part.CFrame = gear.cf * spin * item.localCf
 			end
-		end)
-		if not moved and connection ~= nil then
-			connection:Disconnect()
 		end
-	end
-	local connected = pcall(function()
-		connection = heartbeat:Connect(stepClock)
 	end)
-	if not connected then
-		connection = nil
-	end
 end
 
 local function moveTo(anchor: any, desired: any, parts: { any })
@@ -1110,13 +1181,14 @@ function ClockTower.replace(townFolder: Instance, refs: any): any
 	buildChains(folder, pivot)
 	if detail then
 		buildGargoyles(folder, pivot)
+		buildDentils(folder, pivot)
 		buildLife(folder, pivot)
 	else
 		stripDetailLights(model)
 	end
 	repositionKept(model, pivot)
 	quietLights(model)
-	bindMotion(rig)
+	driveClock(model, rig)
 
 	for _, prompt in prompts do
 		prompt.Parent = if anchor ~= nil then anchor else model
