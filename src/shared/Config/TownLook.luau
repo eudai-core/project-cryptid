@@ -41,6 +41,18 @@ local TownLook = {
 		firefly = table.freeze({ rate = 3, life = 2.2, speed = 0.75, size = 0.16, spread = 46 }),
 		steam = table.freeze({ rate = 6, life = 1.5, speed = 1.05, size = 0.48, spread = 16 }),
 	}),
+	TAROT_LIGHT = table.freeze({
+		eye = table.freeze({ range = 7, brightness = 0.35 }),
+		lantern = table.freeze({ range = 14, brightness = 0.62 }),
+		flame = table.freeze({ range = 8, brightness = 0.38 }),
+		crystal = table.freeze({ range = 6, brightness = 0.32 }),
+		sconce = table.freeze({ range = 6, brightness = 0.28 }),
+	}),
+	TAROT_VFX = table.freeze({
+		lift = 0.35,
+		incense = table.freeze({ rate = 5, life = 2.4, speed = 0.5, size = 0.55, spread = 12 }),
+		mote = table.freeze({ rate = 4, life = 2.6, speed = 0.35, size = 0.14, spread = 36 }),
+	}),
 	CROW_COUNT = 3,
 	NEON_ROLES = table.freeze({
 		flame = true,

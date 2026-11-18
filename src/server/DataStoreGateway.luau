@@ -174,4 +174,17 @@ function DataStoreGateway.seedForeignLock(userId: number, stale: boolean): boole
 	return ledger.seedForeignLock(userId, stale == true)
 end
 
+function DataStoreGateway.seedProfile(userId: number, profile: any): boolean
+	if not RunService:IsStudio() then
+		return false
+	end
+	if type(profile) ~= "table" then
+		return false
+	end
+	if DataStoreGateway.refuseLongKey(profileKey(userId)) ~= nil then
+		return false
+	end
+	return ledger.seedProfile(userId, profile)
+end
+
 return DataStoreGateway

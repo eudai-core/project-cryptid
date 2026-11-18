@@ -12,6 +12,7 @@ local StudioStore = require("../src/shared/Logic/StudioStore")
 local StudioQa = require("../src/server/Dev/StudioQa")
 local Ledger = require("../src/server/Ledger")
 local MockDataStore = require("../src/server/MockDataStore")
+local TitheStore = require("../src/server/TitheStore")
 
 local CRYPTID_TEST_PLACE_ID = 80631305127330
 
@@ -221,4 +222,163 @@ Check.test("a must-publish error in Studio falls back to the mock", function()
 		Check.eq(warnings[1], StudioDataStore.MOCK_WARNING)
 		Check.eq(mock:GetAsync(key(30 + index)).lockJobId, "studio-job")
 	end
+end)
+
+local function openTithe(real: any, isStudio: boolean, placeId: number, warnings: { string }, mock: any): any
+	return TitheStore.open({
+		getStore = function()
+			return real
+		end,
+		createMock = function()
+			return mock
+		end,
+		allowMock = function()
+			return isStudio == true
+		end,
+		isStudio = isStudio,
+		placeId = placeId,
+		warn = function(message: string)
+			table.insert(warnings, message)
+		end,
+	})
+end
+
+Check.test("an ordered page matches the sorted DataStore shape", function()
+	local ordered = MockDataStore.newOrdered()
+	ordered:SetAsync("10", 4)
+	ordered:SetAsync("2", 9)
+	ordered:SetAsync("7", 9)
+	local updated = ordered:UpdateAsync("10", function(old: number?): number
+		return (old or 0) + 1
+	end)
+	Check.eq(updated, 5)
+	local pages = ordered:GetSortedAsync(false, 2)
+	Check.eq(type(pages.GetCurrentPage), "function")
+	Check.eq(pages:IsFinished(), false)
+	local page = pages:GetCurrentPage()
+	Check.eq(#page, 2)
+	Check.eq(type(page[1].key), "string")
+	Check.eq(type(page[1].value), "number")
+	Check.eq(page[1].key, "2")
+	Check.eq(page[1].value, 9)
+	Check.eq(page[2].key, "7")
+	Check.eq(page[2].value, 9)
+	local low = ordered:GetSortedAsync(true, 3):GetCurrentPage()
+	Check.eq(low[1].key, "10")
+	Check.eq(low[1].value, 5)
+	Check.eq(low[3].value, 9)
+end)
+
+Check.test("PlaceId 0 in Studio reads the ordered mock and does not open the live store", function()
+	local reads = 0
+	local warnings = {}
+	local store = TitheStore.open({
+		getStore = function()
+			reads += 1
+			error("live ordered store")
+		end,
+		createMock = function()
+			return MockDataStore.newOrdered()
+		end,
+		allowMock = function()
+			return true
+		end,
+		isStudio = true,
+		placeId = StudioDataStore.UNPUBLISHED_PLACE_ID,
+		warn = function(message: string)
+			table.insert(warnings, message)
+		end,
+	})
+	Check.eq(store.set("4", 3), true)
+	Check.eq(store.set("9", 8), true)
+	local ok, pages = store.getSorted(false, 10)
+	Check.eq(ok, true)
+	local page = pages:GetCurrentPage()
+	Check.eq(#page, 2)
+	Check.eq(page[1].key, "9")
+	Check.eq(page[1].value, 8)
+	Check.eq(page[2].key, "4")
+	Check.eq(page[2].value, 3)
+	Check.eq(pages:IsFinished(), true)
+	Check.eq(reads, 0)
+	Check.eq(#warnings, 1)
+	Check.eq(warnings[1], StudioDataStore.MOCK_WARNING)
+	Check.eq(store.usingMock(), true)
+end)
+
+Check.test("a Studio 403 on the ordered store falls back once", function()
+	local calls = 0
+	local real = {
+		GetSortedAsync = function(_self: any)
+			calls += 1
+			error("403 StudioAccessToApisNotAllowed")
+		end,
+		SetAsync = function(_self: any)
+			calls += 1
+			error("403 StudioAccessToApisNotAllowed")
+		end,
+		UpdateAsync = function(_self: any)
+			calls += 1
+			error("403 StudioAccessToApisNotAllowed")
+		end,
+	}
+	local warnings = {}
+	local store = openTithe(real, true, CRYPTID_TEST_PLACE_ID, warnings, MockDataStore.newOrdered())
+	local failed, empty = store.getSorted(false, 50)
+	Check.eq(failed, true)
+	Check.eq(#empty:GetCurrentPage(), 0)
+	Check.eq(calls, 1)
+	Check.eq(#warnings, 1)
+	Check.eq(warnings[1], StudioDataStore.MOCK_WARNING)
+	Check.eq(store.set("15", 2), true)
+	local updatedOk, updated = store.update("15", function(old: number?): number
+		return (old or 0) + 6
+	end)
+	Check.eq(updatedOk, true)
+	Check.eq(updated, 8)
+	local ok, pages = store.getSorted(false, 50)
+	Check.eq(ok, true)
+	local page = pages:GetCurrentPage()
+	Check.eq(#page, 1)
+	Check.eq(page[1].key, "15")
+	Check.eq(page[1].value, 8)
+	Check.eq(calls, 1)
+	Check.eq(#warnings, 1)
+end)
+
+Check.test("a 403 on the ordered store outside Studio never installs the mock", function()
+	local calls = 0
+	local created = 0
+	local real = {
+		GetSortedAsync = function(_self: any)
+			calls += 1
+			error("403 StudioAccessToApisNotAllowed")
+		end,
+	}
+	local warnings = {}
+	local store = TitheStore.open({
+		getStore = function()
+			return real
+		end,
+		createMock = function()
+			created += 1
+			return MockDataStore.newOrdered()
+		end,
+		allowMock = function()
+			return false
+		end,
+		isStudio = false,
+		placeId = 0,
+		warn = function(message: string)
+			table.insert(warnings, message)
+		end,
+	})
+	local ok, pages = store.getSorted(false, 10)
+	Check.eq(ok, false)
+	Check.eq(pages ~= nil, true)
+	Check.eq(created, 0)
+	Check.eq(calls, 1)
+	Check.eq(store.usingMock(), false)
+	Check.eq(#warnings, 0)
+	Check.eq(StudioStore.preferMock(false, 0, "403 StudioAccessToApisNotAllowed"), false)
 end)

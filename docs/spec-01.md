@@ -55,7 +55,7 @@ This is a purpose-built `UpdateAsync` lock, not ProfileStore. The save is one sm
 | 14 | No purchase prompts before step 8 / 5:00 | Lune source guard rejects `MarketplaceService`, `PromptProductPurchase`, and `ProcessReceipt` under `src`. Studio: watch the first five minutes for any core purchase prompt. |
 | 15 | Palette tokens, no purple, Rift used sparingly | Lune palette table and a ban on `Color3.new` / `Color3.from` outside `UITheme`. Studio: look at the plaque, banner, and lair. Belt trim is RiftDim `#4F6B34` metal. No world part uses Neon. |
 | 16 | Oswald for numbers, nothing under 14 px | Tokens lock Oswald and the 14 px minimum. Studio: phone emulator on the plaque, banner, and pad plates. |
-| 17 | Reduced motion | Lune `QA17` checks durations. Studio: press **Steady gaze** and confirm the banner does not slide, the cash does not roll, and the `+$` floater does not appear. |
+| 17 | Reduced motion | Lune `QA17` checks durations. Studio: open **Menu** and press **Calm motion**. Confirm the banner does not slide, the cash does not roll, and the `+$` floater does not appear. The line under the button says the numbers stay still. |
 | 18 | Number format | Lune `QA18`: `$9,999`, `$12.3K`, `$1.23M`, plus `$4.50B`, `$1.00Dc`, `$1.0e34`. |
 | 19 | Skip the rite | Lune `QA19`. Studio: press Skip on a fresh profile. Step 8, cash still $25, Fresno Nightcrawler, Hidebehind, and Hodag in inventory, no pads or altar granted, no second copies. |
 | 20 | No stealing before step 8 or 5:00 | Lune `QA20`. There is no steal remote in this spec. `StealGuard.canSteal` is the gate a later spec must call. |

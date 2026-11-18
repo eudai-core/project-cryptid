@@ -2,12 +2,14 @@
 
 local CollectionService = game:GetService("CollectionService")
 local HttpService = game:GetService("HttpService")
+local ProximityPromptService = game:GetService("ProximityPromptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local ShopRoll = require(script.Parent:WaitForChild("ShopRoll"))
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Shop = require(Shared:WaitForChild("Config"):WaitForChild("Shop")) :: any
 local ShopStock = require(Shared:WaitForChild("Logic"):WaitForChild("ShopStock")) :: any
+local Town = require(Shared:WaitForChild("Config"):WaitForChild("Town")) :: any
 
 local cached: any = nil
 local glowToken = 0
@@ -76,28 +78,6 @@ function Pedlar.offers(): any
 	return cached
 end
 
-local function bindBrowse(onBrowse: (Player) -> ())
-	local function bind(prompt: ProximityPrompt)
-		if prompt:GetAttribute("AnalyticsBound") == true then
-			return
-		end
-		if prompt.ActionText ~= Shop.PROMPT then
-			return
-		end
-		prompt:SetAttribute("AnalyticsBound", true)
-		prompt.Triggered:Connect(function(player)
-			onBrowse(player)
-		end)
-	end
-	for _, model in CollectionService:GetTagged("PedlarStall") do
-		for _, desc in model:GetDescendants() do
-			if desc:IsA("ProximityPrompt") then
-				bind(desc)
-			end
-		end
-	end
-end
-
 function Pedlar.start(onRotation: () -> (), onBrowse: ((Player) -> ())?)
 	local existing = ReplicatedStorage:FindFirstChild("PedlarBoard")
 	local board: StringValue
@@ -110,7 +90,12 @@ function Pedlar.start(onRotation: () -> (), onBrowse: ((Player) -> ())?)
 	end
 	publish(board, false)
 	if onBrowse ~= nil then
-		bindBrowse(onBrowse)
+		ProximityPromptService.PromptTriggered:Connect(function(prompt, player)
+			if prompt:GetAttribute("Kind") ~= Town.PEDLAR_PROMPT_NAME then
+				return
+			end
+			onBrowse(player)
+		end)
 	end
 	onRotation()
 	task.spawn(function()

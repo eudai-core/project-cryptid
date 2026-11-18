@@ -22,12 +22,12 @@ local Economy = require(Shared:WaitForChild("Config"):WaitForChild("Economy")) :
 local Onboarding = require(Shared:WaitForChild("Config"):WaitForChild("Onboarding")) :: any
 local Lair = require(Shared:WaitForChild("Config"):WaitForChild("Lair")) :: any
 local Plots = require(Shared:WaitForChild("Config"):WaitForChild("Plots")) :: any
-local Income = require(Shared:WaitForChild("Logic"):WaitForChild("Income")) :: any
 local Names = require(Shared:WaitForChild("Config"):WaitForChild("Remotes")) :: any
 local ProfileQuery = require(Shared:WaitForChild("Logic"):WaitForChild("ProfileQuery")) :: any
 local Shop = require(Shared:WaitForChild("Config"):WaitForChild("Shop")) :: any
 local ShopStock = require(Shared:WaitForChild("Logic"):WaitForChild("ShopStock")) :: any
 local Town = require(Shared:WaitForChild("Config"):WaitForChild("Town")) :: any
+local PedlarBrowse = require(Shared:WaitForChild("Logic"):WaitForChild("PedlarBrowse")) :: any
 local RemoteArgs = require(Shared:WaitForChild("Logic"):WaitForChild("RemoteArgs")) :: any
 local Autosave = require(Shared:WaitForChild("Logic"):WaitForChild("Autosave")) :: any
 local Bowl = require(Shared:WaitForChild("Logic"):WaitForChild("Bowl")) :: any
@@ -44,6 +44,9 @@ local SkillTree = require(Shared:WaitForChild("Logic"):WaitForChild("SkillTree")
 local ShutdownFlush = require(Shared:WaitForChild("Logic"):WaitForChild("ShutdownFlush")) :: any
 local Snapshot = require(Shared:WaitForChild("Logic"):WaitForChild("Snapshot")) :: any
 local StealGuard = require(Shared:WaitForChild("Logic"):WaitForChild("StealGuard")) :: any
+local Rebirth = require(Shared:WaitForChild("Logic"):WaitForChild("Rebirth")) :: any
+local RebirthRules = require(Shared:WaitForChild("Config"):WaitForChild("Rebirth")) :: any
+local TitheLedger = require(script.Parent:WaitForChild("TitheLedger"))
 local Transactions = require(Shared:WaitForChild("Logic"):WaitForChild("Transactions")) :: any
 local UITheme = require(Shared:WaitForChild("UITheme")) :: any
 
@@ -163,7 +166,10 @@ end
 local function publish(session: any, credit: number)
 	session.revision += 1
 	local profile = session.profile
-	local income = Income.perSecond(profile)
+	if Rebirth.noteBalance(profile) then
+		session.dirty = true
+	end
+	local _, cashRate = Ownership.leaveRates(profile)
 	local offeringNow = StudioQaHooks.unixNow()
 	local snap = Snapshot.build(profile, credit, session.revision, {
 		now = offeringNow,
@@ -172,10 +178,13 @@ local function publish(session: any, credit: number)
 		revealSerial = session.revealSerial or 0,
 		relicsBought = session.relicsBought or 0,
 		relicsSpent = session.relicsSpent or 0,
+		rebirthNotice = session.rebirthNotice or 0,
+		rebirthText = session.rebirthText or "",
 	})
 	local player = session.player
+	TitheLedger.note(player, profile.tithe)
 	player:SetAttribute("Cash", profile.cash)
-	player:SetAttribute("IncomePerSecond", income)
+	player:SetAttribute("IncomePerSecond", cashRate)
 	player:SetAttribute("CatchSeconds", SkillEffects.catchSeconds(profile))
 	player:SetAttribute("CatchStuds", SkillEffects.catchRange(profile))
 	player:SetAttribute("SkillIncome", SkillEffects.skillIncome(profile))
@@ -228,9 +237,11 @@ performSave = function(session: any): (boolean, string)
 	session.saveBusy = true
 	session.dirty = false
 	session.lastSaveAt = os.clock()
-	local ok, status = DataStoreGateway.save(session.player.UserId, session.profile)
+	local marked = session.rebirthWrite == true
+	local ok, status = DataStoreGateway.save(session.player.UserId, session.profile, marked)
 	session.saveBusy = false
 	if ok then
+		session.rebirthWrite = false
 		session.lockExpiresAt = os.time() + Save.LOCK_TTL_SECONDS
 		if session.dirty and session.alive then
 			queueSave(session)
@@ -308,6 +319,9 @@ local function allowRequest(session: any): boolean
 end
 
 local function allowPurchase(session: any): boolean
+	if session.riteBusy == true then
+		return false
+	end
 	local now = os.clock()
 	local ok, at = Debounce.allow(session.lastPurchaseAt, now, Economy.PURCHASE_DEBOUNCE_SECONDS)
 	if not ok then
@@ -511,10 +525,47 @@ end
 local function pedlarDistance(player: Player): number?
 	local tagged = CollectionService:GetTagged("PedlarStall")
 	local model = tagged[1]
-	if model == nil or not model:IsA("Model") then
+	if model == nil then
 		return nil
 	end
-	return distanceTo(player, model.PrimaryPart)
+	local host = model:FindFirstChild(Town.PEDLAR_HOST)
+	if host ~= nil and host:IsA("BasePart") then
+		return distanceTo(player, host)
+	end
+	if model:IsA("Model") then
+		return distanceTo(player, model.PrimaryPart)
+	end
+	return nil
+end
+
+local function grantPedlarOpen(session: any): boolean
+	if not allowRequest(session) then
+		return false
+	end
+	local onboarding = session.profile.onboarding
+	local step = if type(onboarding) == "table" then onboarding.step else nil
+	local opened, at = PedlarBrowse.tryOpen(
+		pedlarDistance(session.player),
+		step,
+		Shop.GATE_STEP,
+		Town.PROMPT_DISTANCE,
+		os.clock(),
+		session.lastPedlarOpenAt,
+		Economy.PURCHASE_DEBOUNCE_SECONDS
+	)
+	if opened ~= true or at == nil then
+		return false
+	end
+	session.lastPedlarOpenAt = at
+	session.pedlarOpenToken += 1
+	session.player:SetAttribute(Shop.OPEN_TOKEN, session.pedlarOpenToken)
+	sink().pedlarOpen(
+		session.player,
+		session,
+		ShopStock.rotationId(os.time(), Shop.ROTATION_SECONDS),
+		HttpService:GenerateGUID(false)
+	)
+	return true
 end
 
 local function onPedlarBuy(session: any, rotationId: any, slot: any)
@@ -632,6 +683,39 @@ local function onSettings(session: any, key: any, value: any)
 	queueSave(session)
 end
 
+local function onRebirth(session: any, familiarUid: any)
+	if not allowRequest(session) or session.riteBusy == true or session.saveBusy == true then
+		return
+	end
+	local uid = familiarUid
+	if uid == nil then
+		uid = ""
+	end
+	if uid ~= "" then
+		local parsed = RemoteArgs.instanceId(uid)
+		if parsed == nil then
+			return
+		end
+		uid = parsed
+	end
+	local now = os.clock()
+	local allowed, at = Debounce.allow(session.rebirthAt, now, RebirthRules.DEBOUNCE_SECONDS)
+	if not allowed then
+		return
+	end
+	session.rebirthAt = at
+	session.riteBusy = true
+	local ok = Rebirth.commit(session.profile, uid)
+	if ok then
+		session.rebirthWrite = true
+		session.rebirthNotice = (session.rebirthNotice or 0) + 1
+		session.rebirthText = Rebirth.toast(session.profile.rebirths)
+		publish(session, 0)
+		performSave(session)
+	end
+	session.riteBusy = false
+end
+
 local function onBuySkill(session: any, nodeId: any)
 	if not allowRequest(session) then
 		return
@@ -703,6 +787,9 @@ local function bind(folder: Folder)
 	listen(Names.REDUCED_MOTION, onReducedMotion)
 	listen(Names.RETURN_TO_LAIR, onReturn)
 	listen(Names.PEDLAR_BUY, onPedlarBuy)
+	listen(Names.REQUEST_PEDLAR_OPEN, function(session)
+		grantPedlarOpen(session)
+	end)
 	listen(Names.BIND_AT_ONCE, onBind)
 	listen(Names.CLAIM_HAUL, onClaimHaul)
 	listen(Names.CLAIM_DAILY, onClaimDaily)
@@ -714,6 +801,7 @@ local function bind(folder: Folder)
 		end
 		MonetisationService.onOpen(session)
 	end)
+	listen(Names.REBIRTH, onRebirth)
 	listen(Names.BUY_RELIC, function(session, key)
 		if not allowRequest(session) or not allowPurchase(session) then
 			return
@@ -868,8 +956,19 @@ function PlayerSession.onPlayer(player: Player): boolean
 	if plan == "seed-fresh" or plan == "seed-stale" then
 		DataStoreGateway.seedForeignLock(player.UserId, plan == "seed-stale")
 	end
+	local seedKind = StudioQa.seedKind(RunService:IsStudio(), StudioQaHooks.args())
+	if seedKind ~= nil then
+		local seeded = StudioQa.seedDocument(seedKind, os.time())
+		if seeded ~= nil then
+			print(StudioQa.seedLine(seedKind, "before", seeded))
+			DataStoreGateway.seedProfile(player.UserId, seeded)
+		end
+	end
 	local created = Schema.newProfile(os.time(), HttpService:GenerateGUID(false))
 	local loaded = DataStoreGateway.load(player.UserId, created)
+	if seedKind ~= nil and loaded.ok and loaded.profile ~= nil then
+		print(StudioQa.seedLine(seedKind, "after", loaded.profile))
+	end
 	if player.Parent == nil then
 		if loaded.ok and loaded.ephemeral ~= true and loaded.profile ~= nil then
 			DataStoreGateway.release(player.UserId, loaded.profile)
@@ -885,6 +984,7 @@ function PlayerSession.onPlayer(player: Player): boolean
 	local grantedStarter = Schema.ensureStarter(profile, os.time(), HttpService:GenerateGUID(false))
 	local playedBefore = profile.onboarding.playSeconds
 	StudioQa.armRelics(profile)
+	local armedRite = StudioQa.armRebirth(profile)
 	local armedShop = profile.onboarding.playSeconds ~= playedBefore
 	local silentNotice = 0
 	if type(profile.offline.notice) == "number" and profile.offline.notice > 0 then
@@ -935,7 +1035,7 @@ function PlayerSession.onPlayer(player: Player): boolean
 		loaded = true,
 		alive = true,
 		leaving = false,
-		dirty = grantedStarter or silentNotice > 0 or armedShop,
+		dirty = grantedStarter or silentNotice > 0 or armedShop or armedRite,
 		dailyAutoOpen = dailyAutoOpen,
 		silentNotice = silentNotice,
 		lockExpiresAt = lockExpiresAt,
@@ -944,6 +1044,11 @@ function PlayerSession.onPlayer(player: Player): boolean
 		lastSaveAt = 0,
 		lastPurchaseAt = nil,
 		lastSettingAt = nil,
+		rebirthAt = nil,
+		riteBusy = false,
+		rebirthWrite = false,
+		rebirthNotice = 0,
+		rebirthText = "",
 		revision = 0,
 		catchStart = nil,
 		catchToken = 0,
@@ -956,6 +1061,8 @@ function PlayerSession.onPlayer(player: Player): boolean
 		lastReturnAt = nil,
 		lastBindAt = nil,
 		pedlarToken = 0,
+		pedlarOpenToken = 0,
+		lastPedlarOpenAt = nil,
 		workers = 0,
 		plot = plot,
 		snapshot = snapshot,
@@ -1017,15 +1124,16 @@ local function closeOwned(player: Player, session: any, bounded: boolean): (bool
 			task.wait(seconds)
 		end,
 		save = function(current: any): boolean
-			local ok = DataStoreGateway.save(player.UserId, current.profile)
+			local ok = DataStoreGateway.save(player.UserId, current.profile, current.rebirthWrite == true)
 			if ok then
+				current.rebirthWrite = false
 				current.dirty = false
 				current.lockExpiresAt = os.time() + Save.LOCK_TTL_SECONDS
 			end
 			return ok
 		end,
 		release = function(current: any): boolean
-			local ok = DataStoreGateway.release(player.UserId, current.profile)
+			local ok = DataStoreGateway.release(player.UserId, current.profile, current.rebirthWrite == true)
 			return ok
 		end,
 	})
@@ -1054,12 +1162,7 @@ function PlayerSession.onPedlarOpen(player: Player)
 	if session == nil or session.alive ~= true then
 		return
 	end
-	sink().pedlarOpen(
-		player,
-		session,
-		ShopStock.rotationId(os.time(), Shop.ROTATION_SECONDS),
-		HttpService:GenerateGUID(false)
-	)
+	grantPedlarOpen(session)
 end
 
 function PlayerSession.onPedlarRotation()

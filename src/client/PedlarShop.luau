@@ -5,10 +5,11 @@ local HttpService = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Motion = require(script.Parent:WaitForChild("Motion"))
-local ThemeBind = require(script.Parent:WaitForChild("ThemeBind"))
 local UiFactory = require(script.Parent:WaitForChild("UiFactory"))
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local CryptidModels = require(Shared:WaitForChild("CryptidModels")) :: any
 local Income = require(Shared:WaitForChild("Logic"):WaitForChild("Income")) :: any
+local PedlarBrowse = require(Shared:WaitForChild("Logic"):WaitForChild("PedlarBrowse")) :: any
 local NumberFormat = require(Shared:WaitForChild("Logic"):WaitForChild("NumberFormat")) :: any
 local Shop = require(Shared:WaitForChild("Config"):WaitForChild("Shop")) :: any
 local ShopLedger = require(Shared:WaitForChild("Logic"):WaitForChild("ShopLedger")) :: any
@@ -37,72 +38,82 @@ function PedlarShop.mount(parent: Instance, player: Player, remotes: Folder, nam
 	local panel = UiFactory.panel(root)
 	panel.Size = UDim2.fromScale(1, 1)
 
+	local pedlar = UITheme.shape.pedlar
+	local touch = UITheme.shape.touchPx
+	local gap = UITheme.shape.plaqueGapPx
+	local pad = Shop.PANEL.padding
+
 	local title = UiFactory.label(panel, "display", Shop.HEADER_PX, "Bone")
 	title.Name = "Title"
-	title.Position = UDim2.fromOffset(Shop.PANEL.padding, 10)
-	title.Size = UDim2.new(1, -160, 0, 36)
+	title.Position = UDim2.fromOffset(pad, pad)
+	title.Size = UDim2.new(1, -(pad * 2 + pedlar.leaveW + gap), 0, touch)
 	title.Text = Shop.HEADER
 
 	local leave = UiFactory.button(panel, UITheme.text.minSize)
 	leave.Name = "Leave"
 	leave.AnchorPoint = Vector2.new(1, 0)
-	leave.Position = UDim2.new(1, -Shop.PANEL.padding, 0, 12)
-	leave.Size = UDim2.fromOffset(96, 28)
+	leave.Position = UDim2.new(1, -pad, 0, pad)
+	leave.Size = UDim2.fromOffset(pedlar.leaveW, touch)
 	leave.BackgroundColor3 = UITheme.color("Soot")
-	leave.TextColor3 = UITheme.color("BoneDim")
+	leave.TextColor3 = UITheme.color("Bone")
 	leave.Text = Shop.LEAVE
 
-	local countdown = UiFactory.label(panel, "number", UITheme.fonts.number.desktop, "GoldBright")
+	local countdown = UiFactory.label(panel, "body", UITheme.text.minSize, "BoneDim")
 	countdown.Name = "Countdown"
-	countdown.Position = UDim2.fromOffset(Shop.PANEL.padding, 48)
-	countdown.Size = UDim2.new(1, -24, 0, 22)
+	countdown.Position = UDim2.fromOffset(pad, pad + touch + gap)
+	countdown.Size = UDim2.new(1, -pad * 2, 0, UITheme.text.minSize)
 	countdown.Text = Shop.WAITING
 
+	local actionY = pad + touch + gap + UITheme.text.minSize + gap
 	local notice = UiFactory.label(panel, "body", UITheme.text.minSize, "BoneDim")
 	notice.Name = "Notice"
-	notice.Position = UDim2.fromOffset(Shop.PANEL.padding, 70)
-	notice.Size = UDim2.new(1, -24, 0, 18)
+	notice.Position = UDim2.fromOffset(pad, actionY + touch + gap)
+	notice.Size = UDim2.new(1, -pad * 2, 0, UITheme.text.minSize)
 	notice.Text = ""
 	notice.Visible = false
-
-	local oddsButton = Instance.new("TextButton")
-	oddsButton.Name = "OddsLink"
-	oddsButton.BackgroundTransparency = 1
-	oddsButton.AutoButtonColor = false
-	oddsButton.Position = UDim2.fromOffset(Shop.PANEL.padding, 92)
-	oddsButton.Size = UDim2.fromOffset(64, 22)
-	oddsButton.Text = Shop.ODDS
-	oddsButton.TextColor3 = UITheme.color("BoneDim")
-	oddsButton.TextXAlignment = Enum.TextXAlignment.Left
-	oddsButton.Parent = panel
-	ThemeBind.apply(oddsButton, "body", UITheme.text.minSize)
-	local underline = Instance.new("Frame")
-	underline.Name = "Underline"
-	underline.BackgroundColor3 = UITheme.color("BoneDim")
-	underline.BorderSizePixel = 0
-	underline.AnchorPoint = Vector2.new(0, 1)
-	underline.Position = UDim2.fromScale(0, 1)
-	underline.Size = UDim2.new(1, 0, 0, 1)
-	underline.Parent = oddsButton
+	local details = UiFactory.button(panel, UITheme.text.minSize)
+	details.Name = "Details"
+	details.Position = UDim2.fromOffset(pad, actionY)
+	details.Size = UDim2.fromOffset(pedlar.detailsW, touch)
+	details.BackgroundColor3 = UITheme.color("Soot")
+	details.TextColor3 = UITheme.color("Bone")
+	details.Text = Shop.DETAILS
+	local detailsStroke = details:FindFirstChildOfClass("UIStroke")
+	if detailsStroke ~= nil then
+		detailsStroke.Color = UITheme.color("BoneDim")
+		detailsStroke.Thickness = UITheme.shape.strokePx
+	end
 
 	local bind = UiFactory.button(panel, UITheme.text.minSize)
 	bind.Name = "BindAtOnce"
-	bind.Position = UDim2.fromOffset(Shop.PANEL.padding + 80, 90)
-	bind.Size = UDim2.fromOffset(180, 26)
+	bind.Position = UDim2.fromOffset(pad + pedlar.detailsW + gap, actionY)
+	bind.Size = UDim2.fromOffset(pedlar.bindW, touch)
 	bind.BackgroundColor3 = UITheme.color("Soot")
 	bind.TextColor3 = UITheme.color("Bone")
 	bind.Text = Shop.BIND_OFF
 
+	local cardsTop = actionY + touch + gap + UITheme.text.minSize + gap
 	local cardLayer = Instance.new("CanvasGroup")
 	cardLayer.Name = "Cards"
 	cardLayer.BackgroundTransparency = 1
-	cardLayer.Position = UDim2.fromOffset(Shop.PANEL.padding, 124)
-	cardLayer.Size = UDim2.new(1, -Shop.PANEL.padding * 2, 1, -136)
+	cardLayer.Position = UDim2.fromOffset(pad, cardsTop)
+	cardLayer.Size = UDim2.new(1, -pad * 2, 1, -(cardsTop + pad))
 	cardLayer.Parent = panel
+	local scroller = Instance.new("ScrollingFrame")
+	scroller.Name = "Scroller"
+	scroller.BackgroundTransparency = 1
+	scroller.BorderSizePixel = 0
+	scroller.Size = UDim2.fromScale(1, 1)
+	scroller.ScrollBarThickness = UITheme.shape.strokePx
+	scroller.ScrollingDirection = Enum.ScrollingDirection.Y
+	scroller.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	scroller.CanvasSize = UDim2.fromOffset(0, 0)
+	scroller.Parent = cardLayer
 	local grid = Instance.new("UIGridLayout")
-	grid.CellPadding = UDim2.fromOffset(8, 8)
+	grid.CellPadding = UDim2.fromOffset(gap, gap)
+	grid.CellSize = UDim2.new(0.25, -gap, 0, pedlar.cardH)
 	grid.SortOrder = Enum.SortOrder.LayoutOrder
-	grid.Parent = cardLayer
+	grid.Parent = scroller
 
 	local oddsLayer = Instance.new("Frame")
 	oddsLayer.Name = "Odds"
@@ -112,11 +123,23 @@ function PedlarShop.mount(parent: Instance, player: Player, remotes: Folder, nam
 	oddsLayer.Size = cardLayer.Size
 	oddsLayer.Visible = false
 	oddsLayer.Parent = panel
+	local oddsColumns = Instance.new("Frame")
+	oddsColumns.Name = "Columns"
+	oddsColumns.BackgroundTransparency = 1
+	oddsColumns.Size = UDim2.new(1, 0, 1, -(UITheme.text.minSize * 2 + gap))
+	oddsColumns.Parent = oddsLayer
 	local oddsRow = Instance.new("UIListLayout")
 	oddsRow.FillDirection = Enum.FillDirection.Horizontal
-	oddsRow.Padding = UDim.new(0, 8)
+	oddsRow.Padding = UDim.new(0, gap)
 	oddsRow.SortOrder = Enum.SortOrder.LayoutOrder
-	oddsRow.Parent = oddsLayer
+	oddsRow.Parent = oddsColumns
+	local oddsNote = UiFactory.label(oddsLayer, "body", UITheme.text.minSize, "BoneDim")
+	oddsNote.Name = "OddsNote"
+	oddsNote.AnchorPoint = Vector2.new(0, 1)
+	oddsNote.Position = UDim2.fromScale(0, 1)
+	oddsNote.Size = UDim2.new(1, 0, 0, UITheme.text.minSize * 2)
+	oddsNote.TextWrapped = true
+	oddsNote.Text = Shop.ODDS_NOTE
 
 	local board: any = nil
 	local snapshot: any = nil
@@ -141,8 +164,8 @@ function PedlarShop.mount(parent: Instance, player: Player, remotes: Folder, nam
 		if board == nil or snapshot == nil or type(snapshot.pedlar) ~= "table" then
 			return false
 		end
-		local pedlar = snapshot.pedlar
-		return ShopLedger.slotBought(pedlar.lastRotationId, pedlar.boughtSlots, board.rotationId, slot)
+		local bought = snapshot.pedlar
+		return ShopLedger.slotBought(bought.lastRotationId, bought.boughtSlots, board.rotationId, slot)
 	end
 
 	local function paintBind()
@@ -151,13 +174,8 @@ function PedlarShop.mount(parent: Instance, player: Player, remotes: Folder, nam
 	end
 
 	local function paintCard(card: any)
-		local token = UITheme.rarity[card.rarity]
-		if token == nil then
-			token = "BoneDim"
-		end
+		UiFactory.applyChip(card.chip, card.rarityLabel, card.rarity)
 		card.rarityLabel.Text = card.rarity
-		card.rarityLabel.TextColor3 = UITheme.color(token)
-		card.art.TextColor3 = UITheme.color(token)
 		local perLevel = player:GetAttribute("AltarPerLevel")
 		local skillIncome = player:GetAttribute("SkillIncome")
 		local rate = if type(perLevel) == "number" then perLevel else nil
@@ -198,8 +216,39 @@ function PedlarShop.mount(parent: Instance, player: Player, remotes: Folder, nam
 		end
 	end
 
+	local function mountPortrait(host: Instance, speciesId: string)
+		local viewport = Instance.new("ViewportFrame")
+		viewport.Name = "Portrait"
+		viewport.BackgroundColor3 = UITheme.color("Ash")
+		viewport.BorderSizePixel = 0
+		viewport.Size = UDim2.new(1, 0, 0, pedlar.previewPx)
+		viewport.Ambient = UITheme.color("BoneDim")
+		viewport.LightColor = UITheme.color("Bone")
+		viewport.LayoutOrder = 1
+		viewport.Parent = host
+		UiFactory.corner(viewport)
+		local camera = Instance.new("Camera")
+		camera.Name = "PortraitCamera"
+		camera.Parent = viewport
+		viewport.CurrentCamera = camera
+		local model = CryptidModels.get(speciesId)
+		model.Parent = viewport
+		local ok, cf, size = pcall(function()
+			return model:GetBoundingBox()
+		end)
+		local focus = Vector3.new(0, 0, 0)
+		local radius = pedlar.previewFit
+		if ok and typeof(cf) == "CFrame" and typeof(size) == "Vector3" then
+			focus = cf.Position
+			local span = math.max(size.X, size.Y, size.Z, 1)
+			radius = span * pedlar.previewFit
+		end
+		local lift = radius * pedlar.previewLift
+		camera.CFrame = CFrame.new(focus + Vector3.new(radius, lift, radius), focus)
+	end
+
 	local function rebuildCards()
-		clear(cardLayer)
+		clear(scroller)
 		cards = {}
 		if board == nil or type(board.offers) ~= "table" then
 			return
@@ -211,55 +260,49 @@ function PedlarShop.mount(parent: Instance, player: Player, remotes: Folder, nam
 				cardFrame.BackgroundColor3 = UITheme.color("Soot")
 				cardFrame.BorderSizePixel = 0
 				cardFrame.LayoutOrder = offer.slot
-				cardFrame.Parent = cardLayer
+				cardFrame.Parent = scroller
 				UiFactory.corner(cardFrame)
 				UiFactory.stroke(cardFrame, "Gold", UITheme.shape.strokePx, UITheme.shape.strokeTransparency)
 				local padding = Instance.new("UIPadding")
-				padding.PaddingTop = UDim.new(0, 8)
-				padding.PaddingBottom = UDim.new(0, 8)
-				padding.PaddingLeft = UDim.new(0, 8)
-				padding.PaddingRight = UDim.new(0, 8)
+				padding.PaddingTop = UDim.new(0, gap)
+				padding.PaddingBottom = UDim.new(0, gap)
+				padding.PaddingLeft = UDim.new(0, gap)
+				padding.PaddingRight = UDim.new(0, gap)
 				padding.Parent = cardFrame
 				local list = Instance.new("UIListLayout")
-				list.Padding = UDim.new(0, 2)
+				list.Padding = UDim.new(0, gap)
 				list.SortOrder = Enum.SortOrder.LayoutOrder
 				list.Parent = cardFrame
 
-				local slotName = UiFactory.label(cardFrame, "body", UITheme.text.minSize, "Bone")
-				slotName.Size = UDim2.new(1, 0, 0, 18)
-				slotName.Text = if type(offer.slotName) == "string" then offer.slotName else ""
-				slotName.LayoutOrder = 1
-				local art = UiFactory.label(cardFrame, "display", 28, "BoneDim")
-				art.Size = UDim2.new(1, 0, 0, 32)
-				art.Text = UITheme.sigil
-				art.TextXAlignment = Enum.TextXAlignment.Center
-				art.LayoutOrder = 2
-				local creature = UiFactory.label(cardFrame, "body", UITheme.text.minSize, "Bone")
-				creature.Size = UDim2.new(1, 0, 0, 32)
+				local speciesId = if type(offer.speciesId) == "string" then offer.speciesId else ""
+				mountPortrait(cardFrame, speciesId)
+				local creature = UiFactory.label(cardFrame, "body", pedlar.namePx, "Bone")
+				creature.Size = UDim2.new(1, 0, 0, pedlar.namePx * 2)
 				creature.TextWrapped = true
 				creature.Text = if type(offer.displayName) == "string" then offer.displayName else ""
-				creature.LayoutOrder = 3
-				local rarityLabel = UiFactory.label(cardFrame, "body", UITheme.text.minSize, "BoneDim")
-				rarityLabel.Size = UDim2.new(1, 0, 0, 18)
-				rarityLabel.LayoutOrder = 4
-				local income = UiFactory.label(cardFrame, "income", UITheme.fonts.income.desktop, "GoldBright")
-				income.Size = UDim2.new(1, 0, 0, 18)
+				creature.LayoutOrder = 2
+				local rarityName = if type(offer.rarity) == "string" then offer.rarity else "Common"
+				local chip, rarityLabel = UiFactory.rarityChip(cardFrame, rarityName)
+				chip.Size = UDim2.new(1, 0, 0, pedlar.chipH)
+				chip.LayoutOrder = 3
+				local priceLabel = UiFactory.label(cardFrame, "number", pedlar.pricePx, "GoldBright")
+				priceLabel.Size = UDim2.new(1, 0, 0, pedlar.pricePx)
+				priceLabel.LayoutOrder = 4
+				local income = UiFactory.label(cardFrame, "body", pedlar.incomePx, "BoneDim")
+				income.Size = UDim2.new(1, 0, 0, pedlar.incomePx)
 				income.LayoutOrder = 5
-				local priceLabel = UiFactory.label(cardFrame, "number", UITheme.fonts.number.desktop, "Bone")
-				priceLabel.Size = UDim2.new(1, 0, 0, 18)
-				priceLabel.LayoutOrder = 6
 				local button = UiFactory.button(cardFrame, UITheme.text.minSize)
-				button.Size = UDim2.new(1, 0, 0, 28)
-				button.LayoutOrder = 7
+				button.Size = UDim2.new(1, 0, 0, touch)
+				button.LayoutOrder = 6
 				button.Text = Shop.BUY
 
 				local card = {
 					slot = offer.slot,
-					speciesId = if type(offer.speciesId) == "string" then offer.speciesId else "",
-					rarity = if type(offer.rarity) == "string" then offer.rarity else "Common",
+					speciesId = speciesId,
+					rarity = rarityName,
 					price = if type(offer.price) == "number" then offer.price else 0,
+					chip = chip,
 					rarityLabel = rarityLabel,
-					art = art,
 					income = income,
 					priceLabel = priceLabel,
 					button = button,
@@ -277,35 +320,31 @@ function PedlarShop.mount(parent: Instance, player: Player, remotes: Folder, nam
 	end
 
 	local function showOdds()
-		clear(oddsLayer)
+		clear(oddsColumns)
 		for _, column in ShopStock.oddsColumns() do
 			local columnFrame = Instance.new("Frame")
 			columnFrame.Name = column.name
 			columnFrame.BackgroundTransparency = 1
-			columnFrame.Size = UDim2.new(0.25, -8, 1, 0)
+			columnFrame.Size = UDim2.new(0.25, -gap, 1, 0)
 			columnFrame.LayoutOrder = column.slot
-			columnFrame.Parent = oddsLayer
+			columnFrame.Parent = oddsColumns
 			local list = Instance.new("UIListLayout")
-			list.Padding = UDim.new(0, 2)
+			list.Padding = UDim.new(0, gap)
 			list.SortOrder = Enum.SortOrder.LayoutOrder
 			list.Parent = columnFrame
 			local header = UiFactory.label(columnFrame, "body", UITheme.text.minSize, "Bone")
-			header.Size = UDim2.new(1, 0, 0, 32)
+			header.Size = UDim2.new(1, 0, 0, UITheme.text.minSize * 2)
 			header.TextWrapped = true
 			header.Text = column.name
 			header.LayoutOrder = 0
 			for rowIndex, row in column.rows do
-				local token = UITheme.rarity[row.rarity]
-				if token == nil then
-					token = "BoneDim"
-				end
-				local line = UiFactory.label(columnFrame, "body", UITheme.text.minSize, token)
-				line.Size = UDim2.new(1, 0, 0, 18)
+				local chip, line = UiFactory.rarityChip(columnFrame, row.rarity)
+				chip.Size = UDim2.new(1, 0, 0, pedlar.chipH)
+				chip.LayoutOrder = rowIndex
 				line.Text = row.rarity .. "  " .. tostring(row.percent) .. "%"
-				line.LayoutOrder = rowIndex
 			end
-			local total = UiFactory.label(columnFrame, "number", UITheme.fonts.number.desktop, "Gold")
-			total.Size = UDim2.new(1, 0, 0, 20)
+			local total = UiFactory.label(columnFrame, "number", UITheme.fonts.number.desktop, "GoldBright")
+			total.Size = UDim2.new(1, 0, 0, UITheme.fonts.number.desktop)
 			total.Text = Shop.ODDS_TOTAL .. "  " .. tostring(column.total) .. "%"
 			total.LayoutOrder = 20
 		end
@@ -325,26 +364,38 @@ function PedlarShop.mount(parent: Instance, player: Player, remotes: Folder, nam
 			width = camera.ViewportSize.X
 		end
 		local mobile = width < UITheme.shape.mobileWidthBreakpoint
+		local noticeY = actionY + touch + gap
+		if mobile then
+			bind.Position = UDim2.fromOffset(pad, actionY + touch + gap)
+			noticeY = actionY + touch + gap + touch + gap
+		else
+			bind.Position = UDim2.fromOffset(pad + pedlar.detailsW + gap, actionY)
+		end
+		details.Position = UDim2.fromOffset(pad, actionY)
+		notice.Position = UDim2.fromOffset(pad, noticeY)
+		local top = noticeY + UITheme.text.minSize + gap
+		cardLayer.Position = UDim2.fromOffset(pad, top)
+		cardLayer.Size = UDim2.new(1, -pad * 2, 1, -(top + pad))
+		oddsLayer.Position = cardLayer.Position
+		oddsLayer.Size = cardLayer.Size
 		if mobile then
 			local margin = Shop.PANEL.mobileMargin
 			root.Size = UDim2.new(1, -margin * 2, 1, -margin * 2)
-			grid.CellSize = UDim2.new(0.5, -8, 0.5, -8)
+			grid.CellSize = UDim2.new(0.5, -gap, 0, pedlar.cardH)
 			grid.FillDirectionMaxCells = 2
 		else
 			root.Size = UDim2.fromOffset(Shop.PANEL.width, Shop.PANEL.height)
-			grid.CellSize = UDim2.new(0.25, -8, 1, -8)
+			grid.CellSize = UDim2.new(0.25, -gap, 0, pedlar.cardH)
 			grid.FillDirectionMaxCells = 4
 		end
 	end
 
-	local function openShop()
-		local step = player:GetAttribute("OnboardingStep")
-		if type(step) ~= "number" or step < Shop.GATE_STEP then
-			return
-		end
+	local seenOpen = 0
+
+	local function showFromServer()
 		showCards()
 		layout()
-		root.Visible = true
+		PedlarBrowse.reveal(root)
 		root.GroupTransparency = 1
 		Motion.play(root, "panelOpen", isReduced(), { GroupTransparency = 0 })
 	end
@@ -360,7 +411,7 @@ function PedlarShop.mount(parent: Instance, player: Player, remotes: Folder, nam
 	end
 
 	leave.Activated:Connect(closeShop)
-	oddsButton.Activated:Connect(function()
+	details.Activated:Connect(function()
 		if oddsLayer.Visible then
 			showCards()
 		else
@@ -479,6 +530,15 @@ function PedlarShop.mount(parent: Instance, player: Player, remotes: Folder, nam
 		player:GetAttributeChangedSignal("OnboardingStep"):Connect(refresh)
 	end
 
+	player:GetAttributeChangedSignal(Shop.OPEN_TOKEN):Connect(function()
+		local token = player:GetAttribute(Shop.OPEN_TOKEN)
+		if type(token) ~= "number" or token <= seenOpen then
+			return
+		end
+		seenOpen = token
+		showFromServer()
+	end)
+
 	for _, model in CollectionService:GetTagged("PedlarStall") do
 		attachUnmarked(model)
 	end
@@ -496,10 +556,6 @@ function PedlarShop.mount(parent: Instance, player: Player, remotes: Folder, nam
 		end
 	end)
 	layout()
-
-	return {
-		open = openShop,
-	}
 end
 
 return PedlarShop

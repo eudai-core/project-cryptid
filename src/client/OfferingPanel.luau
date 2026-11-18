@@ -8,7 +8,6 @@ local UiFactory = require(script.Parent:WaitForChild("UiFactory"))
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local NumberFormat = require(Shared:WaitForChild("Logic"):WaitForChild("NumberFormat")) :: any
 local OfferingCopy = require(Shared:WaitForChild("Logic"):WaitForChild("OfferingCopy")) :: any
-local Plots = require(Shared:WaitForChild("Config"):WaitForChild("Plots")) :: any
 local Return = require(Shared:WaitForChild("Config"):WaitForChild("Return")) :: any
 local UITheme = require(Shared:WaitForChild("UITheme")) :: any
 
@@ -17,18 +16,14 @@ local ACTION = "CryptidOfferingDismiss"
 local OfferingPanel = {}
 
 function OfferingPanel.mount(parent: Instance, isReduced: () -> boolean, claim: () -> (), isBlocked: () -> boolean)
-	local hud = Plots.RETURN_BUTTON
 	local button = UiFactory.button(parent, UITheme.text.minSize)
 	button.Name = "Offering"
 	button.Text = Return.OFFERING_BUTTON
-	button.AnchorPoint = Vector2.new(0, 1)
 	button.Visible = false
 	button.BackgroundColor3 = UITheme.color("Soot")
 	button.TextColor3 = UITheme.color("Bone")
 	button.ZIndex = 5
-	local lift = hud.margin + hud.height + hud.gap
-	button.Position = UDim2.new(0, hud.margin, 1, -lift)
-	button.Size = UDim2.fromOffset(hud.width, hud.height)
+	button.Size = UDim2.fromOffset(UITheme.shape.hudMenu.sheetW, UITheme.shape.touchPx)
 
 	local pip = Instance.new("Frame")
 	pip.Name = "Pip"
@@ -347,6 +342,8 @@ function OfferingPanel.mount(parent: Instance, isReduced: () -> boolean, claim: 
 	end
 
 	api.layout(false)
+	api.button = button
+	api.pip = pip
 	return api
 end
 

@@ -14,7 +14,7 @@ local CashPlaque = {}
 function CashPlaque.mount(parent: Instance, isReduced: () -> boolean)
 	local frame = UiFactory.panel(parent)
 	frame.Name = "CashPlaque"
-	frame.AnchorPoint = Vector2.new(0.5, 0)
+	frame.AnchorPoint = Vector2.new(1, 0)
 	local stroke = frame:FindFirstChildOfClass("UIStroke")
 	if stroke ~= nil then
 		stroke.Thickness = UITheme.shape.plaqueStrokePx
@@ -110,7 +110,7 @@ function CashPlaque.mount(parent: Instance, isReduced: () -> boolean)
 		local extra = if bowlAmount > 0 then UITheme.shape.plaqueBowlPx else 0
 		local height = size.h + extra
 		frame.Size = UDim2.fromOffset(size.w, height)
-		frame.Position = UDim2.new(0.5, 0, 0, topOffset)
+		frame.Position = UDim2.new(1, -UITheme.shape.plaqueInsetPx, 0, topOffset)
 		local numberSize = if mobile then UITheme.fonts.number.plaqueMobile else UITheme.fonts.number.plaqueDesktop
 		local incomeSize = if mobile then UITheme.fonts.income.mobile else UITheme.fonts.income.desktop
 		local pad = if mobile then 8 else 12
