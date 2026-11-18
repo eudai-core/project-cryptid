@@ -793,6 +793,8 @@ Check.test("kit animation is one Lune-safe helper", function()
 	Check.eq(string.find(kitSource, "Heartbeat", 1, true) ~= nil, true)
 	Check.eq(string.find(kitSource, "Destroying", 1, true) ~= nil, true)
 	Check.eq(string.find(kitSource, "pcall", 1, true) ~= nil, true)
+	Check.eq(string.find(kitSource, "warn(stepErr)", 1, true) ~= nil, true)
+	Check.eq(string.find(kitSource, "link:Disconnect()", 1, true) ~= nil, true)
 	local ship = fs.readFile("src/server/TownKits/Longship.luau")
 	Check.eq(string.find(ship, "Kit.animate", 1, true) ~= nil, true)
 	for _, needle in { "Heartbeat", "RunService", ":Connect", "task.wait", "task.spawn", "task.defer" } do

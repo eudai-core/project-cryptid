@@ -403,15 +403,32 @@ local function flicker(light: PointLight)
 		return
 	end
 	task.spawn(function()
-		while light.Parent ~= nil do
-			local dip = Town.FLICKER_MIN + math.random() * (Town.FLICKER_MAX - Town.FLICKER_MIN)
-			light.Brightness = Town.LAMP_DIP_BRIGHTNESS
-			task.wait(dip)
-			if light.Parent == nil then
+		local warned = false
+		while true do
+			local ok, keep = pcall(function()
+				if light.Parent == nil then
+					return false
+				end
+				local dip = Town.FLICKER_MIN + math.random() * (Town.FLICKER_MAX - Town.FLICKER_MIN)
+				light.Brightness = Town.LAMP_DIP_BRIGHTNESS
+				task.wait(dip)
+				if light.Parent == nil then
+					return false
+				end
+				light.Brightness = Lanterns.BRIGHTNESS
+				task.wait(Town.FLICKER_GAP)
+				return true
+			end)
+			if not ok then
+				if not warned then
+					warned = true
+					warn(keep)
+				end
 				break
 			end
-			light.Brightness = Lanterns.BRIGHTNESS
-			task.wait(Town.FLICKER_GAP)
+			if keep ~= true then
+				break
+			end
 		end
 	end)
 end

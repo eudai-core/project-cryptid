@@ -111,16 +111,28 @@ pcall(function()
 		speed[index] = if type(rate) == "number" then rate else 0.6
 	end
 	local elapsed = 0
-	heartbeat:Connect(function(dt)
-		elapsed += if type(dt) == "number" then dt else 0
-		if axis.CFrame == nil then
+	local connection = nil
+	connection = heartbeat:Connect(function(dt)
+		local spun, spinErr = pcall(function()
+			elapsed += if type(dt) == "number" then dt else 0
+			if axis.Parent == nil or axis.CFrame == nil then
+				return
+			end
+			for index, part in parts do
+				if part.Parent ~= nil and part.CFrame ~= nil and relative[index] ~= nil then
+					part.CFrame = axis.CFrame * CFrame.Angles(speed[index] * elapsed, 0, 0) * relative[index]
+				end
+			end
+		end)
+		if spun or connection == nil then
 			return
 		end
-		for index, part in parts do
-			if part.CFrame ~= nil and relative[index] ~= nil then
-				part.CFrame = axis.CFrame * CFrame.Angles(speed[index] * elapsed, 0, 0) * relative[index]
-			end
-		end
+		local link = connection
+		connection = nil
+		pcall(function()
+			link:Disconnect()
+		end)
+		warn(spinErr)
 	end)
 end)
 ]=]

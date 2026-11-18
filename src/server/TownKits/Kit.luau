@@ -350,6 +350,7 @@ function Kit.animate(model: any, step: any)
 		local runService = game:GetService("RunService")
 		local started = os.clock()
 		local connection: any = nil
+		local warned = false
 		local function stop()
 			if connection == nil then
 				return
@@ -361,13 +362,19 @@ function Kit.animate(model: any, step: any)
 			end)
 		end
 		connection = runService.Heartbeat:Connect(function(dt)
-			if model.Parent == nil then
-				stop()
+			local stepped, stepErr = pcall(function()
+				if model.Parent == nil then
+					return false
+				end
+				step(dt, os.clock() - started)
+				return true
+			end)
+			if stepped and stepErr == true then
 				return
 			end
-			local stepped, stepErr = pcall(step, dt, os.clock() - started)
-			if not stepped then
-				stop()
+			stop()
+			if not stepped and not warned then
+				warned = true
 				warn(stepErr)
 			end
 		end)
