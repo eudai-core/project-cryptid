@@ -452,41 +452,54 @@ local function buildStatue(parent: Instance, pivot: any)
 	statue.Name = "PedlarStatue"
 	statue.Parent = parent
 	place(statue, pivot, {
-		name = "Cloak",
-		size = Vector3.new(1.8, 3.6, 1.15),
-		cf = CFrame.new(0.35, 3.35, 2.55),
+		name = "StatueRobe",
+		size = Vector3.new(2.7, 1.25, 1.25),
+		cf = CFrame.new(0.35, 2.55, 2.55) * CFrame.Angles(0, 0, math.rad(90)),
 		material = CLOTH,
-		color = "Bone",
+		color = "Soot",
 		decor = true,
 		shadow = true,
+		shape = Enum.PartType.Cylinder,
 	})
 	place(statue, pivot, {
-		name = "Shoulder",
-		size = Vector3.new(2.05, 0.38, 1.2),
-		cf = CFrame.new(0.35, 4.55, 2.5),
+		className = "WedgePart",
+		name = "StatueFold",
+		size = Vector3.new(0.55, 1.8, 0.28),
+		cf = CFrame.new(-0.15, 2.2, 2.2) * CFrame.Angles(0, 0.3, 0.1),
 		material = CLOTH,
-		color = "BoneDim",
+		color = "Void",
 		decor = true,
 		shadow = true,
 	})
 	place(statue, pivot, {
 		className = "WedgePart",
-		name = "Hood",
-		size = Vector3.new(1.2, 1.05, 1.15),
-		cf = CFrame.new(0.35, 5.35, 2.45) * CFrame.Angles(0.15, math.rad(180), 0),
+		name = "StatueFold",
+		size = Vector3.new(0.55, 1.8, 0.28),
+		cf = CFrame.new(0.85, 2.15, 2.85) * CFrame.Angles(0, -0.25, -0.1),
 		material = CLOTH,
-		color = "Bone",
+		color = "Ash",
 		decor = true,
 		shadow = true,
 	})
 	place(statue, pivot, {
-		name = "HoodOpening",
-		size = Vector3.new(0.62, 0.72, 0.18),
-		cf = CFrame.new(0.35, 4.95, 1.95),
+		className = "WedgePart",
+		name = "StatueHood",
+		size = Vector3.new(1.15, 0.9, 1.05),
+		cf = CFrame.new(0.35, 4.15, 2.5) * CFrame.Angles(0.2, math.rad(180), 0),
 		material = CLOTH,
-		color = "Void",
+		color = "Soot",
+		decor = true,
+		shadow = true,
+	})
+	place(statue, pivot, {
+		name = "StatueHead",
+		size = Vector3.new(0.48, 0.48, 0.48),
+		cf = CFrame.new(0.35, 3.85, 2.35),
+		material = BONE,
+		color = "NightSky",
 		decor = true,
 		shadow = false,
+		shape = Enum.PartType.Ball,
 	})
 end
 
