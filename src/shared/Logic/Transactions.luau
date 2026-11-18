@@ -65,6 +65,9 @@ end)
 local Passes = import("./Passes", function()
 	return script.Parent:WaitForChild("Passes")
 end)
+local Rebirth = import("./Rebirth", function()
+	return script.Parent:WaitForChild("Rebirth")
+end)
 local RelicsPip = import("./RelicsPip", function()
 	return script.Parent:WaitForChild("RelicsPip")
 end)
@@ -268,7 +271,8 @@ function Transactions.creditIncome(
 	profile.onboarding.playSeconds += seconds
 	OnboardingGoals.advance(profile)
 	local gained, changed = Bowl.route(profile, tick.cash, inside == true, autoCollect == true)
-	return gained, changed or tick.tithe > 0
+	local noted = Rebirth.noteBalance(profile)
+	return gained, changed or tick.tithe > 0 or noted
 end
 
 function Transactions.buySkill(profile: any, nodeId: any): (boolean, string)

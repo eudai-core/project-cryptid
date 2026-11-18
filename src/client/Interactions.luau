@@ -129,6 +129,10 @@ function Interactions.start(player: Player, remotes: Folder, names: any, beginCa
 				askPedlar()
 			elseif kind == "SkillShrine" then
 				town.onShrine()
+			elseif kind == "Rite" then
+				if town.onRite ~= nil then
+					town.onRite()
+				end
 			else
 				send(remotes, names, inst)
 			end
