@@ -17,8 +17,14 @@ end)
 local Shop = import("../Config/Shop", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Shop")
 end)
+local ShopAnchors = import("../Config/ShopAnchors", function()
+	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("ShopAnchors")
+end)
 local Species = import("../Config/Species", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Species")
+end)
+local TownShops = import("../Config/TownShops", function()
+	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("TownShops")
 end)
 
 local RemoteArgs = {}
@@ -95,6 +101,43 @@ end
 
 function RemoteArgs.flag(value: any): boolean?
 	if type(value) ~= "boolean" then
+		return nil
+	end
+	return value
+end
+
+function RemoteArgs.shopId(value: any): string?
+	if ShopAnchors.get(value) == nil then
+		return nil
+	end
+	return value
+end
+
+function RemoteArgs.itemId(value: any): string?
+	if type(value) ~= "string" or #value < 1 or #value > TownShops.ID_MAX then
+		return nil
+	end
+	if string.match(value, "^[%w_]+$") == nil then
+		return nil
+	end
+	return value
+end
+
+function RemoteArgs.requestId(value: any): string?
+	if type(value) ~= "string" or #value < 1 or #value > TownShops.REQUEST_MAX then
+		return nil
+	end
+	if string.match(value, "^[%w_%-]+$") == nil then
+		return nil
+	end
+	return value
+end
+
+function RemoteArgs.shopQty(value: any): number?
+	if type(value) ~= "number" or value ~= math.floor(value) then
+		return nil
+	end
+	if value < 1 or value > TownShops.MAX_QTY then
 		return nil
 	end
 	return value

@@ -20,6 +20,8 @@ local Remotes = {
 	BUY_SKILL = "RequestBuySkill",
 	OPEN_RELICS = "RequestOpenRelics",
 	BUY_RELIC = "RequestRelic",
+	SHOP_BUY = "RequestShopBuy",
+	SHOP_SELL = "RequestShopSell",
 	REBIRTH = "RequestRebirth",
 }
 

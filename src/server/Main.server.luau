@@ -8,6 +8,7 @@ local GameInfo = require(Shared:WaitForChild("GameInfo")) :: any
 local LightingSetup = require(script.Parent:WaitForChild("LightingSetup"))
 local Pedlar = require(script.Parent:WaitForChild("Pedlar"))
 local PlayerSession = require(script.Parent:WaitForChild("PlayerSession"))
+local TownShopService = require(script.Parent:WaitForChild("TownShopService"))
 local Plot = require(script.Parent:WaitForChild("Plot"))
 local Remotes = require(script.Parent:WaitForChild("Remotes"))
 local TitheLedger = require(script.Parent:WaitForChild("TitheLedger"))
@@ -43,6 +44,12 @@ SpawnCheck.start()
 
 LightingSetup.apply()
 Plot.build()
+local town = workspace:FindFirstChild("Town")
+if town ~= nil and town:IsA("Folder") then
+	TownShopService.start(town, PlayerSession.onTownShopOpen)
+else
+	warn("Town shop anchors skipped: Workspace.Town is missing")
+end
 worldReady = true
 
 local folder = Remotes.create()

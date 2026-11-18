@@ -239,9 +239,19 @@ function Snapshot.build(profile: any, lastCredit: number, revision: number, view
 		}
 	end
 
+	local wares = {}
+	if type(profile.wares) == "table" and type(profile.wares.counts) == "table" then
+		for id, count in profile.wares.counts do
+			if type(id) == "string" and type(count) == "number" and count > 0 then
+				wares[id] = count
+			end
+		end
+	end
+
 	return {
 		revision = revision,
 		cash = profile.cash,
+		wares = wares,
 		incomePerSecond = Money.round(rate * pass),
 		rebirth = rite,
 		lastCredit = lastCredit,

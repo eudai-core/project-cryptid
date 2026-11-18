@@ -159,7 +159,7 @@ Every agent:
    - `docs/studio-ops-guide` §11 when that guide is in the repo. It is not in the repo today.
    - Server-authoritative gameplay. The client shows replicated state and sends intents. Cash, rolls, prices, rewards, and eligibility stay on the server.
    - `UITheme` for colour, type, and motion (`src/shared/UITheme.luau`). No magic numbers. Name constants in the config modules.
-   - Versioned DataStore migrations. Do not rewrite a save in place. A new profile shape gets a new `dataVersion` and a migration. `Save.DATA_VERSION` on main is 9.
+   - Versioned DataStore migrations. Do not rewrite a save in place. A new profile shape gets a new `dataVersion` and a migration. `Save.DATA_VERSION` on main is 10.
 5. **Keep approved decisions unless a human explicitly authorises a change.** Flag conflicts in the index or the pull request. Do not resolve them while passing through.
 6. **Record meaningful gameplay, architecture, or art changes** in the spec or the index, in the same change as the work.
 7. **Give verification evidence before calling work done.** A merged pull request is not QA Passed. QA Passed requires a `qa/*-report.md` that says PASS. Nothing is Released until a publish has happened.

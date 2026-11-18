@@ -76,6 +76,9 @@ local Shop = {
 	WAITING = "The pedlar is counting the cages.",
 	UNMARKED = "The Pedlar ignores the unmarked.",
 	MOVED_ON = "The Pedlar has moved on.",
+	CRYPTID_REFUSAL = "The Pale Pedlar sells supplies. Cryptids are not for sale.",
+	NOTICE = "PedlarNotice",
+	NOTICE_TOKEN = "PedlarNoticeToken",
 	PROMPT = "Browse the Pedlar's cages",
 	OPEN_TOKEN = "PedlarOpenToken",
 }

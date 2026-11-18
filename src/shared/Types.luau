@@ -62,6 +62,10 @@ export type Profile = {
 		lastRotationId: number,
 		boughtSlots: { boolean },
 	},
+	wares: {
+		counts: { [string]: number },
+		receipts: { { id: string, itemId: string, qty: number, cashDelta: number } },
+	},
 	base: {
 		defences: { [number]: string },
 	},

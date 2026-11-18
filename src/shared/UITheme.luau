@@ -65,6 +65,13 @@ local world = table.freeze({
 	MoonGlow = "F4E8FF",
 })
 
+-- Shop chrome from the approved town preview. Muted well teal and night violet.
+-- Body text stays on the spec 01 Bone tokens. These are not flame neons.
+local glow = table.freeze({
+	teal = "3C7F78",
+	violet = "6E5C9A",
+})
+
 local TOUCH_PX = 44
 local GAP_PX = 8
 local BANNER_PAD = 8
@@ -95,6 +102,7 @@ local PEDLAR_CARD_H = GAP_PX * 2
 local UITheme = {
 	palette = palette,
 	world = world,
+	glow = glow,
 	rarity = table.freeze({
 		Common = "BoneDim",
 		Uncommon = "Moss",
@@ -423,6 +431,9 @@ end
 
 function UITheme.color(token: string): Color3
 	local hex = palette[token]
+	if hex == nil then
+		hex = glow[token]
+	end
 	if hex == nil then
 		hex = world[token]
 	end
