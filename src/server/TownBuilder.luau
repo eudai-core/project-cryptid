@@ -165,7 +165,7 @@ local function cobble(town: Folder)
 		Vector3.new(thickness, diameter, diameter),
 		CFrame.new(0, centerY, 0),
 		UITheme.materials.cobble,
-		"Soot",
+		"PlazaCobble",
 		true
 	)
 	uprightCylinder(disc, CFrame.new(0, centerY, 0))
@@ -311,7 +311,7 @@ local function roads(town: Folder)
 			Vector3.new(Town.ROAD_WIDTH, Town.ROAD_THICKNESS, length),
 			cf,
 			UITheme.materials.cobble,
-			"Soot",
+			"PlazaRoad",
 			true
 		)
 		local rampMid = Plots.TOWN_RADIUS - Town.RAMP_LENGTH / 2
@@ -327,7 +327,7 @@ local function roads(town: Folder)
 			Vector3.new(Town.ROAD_WIDTH, Town.ROAD_THICKNESS, Town.RAMP_LENGTH),
 			rampCf,
 			UITheme.materials.cobble,
-			"Soot",
+			"PlazaRoad",
 			true
 		)
 	end
@@ -1321,6 +1321,8 @@ local function buildHollowmere(town: Folder)
 	placeModel(brazier, plazaCf(brazierSpec.angle, brazierSpec.radius))
 end
 
+local publishCensus: (Folder) -> ()
+
 function TownBuilder.build(town: Folder)
 	-- The town is large enough to stall Play solo if the server never yields.
 	-- selene: allow(global_usage)
@@ -1351,6 +1353,90 @@ function TownBuilder.build(town: Folder)
 		task.wait()
 	end
 	TownKits.applyAll(town, {})
+	publishCensus(town)
+end
+
+local CENSUS_PART = {
+	Part = true,
+	WedgePart = true,
+	CornerWedgePart = true,
+	MeshPart = true,
+	UnionOperation = true,
+	NegateOperation = true,
+	TrussPart = true,
+	SpawnLocation = true,
+	Seat = true,
+	VehicleSeat = true,
+}
+local CENSUS_LIGHT = {
+	PointLight = true,
+	SpotLight = true,
+	SurfaceLight = true,
+}
+
+publishCensus = function(town: Folder)
+	local quality = if type(TownKits.forceQuality) == "number" then TownKits.forceQuality else 10
+	local parts = 0
+	local lights = 0
+	local enabledLights = 0
+	local emitters = 0
+	local highlights = 0
+	local kitParts: { [string]: number } = {}
+	for _, inst in town:GetDescendants() do
+		local className = inst.ClassName
+		if CENSUS_PART[className] == true then
+			parts += 1
+			local cursor = inst.Parent
+			while cursor ~= nil and cursor ~= town do
+				local tagged = cursor:GetAttribute("TownKit")
+				if type(tagged) == "string" then
+					kitParts[tagged] = (kitParts[tagged] or 0) + 1
+					break
+				end
+				cursor = cursor.Parent
+			end
+		elseif CENSUS_LIGHT[className] == true then
+			lights += 1
+			if inst.Enabled ~= false then
+				enabledLights += 1
+			end
+		elseif className == "ParticleEmitter" then
+			emitters += 1
+		elseif className == "Highlight" then
+			highlights += 1
+		end
+	end
+	local line = string.format(
+		"[TownCensus] quality=%d parts=%d lights=%d enabledLights=%d emitters=%d highlights=%d",
+		quality,
+		parts,
+		lights,
+		enabledLights,
+		emitters,
+		highlights
+	)
+	warn(line)
+	local names = {}
+	for name in kitParts do
+		table.insert(names, name)
+	end
+	table.sort(names)
+	local bits = {}
+	for _, name in names do
+		local count = kitParts[name]
+		table.insert(bits, name .. "=" .. tostring(count))
+		town:SetAttribute("CensusKit_" .. name, count)
+	end
+	if #bits > 0 then
+		warn("[TownCensus] kits " .. table.concat(bits, " "))
+	end
+	town:SetAttribute("CensusQuality", quality)
+	town:SetAttribute("CensusParts", parts)
+	town:SetAttribute("CensusLights", lights)
+	town:SetAttribute("CensusEnabledLights", enabledLights)
+	town:SetAttribute("CensusEmitters", emitters)
+	town:SetAttribute("CensusHighlights", highlights)
+	town:SetAttribute("CensusLine", line)
 end
 
 return TownBuilder

@@ -23,6 +23,7 @@ local PalePedlar = {}
 local WOOD = UITheme.materials.wood
 local METAL = UITheme.materials.iron
 local GLASS = UITheme.materials.glass
+local NEON = UITheme.materials.neon
 local CLOTH = UITheme.materials.cloth
 local BONE = UITheme.materials.candle
 
@@ -341,13 +342,22 @@ end
 
 local function buildCages(parent: Instance, pivot: any)
 	local seats = { -4.4, -1.5, 1.5, 4.4 }
+	place(parent, pivot, {
+		name = "CageRail",
+		size = Vector3.new(10.4, 0.1, 0.1),
+		cf = CFrame.new(0, 6.85, -3.7),
+		material = METAL,
+		color = "Soot",
+		decor = true,
+		shadow = false,
+	})
 	for index, x in seats do
 		for bar = 0, 3 do
 			local ox = (bar - 1.5) * 0.28
 			place(parent, pivot, {
 				name = "CageBar",
-				size = Vector3.new(0.06, 1.15, 0.06),
-				cf = CFrame.new(x + ox, 2.15, -3.55),
+				size = Vector3.new(0.08, 1.35, 0.08),
+				cf = CFrame.new(x + ox, 5.05, -3.55),
 				material = METAL,
 				color = "BoneDim",
 				decor = true,
@@ -355,34 +365,33 @@ local function buildCages(parent: Instance, pivot: any)
 		end
 		place(parent, pivot, {
 			name = "CageRing",
-			size = Vector3.new(0.95, 0.06, 0.7),
-			cf = CFrame.new(x, 1.55, -3.55),
+			size = Vector3.new(1.15, 0.08, 0.85),
+			cf = CFrame.new(x, 4.4, -3.55),
 			material = METAL,
 			color = "Soot",
 			decor = true,
 		})
 		place(parent, pivot, {
 			name = "CageRing",
-			size = Vector3.new(0.95, 0.06, 0.7),
-			cf = CFrame.new(x, 2.7, -3.55),
+			size = Vector3.new(1.15, 0.08, 0.85),
+			cf = CFrame.new(x, 5.7, -3.55),
 			material = METAL,
 			color = "Soot",
 			decor = true,
 		})
 		place(parent, pivot, {
 			name = "CageChain",
-			size = Vector3.new(1.6, 0.05, 0.05),
-			cf = CFrame.new(x, 3.55, -3.7) * CFrame.Angles(0, 0, math.rad(90)),
+			size = Vector3.new(0.08, 1.15, 0.08),
+			cf = CFrame.new(x, 6.35, -3.7),
 			material = METAL,
 			color = "Soot",
 			decor = true,
 			shadow = false,
-			shape = Enum.PartType.Cylinder,
 		})
 		place(parent, pivot, {
 			name = "Curio",
 			size = Vector3.new(0.28, 0.22, 0.18),
-			cf = CFrame.new(x, 1.75, -3.5) * CFrame.Angles(0.2, sway(index, 0.4), 0.1),
+			cf = CFrame.new(x, 4.85, -3.5) * CFrame.Angles(0.2, sway(index, 0.4), 0.1),
 			material = BONE,
 			color = "Bone",
 			decor = true,
@@ -390,16 +399,17 @@ local function buildCages(parent: Instance, pivot: any)
 		})
 		local wick = place(parent, pivot, {
 			name = "CageWick",
-			size = Vector3.new(0.16, 0.16, 0.16),
-			cf = CFrame.new(x, 2.15, -3.5),
-			material = GLASS,
+			size = Vector3.new(0.28, 0.28, 0.28),
+			cf = CFrame.new(x, 5.05, -3.5),
+			material = NEON,
 			color = "Rift",
 			decor = true,
 			shadow = false,
 			shape = Enum.PartType.Ball,
+			neonRole = "flame",
 		})
-		wick.Transparency = 0.4
-		addPoint(wick, "CageGlow", 4, 0.16, "Rift")
+		wick.Transparency = 0.2
+		addPoint(wick, "CageGlow", 8, 0.85, "Rift")
 	end
 end
 
@@ -434,6 +444,102 @@ local function buildMosaic(parent: Instance, pivot: any, detail: boolean)
 				decor = true,
 			})
 		end
+	end
+end
+
+local function buildStatue(parent: Instance, pivot: any)
+	local statue = Instance.new("Model")
+	statue.Name = "PedlarStatue"
+	statue.Parent = parent
+	place(statue, pivot, {
+		name = "Cloak",
+		size = Vector3.new(1.8, 3.6, 1.15),
+		cf = CFrame.new(0.35, 3.35, 2.55),
+		material = CLOTH,
+		color = "Bone",
+		decor = true,
+		shadow = true,
+	})
+	place(statue, pivot, {
+		name = "Shoulder",
+		size = Vector3.new(2.05, 0.38, 1.2),
+		cf = CFrame.new(0.35, 4.55, 2.5),
+		material = CLOTH,
+		color = "BoneDim",
+		decor = true,
+		shadow = true,
+	})
+	place(statue, pivot, {
+		className = "WedgePart",
+		name = "Hood",
+		size = Vector3.new(1.2, 1.05, 1.15),
+		cf = CFrame.new(0.35, 5.35, 2.45) * CFrame.Angles(0.15, math.rad(180), 0),
+		material = CLOTH,
+		color = "Bone",
+		decor = true,
+		shadow = true,
+	})
+	place(statue, pivot, {
+		name = "HoodOpening",
+		size = Vector3.new(0.62, 0.72, 0.18),
+		cf = CFrame.new(0.35, 4.95, 1.95),
+		material = CLOTH,
+		color = "Void",
+		decor = true,
+		shadow = false,
+	})
+end
+
+local function buildBook(parent: Instance, pivot: any)
+	place(parent, pivot, {
+		name = "OpenBook",
+		size = Vector3.new(0.85, 0.08, 0.62),
+		cf = CFrame.new(-1.15, 1.72, -2.15) * CFrame.Angles(0.08, 0.4, 0.15),
+		material = BONE,
+		color = "Bone",
+		decor = true,
+		shadow = false,
+	})
+	place(parent, pivot, {
+		name = "OpenBook",
+		size = Vector3.new(0.85, 0.08, 0.62),
+		cf = CFrame.new(-0.25, 1.74, -2.05) * CFrame.Angles(0.05, -0.35, -0.12),
+		material = BONE,
+		color = "BoneDim",
+		decor = true,
+		shadow = false,
+	})
+	place(parent, pivot, {
+		name = "BookSpine",
+		size = Vector3.new(0.12, 0.1, 0.62),
+		cf = CFrame.new(-0.7, 1.7, -2.1),
+		material = WOOD,
+		color = "Bark",
+		decor = true,
+		shadow = false,
+	})
+end
+
+local function carveName(model: Instance, pivot: any)
+	local sign = findNamed(model, "Sign", "Part")
+	local trim = findNamed(model, "SignTrim", "Part")
+	if sign ~= nil then
+		sign.Size = Vector3.new(4.4, 0.72, 0.08)
+		sign.CFrame = pivot * CFrame.new(0, 1.05, -4.55)
+		sign.Material = Enum.Material.WoodPlanks
+		sign.Color = UITheme.color("ShipWood")
+		local gui = sign:FindFirstChild("SignGui")
+		local label = if gui ~= nil then gui:FindFirstChild("SignText") else nil
+		if label ~= nil then
+			label.TextColor3 = UITheme.color("Gold")
+			label.TextSize = 16
+		end
+	end
+	if trim ~= nil then
+		trim.Size = Vector3.new(4.6, 0.1, 0.05)
+		trim.CFrame = pivot * CFrame.new(0, 0.62, -4.58)
+		trim.Material = Enum.Material.WoodPlanks
+		trim.Color = UITheme.color("Gold")
 	end
 end
 
@@ -503,11 +609,22 @@ local function buildHanger(parent: Instance, pivot: any)
 		shadow = false,
 	})
 	globe.Transparency = 0.15
+	place(parent, pivot, {
+		name = "SupplyCore",
+		size = Vector3.new(0.38, 0.38, 0.38),
+		cf = CFrame.new(-5.19, 5.05, -4.85),
+		material = NEON,
+		color = "Rift",
+		decor = true,
+		shadow = false,
+		shape = Enum.PartType.Ball,
+		neonRole = "flame",
+	})
 	local light = Instance.new("PointLight")
 	light.Name = "SupplyLight"
 	light.Color = UITheme.color("Rift")
-	light.Range = 10
-	light.Brightness = 0.7
+	light.Range = 14
+	light.Brightness = 2.2
 	light.Shadows = false
 	light.Enabled = true
 	light.Parent = globe
@@ -561,14 +678,38 @@ function PalePedlar.replace(townFolder: Instance, refs: any): any
 	local folder = Instance.new("Folder")
 	folder.Name = "Wagon"
 	folder.Parent = model
-	buildBed(folder, pivot, detail)
-	buildWheels(folder, pivot)
-	buildCanopy(folder, pivot, detail)
-	buildCrates(folder, pivot, detail)
-	buildCages(folder, pivot)
-	buildMosaic(folder, pivot, detail)
-	buildTradeSign(model, folder, pivot)
-	buildHanger(folder, pivot)
+	local function phase(stepName: string, fn: () -> ())
+		Kit.step("PalePedlar", stepName, fn)
+	end
+	phase("bed", function()
+		buildBed(folder, pivot, detail)
+	end)
+	phase("wheels", function()
+		buildWheels(folder, pivot)
+	end)
+	phase("canopy", function()
+		buildCanopy(folder, pivot, detail)
+	end)
+	phase("crates", function()
+		buildCrates(folder, pivot, detail)
+	end)
+	phase("cages", function()
+		buildCages(folder, pivot)
+	end)
+	phase("mosaic", function()
+		buildMosaic(folder, pivot, detail)
+	end)
+	phase("statue", function()
+		buildStatue(folder, pivot)
+		buildBook(folder, pivot)
+		carveName(model, pivot)
+	end)
+	phase("sign", function()
+		buildTradeSign(model, folder, pivot)
+	end)
+	phase("lantern", function()
+		buildHanger(folder, pivot)
+	end)
 
 	for _, prompt in prompts do
 		if prompt.Parent == nil and homes[prompt] ~= nil then

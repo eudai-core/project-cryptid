@@ -18,8 +18,8 @@ local TownLook = {
 	PORTAL_LIGHT_RANGE = 12,
 	PORTAL_LIGHT_BRIGHTNESS = 0.9,
 	-- Kit accent. The blockout light stays on the constants above; the kit replaces it.
-	PORTAL_ACCENT_RANGE = 16,
-	PORTAL_ACCENT_BRIGHTNESS = 1.35,
+	PORTAL_ACCENT_RANGE = 22,
+	PORTAL_ACCENT_BRIGHTNESS = 2.2,
 	PORTAL_EYE_RANGE = 7,
 	PORTAL_EYE_BRIGHTNESS = 0.8,
 	PORTAL_VFX = table.freeze({
@@ -169,21 +169,31 @@ local TownLook = {
 		rt = "rbxasset://textures/sky/sky512_rt.tex",
 		up = "rbxasset://textures/sky/sky512_up.tex",
 	}),
-	-- Muted occult grade over the built-in sky512 cubemap. Not a bright violet.
-	SKY_AMBIENT = "3E2C4A",
-	SKY_OUTDOOR_AMBIENT = "62466C",
-	SKY_COLOR_SHIFT_TOP = "241030",
-	SKY_ATMOSPHERE_COLOR = "604A6E",
-	SKY_ATMOSPHERE_DECAY = "241430",
-	SKY_ATMOSPHERE_DENSITY = 0.16,
-	SKY_ATMOSPHERE_HAZE = 0.22,
-	SKY_ATMOSPHERE_GLARE = 0,
-	SKY_GRADE_SATURATION = 0.02,
-	SKY_GRADE_TINT = "E4DCE8",
-	-- Low cover over the muted violet night. Not a storm, and not a voxel map.
-	CLOUD_COVER = 0.5,
-	CLOUD_DENSITY = 0.4,
-	CLOUD_COLOR = "604A6E",
+	-- Violet dusk. The built-in sky512 cubemap reads purple when the sun is low,
+	-- the grade is lilac, and the ambient is high enough that cobbles are not black.
+	SKY_CLOCK_TIME = 18.25,
+	SKY_BRIGHTNESS = 2.4,
+	SKY_EXPOSURE = 0.55,
+	SKY_AMBIENT = "8A6AAA",
+	SKY_OUTDOOR_AMBIENT = "C4A0DC",
+	SKY_COLOR_SHIFT_TOP = "7A4AA8",
+	SKY_ATMOSPHERE_COLOR = "C9A6E8",
+	SKY_ATMOSPHERE_DECAY = "6E3E96",
+	SKY_ATMOSPHERE_DENSITY = 0.35,
+	SKY_ATMOSPHERE_HAZE = 1.85,
+	SKY_ATMOSPHERE_GLARE = 0.2,
+	SKY_GRADE_SATURATION = 0.22,
+	SKY_GRADE_TINT = "E4D0FF",
+	SKY_FOG_COLOR = "A08CC4",
+	SKY_FOG_START = 160,
+	SKY_FOG_END = 780,
+	SKY_BLOOM_INTENSITY = 0.9,
+	SKY_BLOOM_SIZE = 32,
+	SKY_BLOOM_THRESHOLD = 0.8,
+	-- Same violet as the horizon so the cloud deck does not turn the zenith black.
+	CLOUD_COVER = 0.45,
+	CLOUD_DENSITY = 0.45,
+	CLOUD_COLOR = "C9A6E8",
 }
 
 function TownLook.bloomEnabled(level: number, authored: boolean): boolean

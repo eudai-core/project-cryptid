@@ -826,6 +826,53 @@ local function repositionKept(model: Instance, pivot: any)
 		table.insert(signParts, trim)
 	end
 	moveTo(sign, pivot * SIGN_LOCAL, signParts)
+	if sign ~= nil then
+		sign.Size = Vector3.new(3.2, 0.9, 0.16)
+		sign.Material = Enum.Material.WoodPlanks
+		sign.Color = UITheme.color("Bark")
+		local gui = sign:FindFirstChild("SignGui")
+		local label = if gui ~= nil then gui:FindFirstChild("SignText") else nil
+		if label ~= nil then
+			label.TextColor3 = UITheme.color("FlameGreen")
+			label.TextSize = 16
+		end
+	end
+	if trim ~= nil then
+		trim.Size = Vector3.new(3.45, 1.08, 0.08)
+		trim.Material = Enum.Material.WoodPlanks
+		trim.Color = UITheme.color("Gold")
+	end
+	local signHost = if sign ~= nil and sign.Parent ~= nil then sign.Parent else model
+	place(signHost, pivot, {
+		name = "Pestle",
+		size = Vector3.new(0.22, 0.7, 0.22),
+		cf = CFrame.new(0.55, 5.15, -4.7) * CFrame.Angles(0, 0, math.rad(28)),
+		material = WOOD,
+		color = "Bark",
+		decor = true,
+		shadow = false,
+		shape = Enum.PartType.Cylinder,
+	})
+	place(signHost, pivot, {
+		name = "PestleBowl",
+		size = Vector3.new(0.55, 0.28, 0.55),
+		cf = CFrame.new(-0.15, 4.85, -4.72),
+		material = WOOD,
+		color = "ShipWood",
+		decor = true,
+		shadow = false,
+	})
+	place(signHost, pivot, {
+		name = "PestleMark",
+		size = Vector3.new(0.16, 0.16, 0.16),
+		cf = CFrame.new(-0.15, 5.05, -4.9),
+		material = NEON,
+		color = "FlameGreen",
+		decor = true,
+		shadow = false,
+		shape = Enum.PartType.Ball,
+		neonRole = "sign",
+	})
 
 	local bowls = {}
 	local flames = {}
@@ -955,17 +1002,37 @@ function ApothecaryTree.replace(townFolder: Instance, refs: any): any
 	folder.Name = "Tree"
 	folder.Parent = model
 
-	buildTrunk(folder, pivot)
-	buildLimbs(folder, pivot)
-	buildRoots(folder, pivot)
-	local door = buildDoor(folder, pivot)
-	buildEye(folder, pivot)
-	if detail then
-		buildDetail(folder, pivot, door)
-		playMotion(model)
+	local function phase(stepName: string, fn: () -> ())
+		Kit.step("ApothecaryTree", stepName, fn)
 	end
-	repositionKept(model, pivot)
-	lightFlames(model)
+	phase("trunk", function()
+		buildTrunk(folder, pivot)
+	end)
+	phase("limbs", function()
+		buildLimbs(folder, pivot)
+	end)
+	phase("roots", function()
+		buildRoots(folder, pivot)
+	end)
+	local door = nil
+	phase("door", function()
+		door = buildDoor(folder, pivot)
+	end)
+	phase("eye", function()
+		buildEye(folder, pivot)
+	end)
+	if detail then
+		phase("detail", function()
+			buildDetail(folder, pivot, door)
+			playMotion(model)
+		end)
+	end
+	phase("sign", function()
+		repositionKept(model, pivot)
+	end)
+	phase("flames", function()
+		lightFlames(model)
+	end)
 	quietLights(model)
 
 	local anchor = findNamed(folder, "DoorAnchor", "Part")

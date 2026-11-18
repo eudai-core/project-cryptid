@@ -276,15 +276,29 @@ local function buildWalls(parent: Instance, pivot: any, detail: boolean)
 		})
 		local pane = place(parent, pivot, {
 			name = "Window",
-			size = Vector3.new(0.06, 0.85, 0.58),
-			cf = CFrame.new(side * 3.34, 2.72, -1.4),
-			material = GLASS,
+			size = Vector3.new(0.1, 1.35, 1.05),
+			cf = CFrame.new(side * 3.34, 2.85, -1.4),
+			material = NEON,
 			color = "Candle",
 			decor = true,
 			shadow = false,
+			neonRole = "flame",
 		})
-		pane.Transparency = 0.35
+		pane.Transparency = 0.08
+		addPoint(pane, "WindowGlow", 12, 2, "Candle")
 	end
+	local backPane = place(parent, pivot, {
+		name = "Window",
+		size = Vector3.new(1.6, 1.2, 0.1),
+		cf = CFrame.new(0.2, 3.15, 3.62),
+		material = NEON,
+		color = "Candle",
+		decor = true,
+		shadow = false,
+		neonRole = "flame",
+	})
+	backPane.Transparency = 0.08
+	addPoint(backPane, "WindowGlow", 14, 2.2, "Candle")
 	place(parent, pivot, {
 		name = "DoorPlank",
 		size = Vector3.new(0.34, 2.15, 0.1),
@@ -431,8 +445,19 @@ local function hangingLantern(parent: Instance, pivot: any, at: any, token: stri
 		shadow = false,
 		shape = Enum.PartType.Cylinder,
 	})
+	local pane = place(parent, pivot, {
+		name = "LanternPane",
+		size = Vector3.new(0.08, 0.38, 0.28),
+		cf = CFrame.new(at + Vector3.new(0, 0.02, 0.12)),
+		material = NEON,
+		color = token,
+		decor = true,
+		shadow = false,
+		neonRole = "flame",
+	})
+	addPoint(pane, "LanternGlow", 12, 2.1, token)
 	if lit then
-		addPoint(globe, "LanternGlow", 9, 0.45, token)
+		pane.Transparency = 0
 	end
 end
 
@@ -441,14 +466,14 @@ local function buildLanterns(parent: Instance, pivot: any, detail: boolean)
 	for index = 1, frontCount do
 		local x = -3.05 + (index - 0.5) * (6.1 / frontCount)
 		local y = 4.15 + math.sin(index * 1.4) * 0.16
-		hangingLantern(parent, pivot, Vector3.new(x, y, -3.88), "Candle", index % 3 == 1)
+		hangingLantern(parent, pivot, Vector3.new(x, y, -3.88), "Candle", true)
 	end
 	if not detail then
 		return
 	end
 	for index = 1, 8 do
 		local x = -2.6 + (index - 0.5) * (5.2 / 8)
-		hangingLantern(parent, pivot, Vector3.new(x, 4.85 + sway(index, 0.08), -3.15), "Candle", false)
+		hangingLantern(parent, pivot, Vector3.new(x, 4.85 + sway(index, 0.08), -3.15), "Candle", true)
 	end
 	for index = 1, 5 do
 		place(parent, pivot, {
@@ -480,7 +505,7 @@ local function buildSign(model: any, parent: Instance, pivot: any)
 		size = Vector3.new(2.7, 1.15, 0.12),
 		cf = CFrame.new(0, 5.55, -4.2),
 		material = WOOD,
-		color = "Ash",
+		color = "ShipWood",
 		decor = true,
 	})
 	local trim = place(parent, pivot, {
@@ -494,8 +519,8 @@ local function buildSign(model: any, parent: Instance, pivot: any)
 	})
 	local glyph = place(parent, pivot, {
 		name = "SignGlyph",
-		size = Vector3.new(0.42, 0.55, 0.08),
-		cf = CFrame.new(-1.85, 5.55, -4.2),
+		size = Vector3.new(0.55, 0.9, 0.14),
+		cf = CFrame.new(-2.35, 5.55, -4.28),
 		material = NEON,
 		color = "Candle",
 		decor = true,
@@ -506,7 +531,7 @@ local function buildSign(model: any, parent: Instance, pivot: any)
 		className = "WedgePart",
 		name = "SignCap",
 		size = Vector3.new(0.5, 0.22, 0.16),
-		cf = CFrame.new(-1.85, 5.95, -4.2),
+		cf = CFrame.new(-2.35, 6.12, -4.28),
 		material = METAL,
 		color = "Gold",
 		decor = true,
@@ -544,6 +569,8 @@ local function buildSign(model: any, parent: Instance, pivot: any)
 	label.BackgroundTransparency = 1
 	label.Size = UDim2.fromScale(1, 1)
 	label.Text = "The Lanternwright"
+	label.TextColor3 = UITheme.color("Gold")
+	label.TextSize = 16
 	label.TextColor3 = UITheme.color("Bone")
 	label.TextScaled = false
 	label.TextSize = 28
@@ -634,9 +661,6 @@ local function buildCounter(parent: Instance, pivot: any, detail: boolean)
 		shadow = false,
 	})
 	windowHost.Transparency = 1
-	if detail then
-		addPoint(windowHost, "WindowGlow", 11, 0.55, "Candle")
-	end
 end
 
 local function retireShutteredStall(townFolder: Instance)
@@ -692,13 +716,30 @@ function Lanternwright.replace(townFolder: Instance, refs: any): any
 	local folder = Instance.new("Folder")
 	folder.Name = "Workshop"
 	folder.Parent = model
-	buildBase(folder, pivot, detail)
-	buildFrame(folder, pivot)
-	buildWalls(folder, pivot, detail)
-	buildRoof(folder, pivot, detail)
-	buildChimney(folder, pivot, detail)
-	buildLanterns(folder, pivot, detail)
-	buildSign(model, folder, pivot)
+	local function phase(stepName: string, fn: () -> ())
+		Kit.step("Lanternwright", stepName, fn)
+	end
+	phase("base", function()
+		buildBase(folder, pivot, detail)
+	end)
+	phase("frame", function()
+		buildFrame(folder, pivot)
+	end)
+	phase("walls", function()
+		buildWalls(folder, pivot, detail)
+	end)
+	phase("roof", function()
+		buildRoof(folder, pivot, detail)
+	end)
+	phase("chimney", function()
+		buildChimney(folder, pivot, detail)
+	end)
+	phase("lanterns", function()
+		buildLanterns(folder, pivot, detail)
+	end)
+	phase("sign", function()
+		buildSign(model, folder, pivot)
+	end)
 	if detail then
 		for row = 1, 8 do
 			for col = 1, 14 do
@@ -728,7 +769,9 @@ function Lanternwright.replace(townFolder: Instance, refs: any): any
 			})
 		end
 	end
-	buildCounter(folder, pivot, detail)
+	phase("counter", function()
+		buildCounter(folder, pivot, detail)
+	end)
 	Kit.promptAnchor(model, CFrame.new(0, 2.2, -4.15))
 
 	local afterParts = Kit.countParts(model)

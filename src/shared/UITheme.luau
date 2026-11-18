@@ -63,6 +63,10 @@ local world = table.freeze({
 	Bottle = "C8FFD8",
 	MoonFace = "F3E6C8",
 	MoonGlow = "F4E8FF",
+	DuskViolet = "A56BFF",
+	Magenta = "C4368A",
+	PlazaCobble = "C8BDD4",
+	PlazaRoad = "9A90A8",
 })
 
 -- Shop chrome from the approved town preview. Muted well teal and night violet.

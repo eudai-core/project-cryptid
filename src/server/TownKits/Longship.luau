@@ -674,8 +674,8 @@ local function buildDetail(parent: Instance, pivot: any)
 		local light = Instance.new("PointLight")
 		light.Name = "LanternLight"
 		light.Color = UITheme.color("Candle")
-		light.Range = 12
-		light.Brightness = 1.15
+		light.Range = 14
+		light.Brightness = 2.4
 		light.Shadows = false
 		light.Parent = wick
 		table.insert(swings, {
@@ -754,17 +754,30 @@ local function buildDetail(parent: Instance, pivot: any)
 	end
 	hullSkin(parent, pivot)
 	for _, side in { -1, 1 } do
-		place(parent, pivot, {
-			name = "RuneBand",
-			size = Vector3.new(18.6, 0.16, 0.16),
-			cf = CFrame.new(side * 6.35, 4.15, 2.1) * CFrame.Angles(0, math.rad(90), 0),
-			material = NEON,
-			color = "FlameBlue",
-			decor = true,
-			shadow = false,
-			shape = Enum.PartType.Cylinder,
-			neonRole = "rune",
-		})
+		for index = 0, 7 do
+			local z = -4.2 + index * 1.7
+			local lean = if index % 2 == 0 then 0.7 else -0.55
+			place(parent, pivot, {
+				name = "RuneGlyph",
+				size = Vector3.new(0.1, 0.85, 0.08),
+				cf = CFrame.new(side * 6.55, 4.2, z) * CFrame.Angles(0, 0, lean),
+				material = NEON,
+				color = "FlameBlue",
+				decor = true,
+				shadow = false,
+				neonRole = "rune",
+			})
+			place(parent, pivot, {
+				name = "RuneGlyph",
+				size = Vector3.new(0.42, 0.08, 0.08),
+				cf = CFrame.new(side * 6.55, 3.85 + (index % 3) * 0.18, z),
+				material = NEON,
+				color = "FlameBlue",
+				decor = true,
+				shadow = false,
+				neonRole = "rune",
+			})
+		end
 	end
 	place(parent, pivot, {
 		name = "KeelInlay",
@@ -942,20 +955,33 @@ function Longship.replace(townFolder: Instance, refs: any): any
 	folder.Name = "Longship"
 	folder.Parent = model
 
-	local shell = addCourses(nil, nil, VAULT, SHELL_COURSES, "Shell", 0.72, WOOD, "ShipWood", false, true, 0)
-	Kit.tryUnion("HowlingHornVault", shell, pivot, folder)
-	addCourses(folder, pivot, BOW_A, SHELL_COURSES, "BowStrake", 0.66, WOOD, "ShipWood", false, true, 0)
-	addCourses(folder, pivot, BOW_B, SHELL_COURSES, "BowStrake", 0.66, WOOD, "ShipWood", false, true, 0)
-	addCourses(folder, pivot, STERN, SHELL_COURSES, "SternStrake", 0.66, WOOD, "ShipWood", false, true, 0)
-	addRibs(folder, pivot, VAULT, { -4, 2, 8 })
-	buildHall(folder, pivot)
-	buildProw(folder, pivot, detail)
-	if detail then
-		buildDetail(folder, pivot)
-		dressChimney(model)
-		playMotion(model)
+	local function phase(stepName: string, fn: () -> ())
+		Kit.step("Longship", stepName, fn)
 	end
-	repositionKept(model, pivot, detail)
+	phase("hull", function()
+		local shell = addCourses(nil, nil, VAULT, SHELL_COURSES, "Shell", 0.72, WOOD, "ShipWood", false, true, 0)
+		Kit.tryUnion("HowlingHornVault", shell, pivot, folder)
+		addCourses(folder, pivot, BOW_A, SHELL_COURSES, "BowStrake", 0.66, WOOD, "ShipWood", false, true, 0)
+		addCourses(folder, pivot, BOW_B, SHELL_COURSES, "BowStrake", 0.66, WOOD, "ShipWood", false, true, 0)
+		addCourses(folder, pivot, STERN, SHELL_COURSES, "SternStrake", 0.66, WOOD, "ShipWood", false, true, 0)
+		addRibs(folder, pivot, VAULT, { -4, 2, 8 })
+	end)
+	phase("hall", function()
+		buildHall(folder, pivot)
+	end)
+	phase("prow", function()
+		buildProw(folder, pivot, detail)
+	end)
+	if detail then
+		phase("detail", function()
+			buildDetail(folder, pivot)
+			dressChimney(model)
+			playMotion(model)
+		end)
+	end
+	phase("sign", function()
+		repositionKept(model, pivot, detail)
+	end)
 
 	local door = findNamed(folder, "DoorAnchor", "Part")
 	for _, prompt in prompts do

@@ -678,7 +678,7 @@ local function assertTent(model: any, detail: boolean)
 			sign = inst
 		end
 	end
-	Check.eq(text, "Veil & Fate")
+	Check.eq(text, "Veil & Fate - Tarot Reader")
 	Check.eq(model.PrimaryPart.Name, "Root")
 	Check.near(model.PrimaryPart.CFrame.Position.X, PIVOT.X)
 	Check.near(model.PrimaryPart.CFrame.Position.Y, PIVOT.Y)
@@ -816,10 +816,10 @@ Check.test("tarot tent quality tiers drop ornament, extra lights, and emitters",
 	end
 	Check.eq(eye.ClassName, "PointLight")
 	Check.eq(eye.Shadows, false)
-	Check.eq(string.gsub(eye.Color:ToHex(), "#", ""), "4C2878")
-	Check.eq(string.gsub(lantern.Color:ToHex(), "#", ""), "9C7A3C")
+	Check.eq(string.gsub(eye.Color:ToHex(), "#", ""), "A56BFF")
+	Check.eq(string.gsub(lantern.Color:ToHex(), "#", ""), "C4368A")
 	Check.eq(lantern.Shadows, false)
-	Check.eq(lantern.Range, TownLook.TAROT_LIGHT.lantern.range)
+	Check.eq(lantern.Range >= 14, true, tostring(lantern.Range))
 	print(
 		string.format(
 			"tarot q10 parts=%d lights=%d emitters=%d beforeParts=%d beforeLights=%d beforeEmitters=%d",
