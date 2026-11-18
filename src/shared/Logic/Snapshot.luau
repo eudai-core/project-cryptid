@@ -59,6 +59,9 @@ end)
 local StealGuard = import("./StealGuard", function()
 	return script.Parent:WaitForChild("StealGuard")
 end)
+local TarotShop = import("./TarotShop", function()
+	return script.Parent:WaitForChild("TarotShop")
+end)
 local Transactions = import("./Transactions", function()
 	return script.Parent:WaitForChild("Transactions")
 end)
@@ -178,6 +181,21 @@ function Snapshot.build(profile: any, lastCredit: number, revision: number, view
 			relicsSpent = view.relicsSpent
 		end
 	end
+	local tarotPaid = false
+	local tarotPolicy = false
+	local tarotReveal = nil
+	if type(view) == "table" then
+		tarotPaid = view.tarotPaidEnabled == true
+		tarotPolicy = view.tarotPolicyAllows == true
+		if type(view.tarotReveal) == "table" then
+			tarotReveal = view.tarotReveal
+		end
+	end
+	local tarot = TarotShop.present(profile, viewNow, {
+		paidEnabled = tarotPaid,
+		policyAllows = tarotPolicy,
+		reveal = tarotReveal,
+	})
 	local rate = Money.round(Income.perSecond(profile) * rebirth)
 	local rite = Rebirth.view(profile)
 	rite.noticeSerial = 0
@@ -239,9 +257,19 @@ function Snapshot.build(profile: any, lastCredit: number, revision: number, view
 		}
 	end
 
+	local wares = {}
+	if type(profile.wares) == "table" and type(profile.wares.counts) == "table" then
+		for id, count in profile.wares.counts do
+			if type(id) == "string" and type(count) == "number" and count > 0 then
+				wares[id] = count
+			end
+		end
+	end
+
 	return {
 		revision = revision,
 		cash = profile.cash,
+		wares = wares,
 		incomePerSecond = Money.round(rate * pass),
 		rebirth = rite,
 		lastCredit = lastCredit,
@@ -289,6 +317,7 @@ function Snapshot.build(profile: any, lastCredit: number, revision: number, view
 		},
 		skills = skills,
 		relics = RelicsView.build(profile, viewNow, relicsBought, relicsSpent),
+		tarot = tarot,
 	}
 end
 

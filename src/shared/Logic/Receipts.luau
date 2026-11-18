@@ -86,7 +86,16 @@ function Receipts.process(
 		return held
 	end
 	local item = lookup(productId)
-	if type(item) ~= "table" or item.kind ~= "bundle" or Monetisation.isLive(item) ~= true then
+	if type(item) ~= "table" then
+		if type(deps.tarot) == "function" then
+			local tarotResult = deps.tarot(receipt, profile, deps)
+			if type(tarotResult) == "table" then
+				return tarotResult
+			end
+		end
+		return held
+	end
+	if item.kind ~= "bundle" or Monetisation.isLive(item) ~= true then
 		return held
 	end
 	if

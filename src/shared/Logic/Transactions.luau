@@ -23,9 +23,6 @@ end)
 local Onboarding = import("../Config/Onboarding", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Onboarding")
 end)
-local Shop = import("../Config/Shop", function()
-	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Shop")
-end)
 local Species = import("../Config/Species", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Species")
 end)
@@ -35,23 +32,11 @@ end)
 local ProfileQuery = import("./ProfileQuery", function()
 	return script.Parent:WaitForChild("ProfileQuery")
 end)
-local ShopLedger = import("./ShopLedger", function()
-	return script.Parent:WaitForChild("ShopLedger")
-end)
-local ShopStock = import("./ShopStock", function()
-	return script.Parent:WaitForChild("ShopStock")
-end)
-local RemoteArgs = import("./RemoteArgs", function()
-	return script.Parent:WaitForChild("RemoteArgs")
-end)
 local SkillEffects = import("./SkillEffects", function()
 	return script.Parent:WaitForChild("SkillEffects")
 end)
 local SkillTree = import("./SkillTree", function()
 	return script.Parent:WaitForChild("SkillTree")
-end)
-local Town = import("../Config/Town", function()
-	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Town")
 end)
 local OnboardingGoals = import("./OnboardingGoals", function()
 	return script.Parent:WaitForChild("OnboardingGoals")
@@ -308,6 +293,16 @@ local function firstEmptyPad(profile: any): number?
 	return nil
 end
 
+function Transactions.grantReading(profile: any, instanceId: string, speciesId: string, now: number): boolean
+	if type(instanceId) ~= "string" or type(speciesId) ~= "string" or Species.get(speciesId) == nil then
+		return false
+	end
+	if not Money.isFinite(now) or now < 0 then
+		return false
+	end
+	return addCryptid(profile, instanceId, speciesId, "reading", math.floor(now))
+end
+
 function Transactions.grantOffering(profile: any, speciesId: string, now: number, newId: string): (boolean, string)
 	if type(speciesId) ~= "string" or Species.get(speciesId) == nil then
 		return false, "species"
@@ -325,61 +320,15 @@ function Transactions.grantOffering(profile: any, speciesId: string, now: number
 end
 
 function Transactions.buyPedlar(
-	profile: any,
-	rotationId: number,
-	slot: number,
-	offers: any,
-	distance: number?,
-	now: number,
-	newId: string
+	_profile: any,
+	_rotationId: number,
+	_slot: number,
+	_offers: any,
+	_distance: number?,
+	_now: number,
+	_newId: string
 ): (boolean, string)
-	if not RemoteArgs.withinDistance(distance, Town.BUY_DISTANCE) then
-		return false, "range"
-	end
-	if profile.onboarding.step < Shop.GATE_STEP then
-		return false, "onboarding"
-	end
-	if type(slot) ~= "number" or slot ~= math.floor(slot) or slot < 1 or slot > Shop.SLOT_COUNT then
-		return false, "slot"
-	end
-	if type(rotationId) ~= "number" or rotationId ~= math.floor(rotationId) then
-		return false, "rotation"
-	end
-	if type(offers) ~= "table" then
-		return false, "slot"
-	end
-	local offer = offers[slot]
-	if type(offer) ~= "table" or type(offer.speciesId) ~= "string" then
-		return false, "slot"
-	end
-	local species = Species.get(offer.speciesId)
-	if species == nil then
-		return false, "species"
-	end
-	if ShopLedger.slotBought(profile.shop.lastRotationId, profile.shop.boughtSlots, rotationId, slot) then
-		return false, "bought"
-	end
-	local price = ShopStock.priceFor(offer.speciesId)
-	if profile.cash + 1e-9 < price then
-		return false, "afford"
-	end
-	if not addCryptid(profile, newId, offer.speciesId, "pedlar", now) then
-		return false, "id"
-	end
-	profile.cryptids[newId].mutation = ""
-	profile.cash = Money.round(profile.cash - price)
-	if profile.shop.lastRotationId ~= rotationId then
-		profile.shop.boughtSlots = ShopLedger.freshSlots()
-	end
-	profile.shop.boughtSlots[slot] = true
-	profile.shop.lastRotationId = rotationId
-	if profile.settings.bindAtOnce == true then
-		local pad = firstEmptyPad(profile)
-		if pad ~= nil then
-			profile.pads[tostring(pad)] = newId
-		end
-	end
-	return true, "ok"
+	return false, "cryptids"
 end
 
 return Transactions

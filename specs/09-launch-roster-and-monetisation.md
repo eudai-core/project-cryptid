@@ -17,6 +17,8 @@
 
 > **Supersedes the v2 change note** (v2 was built on the earlier paid-crate approval, which decision B replaces). Kept from v2: the roster, launch odds, reading passes, Server Luck maths, Essence, the Bestiary NEW stamp, the Mythic sky and retention levers. **Overriding rule kept: no visual may imply a higher tier than the one rolled.**
 >
+> **Change note (v3.2, Wed 18 Nov 2026): EUDAI, the Veil & Fate tent.** Eudai's words: "I want the tarot tent to offer premium and different tiered cases you can purchase for robux this follows the tos because it will show you the percentage chance of each rarity you will get and wont lie about the odds and room for event crates for limited time only." This **supersedes decision B for the tent only**. The 4 Nov text above stays the record of that decision. It conflicts with spec 16's hard limit ("no paid random items except Server Luck") and with spec 10's earn-only banner. Those sentences stay. The tent follows 18 Nov, under the paid-random-items rules already quoted in §6.1: odds of each rarity shown before purchase, `ArePaidRandomItemsRestricted` fail-closed, every outcome pays something, no invented stock and no countdown. Bound Rites and Server Luck are unchanged. Paid prices, developer product ids, paid contents, paid pity counts, and the event window are **TBD, pending Eudai approval**. The paid path ships off (`TarotCases.PAID_TAROT_ENABLED = false`). `Save.DATA_VERSION` stays 10. See §5.7.
+>
 > **v1 note kept (4 Nov):** all [A] assumptions are approved by the owner as starting values, to be tuned from playtest data. New v3 [A]s are marked **[A v3]** and are **not** yet approved.
 
 **Owner:** Cryptid Growth Strategist · **Builder:** Cryptid Systems Architect · **Status:** Draft **v3** (Wed 4 Nov 2026, decision B). v2.2: gift inbox design §15. · **Due:** Mon 9 Nov · **Freeze:** Fri 13 Nov · **Launch:** Fri 20 Nov
@@ -182,8 +184,19 @@ Free cards are stored as **Pale Card / Blood Card tokens**. Tokens are **never s
 - Skipping: free players skip **seen** species; **Skip Animation** (earnable or 99 R$, spec 10 v2 §6) skips everything.
 - **Readings are silent:** they play only for the reader; no server banner or chat line (spec 08 v2.2).
 
+### 5.7 Veil & Fate tent (18 Nov, supersedes §5.6 for this stall)
+The tent is the shop at `town.Hollowmere.VeilAndFate`. The E prompt has no onboarding step gate. Free Pale and Blood decks stay the §5.1 odds and the §5.2 pity (Epic within 40 and within 15). The server rolls. The client sends a case id and a request id.
+
+Paid cases are a config framework, shipped off: Tier I, Tier II, Tier III, Premium, and one limited-time event case. Every paid price and product id is nil. Paid contents and weights are placeholders. The event window in config is 2030-01-01 00:00 UTC through 2030-01-08 00:00 UTC, half-open, so the case is hidden in 2026. The panel prints that end as a UTC date. It does not tick.
+
+Odds on the panel are the same weight table the roll uses, in hundredths of a percent, largest remainder, summing to 100.00%. When the next open is the pity open, the table switches to the filtered weights. The line reads "Guaranteed {Rarity} or better within N opens".
+
+A duplicate inside a rarity that still has an unowned card is redrawn as one of those cards. If every card of that rarity is owned, it becomes that card's §3 cash (placeholders use a placeholder cash of 1). That cash is the disclosed outcome. This replaces §5.6's "duplicates are real cryptids plus Essence" **for the tent**. Essence grants are not part of this stall.
+
+`PolicyService` `ArePaidRandomItemsRestricted` must be an explicit false before a paid card is shown or a paid open is accepted. An error or a timeout refuses, and the next open tries again. A restricted player still has the free decks. A nil product id never prompts. A receipt grants one case, once, and only after the save. The purchase ledger, case counts, and per-family pity are filled when missing inside the version 10 migration. They do not bump `DATA_VERSION`.
+
 ### 5.6 Duplicates
-- Every card is a **real cryptid** added to your inventory, including duplicates. A duplicate can earn on another pad, so no outcome is worthless.
+- Every card is a **real cryptid** added to your inventory, including duplicates. A duplicate can earn on another pad, so no outcome is worthless. The tent in §5.7 does not follow this bullet.
 - **Ritual Essence:** each duplicate from a reading also gives Essence (Common 1 / Uncommon 3 / Rare 10 / Epic 40), spent on **chosen-species** crafts and cosmetics only (spec 10 v2 §7). Pity and Essence are separate and never reset each other.
 - **Satchel full:** the reveal says "**Your satchel is full: +$60,000**" and grants **100% of the §3 price** in cash instead, shown before the card is dismissed.
 
@@ -477,7 +490,12 @@ All looks only, previewed live before purchase ("View Item"), sold as passes (pe
 | `giftedPasses[passKey]` | `{fromUserId, purchaseId}` | Update 1 |
 | `giftsReceived[PurchaseId]` | true | Recipient-side dedupe |
 | `tarot.tokens` | `{pale, blood}` | Free only |
-| `tarot.pity` | `{pale, blood}` | Cards since last Epic |
+| `tarot.pity` | `{pale, blood}` | Cards since last Epic. The tent copies `familyPity.pale` and `familyPity.blood` back onto these two |
+| `tarot.cases` | map of case id to count | Tent inventory. Missing on an older save becomes an empty map inside the v10 step |
+| `tarot.familyPity` | map of family to count | Pale, Blood, and each paid family. Missing pale/blood seed from `tarot.pity` |
+| `tarot.ledger` | PurchaseId to `{productId, grantedAt, caseId, grants}` | Tent receipts. Same idempotency window as cash receipts. A corrupt entry rejects the save |
+| `tarot.known` | set | Placeholder cards already drawn. Cryptid ownership stays on `cryptids` |
+| `tarot.nonce` | number | Mixed into the server roll seed |
 | `tarot.marks[species]` | number | Duplicate marks |
 | `tarot.milestonesClaimed` | set | Grimoire/Tithe/rebirth |
 | `bloodMoon.boughtToday` | `{utcDay, count}` | Daily cap |

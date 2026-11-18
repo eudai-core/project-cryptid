@@ -16,11 +16,14 @@ export type Tokens = {
 	offlineSeconds: number,
 	utcDays: number,
 	utcJumpSeconds: number,
+	clockSeconds: number,
 	openTree: boolean,
 	reducedMotion: string,
 	fresh: boolean,
 	relics: boolean,
 	analytics: boolean,
+	tarot: boolean,
+	tarotPaid: boolean,
 	rebirthReady: boolean,
 	seedV9: boolean,
 	rebirth6: boolean,
@@ -31,11 +34,14 @@ local function empty(): Tokens
 		offlineSeconds = 0,
 		utcDays = 0,
 		utcJumpSeconds = 0,
+		clockSeconds = 0,
 		openTree = false,
 		reducedMotion = "",
 		fresh = false,
 		relics = false,
 		analytics = false,
+		tarot = false,
+		tarotPaid = false,
 		rebirthReady = false,
 		seedV9 = false,
 		rebirth6 = false,
@@ -66,8 +72,21 @@ function QaArgs.parse(args: any): Tokens
 	local index = 3
 	while index <= #parts do
 		local key = parts[index]
+		local clockPlus = string.match(key, "^clock%+(%d+)$")
 		if key == "relics" then
 			tokens.relics = true
+			index += 1
+		elseif key == "tarot" then
+			tokens.tarot = true
+			index += 1
+		elseif key == "tarotpaid" then
+			tokens.tarotPaid = true
+			index += 1
+		elseif clockPlus ~= nil then
+			local amount = whole(clockPlus)
+			if amount ~= nil then
+				tokens.clockSeconds = amount
+			end
 			index += 1
 		elseif key == "analytics" then
 			tokens.analytics = true

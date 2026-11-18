@@ -31,6 +31,8 @@ require("./analytics.spec")
 require("./rebirth.spec")
 require("./pedlar_prompt.spec")
 require("./ui_p0.spec")
+require("./town_shops.spec")
+require("./tarot_tent.spec")
 
 local Check = require("./check")
 Check.finish()
