@@ -25,8 +25,6 @@ local WeepingWell = {}
 
 local MODEL_NAME = "WeepingWell"
 local STONE = UITheme.materials.altar
-local WOOD = UITheme.materials.wood
-local METAL = UITheme.materials.iron
 local GLASS = UITheme.materials.glass
 local NEON = UITheme.materials.neon
 
@@ -36,30 +34,11 @@ local BLOCKOUT = {
 }
 
 local RING_COUNT = 8
-local POST_HEIGHT = 5.5
-local POST_THICKNESS = 0.62
-local POST_SINK = 0.2
-local LINTEL_HEIGHT = 0.52
-local LINTEL_DEPTH = 0.7
-local ROOF_RISE = 1.65
-local ROOF_OVERHANG = 0.45
-local ROOF_CAP = 0.7
-local HANG = 2.05
-local BUCKET_HEIGHT = 1.2
-local BUCKET_DIAMETER = 1.45
-local CHAIN_DIAMETER = 0.16
 local WATER_THICKNESS = 0.4
 local WATER_CENTER_Y = 0.2
 local DRIP_CLEARANCE = 0.22
 local RUNE_Y = 0.55
 local WEEP_Y = -0.72
-
-local function distance(a: any, b: any): number
-	local dx = a.X - b.X
-	local dy = a.Y - b.Y
-	local dz = a.Z - b.Z
-	return math.sqrt(dx * dx + dy * dy + dz * dz)
-end
 
 local function findNamed(root: Instance, name: string, className: string?): any
 	if root.Name == name and (className == nil or root.ClassName == className) then
@@ -89,31 +68,16 @@ local function addGlow(parent: Instance, name: string, range: number, brightness
 	light.Parent = parent
 end
 
-local function cylinderBetween(
-	parent: Instance,
-	pivot: any,
-	name: string,
-	a: any,
-	b: any,
-	diameter: number,
-	material: string,
-	color: string,
-	decor: boolean,
-	shadow: boolean
-)
-	local length = math.max(distance(a, b), 0.05)
-	local mid = Vector3.new((a.X + b.X) * 0.5, (a.Y + b.Y) * 0.5, (a.Z + b.Z) * 0.5)
-	local cf = CFrame.lookAt(mid, b) * CFrame.Angles(0, math.rad(90), 0)
-	place(parent, pivot, {
-		name = name,
-		size = Vector3.new(length, diameter, diameter),
-		cf = cf,
-		material = material,
-		color = color,
-		decor = decor,
-		shadow = shadow,
-		shape = Enum.PartType.Cylinder,
-	})
+local function addSpot(parent: Instance, name: string, range: number, brightness: number)
+	local light = Instance.new("SpotLight")
+	light.Name = name
+	light.Color = UITheme.color("Spirit")
+	light.Range = range
+	light.Brightness = brightness
+	light.Angle = 62
+	light.Face = Enum.NormalId.Top
+	light.Shadows = false
+	light.Parent = parent
 end
 
 local function ringMetrics(): any
@@ -133,12 +97,17 @@ end
 local function buildRing(parent: Instance, pivot: any, metrics: any)
 	for index = 0, RING_COUNT - 1 do
 		local theta = index * (2 * math.pi / RING_COUNT)
-		local at = Vector3.new(math.sin(theta) * metrics.midR, 0, math.cos(theta) * metrics.midR)
+		local even = index % 2 == 0
+		local lift = if even then 0.16 else -0.1
+		local radial = if even then 0.1 else -0.05
+		local radius = metrics.midR + radial
+		local at = Vector3.new(math.sin(theta) * radius, lift, math.cos(theta) * radius)
+		local yaw = if even then 0.07 else -0.05
 		place(parent, pivot, {
 			name = "Voussoir",
-			size = Vector3.new(metrics.width, metrics.height, metrics.thickness),
-			cf = CFrame.lookAt(at, Vector3.new(0, 0, 0)),
-			material = STONE,
+			size = Vector3.new(metrics.width * 0.86, metrics.height * 0.92, metrics.thickness * 0.94),
+			cf = CFrame.lookAt(at, Vector3.new(0, lift, 0)) * CFrame.Angles(0, yaw, 0),
+			material = if even then "Brick" else STONE,
 			color = "Stone",
 		})
 	end
@@ -155,84 +124,6 @@ local function buildBasin(parent: Instance, pivot: any)
 	})
 	water:SetAttribute("TownAnchor", "Basin")
 	addGlow(water, "WaterGlow", TownLook.WELL_WATER_GLOW_RANGE, TownLook.WELL_WATER_GLOW_BRIGHTNESS)
-end
-
-local function buildFrame(parent: Instance, pivot: any, metrics: any)
-	local rim = metrics.height / 2
-	local postCenter = rim - POST_SINK + POST_HEIGHT / 2
-	local postTop = postCenter + POST_HEIGHT / 2
-	local lintelCenter = postTop + LINTEL_HEIGHT / 2
-	local lintelTop = postTop + LINTEL_HEIGHT
-	local lintelLength = metrics.midR * 2 + POST_THICKNESS
-	local roofSpan = lintelLength + ROOF_CAP
-	local run = metrics.face + ROOF_OVERHANG
-	local roofCenter = lintelTop + ROOF_RISE / 2
-	local peak = lintelTop + ROOF_RISE
-	for _, side in { -1, 1 } do
-		place(parent, pivot, {
-			name = "Post",
-			size = Vector3.new(POST_THICKNESS, POST_HEIGHT, POST_THICKNESS),
-			cf = CFrame.new(0, postCenter, side * metrics.midR),
-			material = WOOD,
-			color = "Bark",
-		})
-	end
-	place(parent, pivot, {
-		name = "Lintel",
-		size = Vector3.new(LINTEL_DEPTH, LINTEL_HEIGHT, lintelLength),
-		cf = CFrame.new(0, lintelCenter, 0),
-		material = WOOD,
-		color = "Bark",
-	})
-	for _, side in { -1, 1 } do
-		local yaw = if side > 0 then math.rad(90) else math.rad(-90)
-		place(parent, pivot, {
-			className = "WedgePart",
-			name = "Roof",
-			size = Vector3.new(roofSpan, ROOF_RISE, run),
-			cf = CFrame.new(side * run / 2, roofCenter, 0) * CFrame.Angles(0, yaw, 0),
-			material = WOOD,
-			color = "ShipWood",
-			decor = true,
-			shadow = true,
-		})
-	end
-	place(parent, pivot, {
-		name = "Ridge",
-		size = Vector3.new(0.4, 0.32, roofSpan),
-		cf = CFrame.new(0, peak, 0),
-		material = WOOD,
-		color = "Bark",
-		decor = true,
-		shadow = true,
-	})
-	local bucketTop = postTop - HANG
-	local bucketCenter = bucketTop - BUCKET_HEIGHT / 2
-	place(parent, pivot, {
-		name = "Bucket",
-		size = Vector3.new(BUCKET_HEIGHT, BUCKET_DIAMETER, BUCKET_DIAMETER),
-		cf = CFrame.new(0, bucketCenter, 0) * CFrame.Angles(0, 0, math.rad(90)),
-		material = WOOD,
-		color = "ShipWood",
-		decor = true,
-		shadow = true,
-		shape = Enum.PartType.Cylinder,
-	})
-	for _, side in { -1, 1 } do
-		local z = side * 0.24
-		cylinderBetween(
-			parent,
-			pivot,
-			"Chain",
-			Vector3.new(0, postTop - 0.02, z),
-			Vector3.new(0, bucketTop, z * 0.85),
-			CHAIN_DIAMETER,
-			METAL,
-			"Gold",
-			true,
-			false
-		)
-	end
 end
 
 local function buildOrnament(parent: Instance, pivot: any, metrics: any)
@@ -252,53 +143,34 @@ local function buildOrnament(parent: Instance, pivot: any, metrics: any)
 			shadow = false,
 			neonRole = "rune",
 		})
-		addGlow(rune, "RuneGlow", TownLook.WELL_RUNE_GLOW_RANGE, TownLook.WELL_RUNE_GLOW_BRIGHTNESS)
+		addSpot(rune, "RuneGlow", 11, 0.85)
 		if index % 2 == 0 then
 			local weepAt = outward * weepR + Vector3.new(0, WEEP_Y, 0)
+			local tip = weepAt + outward * 0.9 + Vector3.new(0, 2.7, 0)
 			place(parent, pivot, {
+				className = "WedgePart",
 				name = "Weep",
-				size = Vector3.new(0.2, 1.15, 0.1),
-				cf = CFrame.lookAt(weepAt, Vector3.new(0, WEEP_Y, 0)),
-				material = STONE,
-				color = "Ash",
+				size = Vector3.new(0.26, 2.8, 0.58),
+				cf = CFrame.lookAt(weepAt + Vector3.new(0, 1.2, 0), tip),
+				material = NEON,
+				color = "Spirit",
 				decor = true,
 				shadow = false,
+				neonRole = "rune",
 			})
 		end
 	end
 	local waterTop = WATER_CENTER_Y + WATER_THICKNESS / 2
 	place(parent, pivot, {
 		name = "Glint",
-		size = Vector3.new(0.06, 1.55, 1.55),
-		cf = CFrame.new(0, waterTop + 0.05, 0) * CFrame.Angles(0, 0, math.rad(90)),
+		size = Vector3.new(0.08, 2.4, 2.4),
+		cf = CFrame.new(0, waterTop + 0.06, 0) * CFrame.Angles(0, 0, math.rad(90)),
 		material = NEON,
 		color = "Spirit",
 		decor = true,
 		shadow = false,
 		shape = Enum.PartType.Cylinder,
 		neonRole = "rune",
-	})
-	local rim = metrics.height / 2
-	local postTop = rim - POST_SINK + POST_HEIGHT
-	place(parent, pivot, {
-		name = "Sigil",
-		size = Vector3.new(0.08, 0.48, 0.7),
-		cf = CFrame.new(-(LINTEL_DEPTH / 2 + 0.05), postTop + LINTEL_HEIGHT / 2, 0),
-		material = STONE,
-		color = "Blood",
-		decor = true,
-		shadow = false,
-	})
-	local bucketTop = postTop - HANG
-	place(parent, pivot, {
-		name = "Hoop",
-		size = Vector3.new(0.16, BUCKET_DIAMETER + 0.18, BUCKET_DIAMETER + 0.18),
-		cf = CFrame.new(0, bucketTop - 0.08, 0) * CFrame.Angles(0, 0, math.rad(90)),
-		material = METAL,
-		color = "Gold",
-		decor = true,
-		shadow = false,
-		shape = Enum.PartType.Cylinder,
 	})
 end
 
@@ -320,6 +192,173 @@ local function quietLights(model: Instance)
 	end
 end
 
+local bobs: { any } = {}
+
+local function clearMotion()
+	table.clear(bobs)
+end
+
+local function playMotion(model: Instance)
+	local snapshot = table.clone(bobs)
+	Kit.animate(model, function(_dt, elapsed)
+		for _, wisp in snapshot do
+			local bob = math.sin(elapsed * wisp.speed + wisp.phase) * wisp.amp
+			wisp.part.CFrame = wisp.base * CFrame.new(0, bob, 0)
+		end
+	end)
+end
+
+local function trackBob(part: any, phase: number, amp: number)
+	table.insert(bobs, {
+		part = part,
+		base = part.CFrame,
+		phase = phase,
+		amp = amp,
+		speed = 1.35,
+	})
+end
+
+local function buildFinish(parent: Instance, pivot: any, metrics: any)
+	for course = 0, 7 do
+		for index = 0, 27 do
+			local theta = (index + course * 0.5) * (2 * math.pi / 28)
+			local radius = metrics.midR + 0.06 + (course % 2) * 0.14
+			local y = -metrics.height / 2 + 0.22 + course * 0.38
+			local at = Vector3.new(math.sin(theta) * radius, y, math.cos(theta) * radius)
+			place(parent, pivot, {
+				name = "Brick",
+				size = Vector3.new(0.62, 0.28, 0.74),
+				cf = CFrame.lookAt(at, Vector3.new(0, y, 0)),
+				material = if course % 2 == 0 then "Brick" else STONE,
+				color = "Stone",
+				decor = true,
+				shadow = true,
+			})
+		end
+	end
+	local waterTop = WATER_CENTER_Y + WATER_THICKNESS / 2
+	for index = 0, 7 do
+		local diameter = 1.45 - index * 0.14
+		local y = waterTop + 0.55 + index * 1.55
+		place(parent, pivot, {
+			className = "WedgePart",
+			name = "Cone",
+			size = Vector3.new(diameter, 1.7, diameter),
+			cf = CFrame.new(0, y, 0),
+			material = NEON,
+			color = "Spirit",
+			decor = true,
+			shadow = false,
+			neonRole = "flame",
+		})
+	end
+	for index = 0, 15 do
+		local theta = index * (2 * math.pi / 16)
+		local radius = Town.WELL_WATER_DIAMETER * 0.28
+		local at = Vector3.new(math.sin(theta) * radius, waterTop + 1.15, math.cos(theta) * radius)
+		local wisp = place(parent, pivot, {
+			name = "Wisp",
+			size = Vector3.new(0.28, 0.28, 0.28),
+			cf = CFrame.new(at),
+			material = NEON,
+			color = "Spirit",
+			decor = true,
+			shadow = false,
+			shape = Enum.PartType.Ball,
+			neonRole = "rune",
+		})
+		trackBob(wisp, index * 0.45, 0.42)
+	end
+	for _, inst in parent:GetDescendants() do
+		if inst.Name == "Weep" then
+			trackBob(inst, inst.CFrame.Position.X, 0.22)
+		end
+	end
+end
+
+local function dressSpirits(model: Instance)
+	local drip = findNamed(model, "WellDrip", "Part")
+	if drip == nil then
+		return
+	end
+	for _, inst in drip:GetChildren() do
+		if inst.ClassName ~= "ParticleEmitter" then
+			continue
+		end
+		if inst.Name == "SpiritMist" then
+			Kit.tuneEmitter(inst, {
+				rate = 44,
+				lift = 8,
+				speed = { 3.4, 6.2 },
+				spread = 6,
+				spin = 28,
+				size = 1.65,
+				sizeOut = 0.28,
+				transparency = 0.16,
+				color = "Spirit",
+				direction = Enum.NormalId.Top,
+			})
+			inst:SetAttribute("TownFlame", "extra")
+		elseif inst.Name == "RuneDrift" then
+			Kit.tuneEmitter(inst, {
+				rate = 8,
+				lift = 6.5,
+				speed = { 2.2, 4.4 },
+				spread = 18,
+				spin = 80,
+				size = 0.22,
+				sizeOut = 0.05,
+				transparency = 0.2,
+				color = "Spirit",
+				direction = Enum.NormalId.Top,
+			})
+			inst:SetAttribute("TownFlame", "extra")
+		end
+	end
+	local flare = Instance.new("ParticleEmitter")
+	flare.Name = "WellFlare"
+	flare.Enabled = false
+	flare.Rate = 12
+	if typeof(NumberRange) == "table" then
+		flare.Lifetime = NumberRange.new(1.1, 1.1)
+	else
+		flare.Lifetime = { Min = 1.1, Max = 1.1 }
+	end
+	flare.Parent = drip
+	Kit.tuneEmitter(flare, {
+		rate = 12,
+		lift = 9,
+		speed = { 4, 7 },
+		spread = 12,
+		spin = 40,
+		size = 1.4,
+		sizeOut = 0.2,
+		transparency = 0.1,
+		color = "Spirit",
+		direction = Enum.NormalId.Top,
+	})
+	flare.Enabled = false
+	flare:SetAttribute("TownEffect", "WellFlare")
+	flare:SetAttribute("TownFlame", "extra")
+	flare:SetAttribute("RareCatchFlare", true)
+end
+
+local function dressColumn(model: Instance)
+	local light = findNamed(model, "WellLight", "PointLight")
+	if light ~= nil then
+		light.Range = 22
+		light.Brightness = 1.8
+		light.Color = UITheme.color("Spirit")
+		light.Shadows = false
+	end
+	for _, inst in model:GetDescendants() do
+		if inst.Name == "RuneMark" then
+			inst.Color = UITheme.color("Spirit")
+			inst.Material = Enum.Material.Neon
+		end
+	end
+end
+
 local function stripEmitters(model: Instance)
 	local doomed = {}
 	for _, inst in model:GetDescendants() do
@@ -337,6 +376,7 @@ function WeepingWell.replace(townFolder: Instance, refs: any): any
 	if model == nil or model:GetAttribute("TownKit") == "WeepingWell" then
 		return nil
 	end
+	clearMotion()
 	local level = Kit.resolveQuality(refs)
 	local detail = Kit.detailEnabled(level)
 	local beforeParts = Kit.countParts(model)
@@ -386,14 +426,18 @@ function WeepingWell.replace(townFolder: Instance, refs: any): any
 	local metrics = ringMetrics()
 	buildRing(folder, pivot, metrics)
 	buildBasin(folder, pivot)
-	buildFrame(folder, pivot, metrics)
 	if detail then
 		buildOrnament(folder, pivot, metrics)
+		buildFinish(folder, pivot, metrics)
 	end
 	seatDrip(model, pivot)
-	if not detail then
+	if detail then
+		dressSpirits(model)
+		playMotion(model)
+	else
 		stripEmitters(model)
 	end
+	dressColumn(model)
 	quietLights(model)
 
 	local centre = findNamed(model, "Centre", "Part")
