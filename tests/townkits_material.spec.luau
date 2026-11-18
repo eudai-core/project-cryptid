@@ -6,6 +6,8 @@ local fs = require("@lune/fs")
 local luau = require("@lune/luau")
 
 local Check = require("./check")
+local RobloxEnum = require("./roblox_enum")
+local enumTypeof = RobloxEnum.typeof(typeof)
 local TownLook = require("../src/shared/Config/TownLook")
 local TownMaterials = require("../src/shared/Config/TownMaterials")
 
@@ -320,19 +322,8 @@ local roblox = {
 			)
 		end,
 	},
-	Enum = setmetatable({}, {
-		__index = function(self, enumName)
-			local bucket = setmetatable({}, {
-				__index = function(items, itemName)
-					local item = { Name = itemName, EnumType = enumName, Value = 0 }
-					rawset(items, itemName, item)
-					return item
-				end,
-			})
-			rawset(self, enumName, bucket)
-			return bucket
-		end,
-	}),
+	Enum = RobloxEnum.library(nil),
+	typeof = enumTypeof,
 	Instance = {
 		new = function(className: string)
 			local inst = makeInstance(className)
@@ -414,7 +405,7 @@ local function loadModule(path: string): any
 			error = error,
 			assert = assert,
 			type = type,
-			typeof = typeof,
+			typeof = enumTypeof,
 			pairs = pairs,
 			ipairs = ipairs,
 			next = next,
@@ -469,10 +460,11 @@ local function hexOf(inst: any): string
 end
 
 local function materialOf(inst: any): string
-	if type(inst.Material) == "table" then
-		return inst.Material.Name
+	local name = RobloxEnum.name(inst.Material)
+	if name == nil then
+		return tostring(inst.Material)
 	end
-	return tostring(inst.Material)
+	return name
 end
 
 local function countKind(root: any, className: string): number

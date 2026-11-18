@@ -7,6 +7,8 @@ local luau = require("@lune/luau")
 local serde = require("@lune/serde")
 
 local Check = require("./check")
+local RobloxEnum = require("./roblox_enum")
+local enumTypeof = RobloxEnum.typeof(typeof)
 local Town = require("../src/shared/Config/Town")
 local TownLook = require("../src/shared/Config/TownLook")
 local UITheme = require("../src/shared/UITheme")
@@ -534,22 +536,13 @@ local function installRoblox(): any
 				return { X = x, Y = y }
 			end,
 		},
-		Enum = setmetatable({}, {
-			__index = function(self, enumName)
-				local bucket = setmetatable({}, {
-					__index = function(items, itemName)
-						if enumName == "Material" and VALID_MATERIAL[itemName] ~= true then
-							error(tostring(itemName) .. " is not a valid member of Enum.Material", 2)
-						end
-						local item = { Name = itemName, EnumType = enumName, Value = 0 }
-						rawset(items, itemName, item)
-						return item
-					end,
-				})
-				rawset(self, enumName, bucket)
-				return bucket
-			end,
-		}),
+		Enum = RobloxEnum.library(function(enumName: string, itemName: string): boolean
+			if enumName ~= "Material" then
+				return true
+			end
+			return VALID_MATERIAL[itemName] == true
+		end),
+		typeof = enumTypeof,
 		Instance = {
 			new = function(className: string)
 				return makeInstance(className)
@@ -672,7 +665,7 @@ local function loadModule(path: string): any
 			error = error,
 			assert = assert,
 			type = type,
-			typeof = typeof,
+			typeof = enumTypeof,
 			pairs = pairs,
 			ipairs = ipairs,
 			next = next,
@@ -746,11 +739,7 @@ local function descendants(root: any): { any }
 end
 
 local function materialName(inst: any): string?
-	local material = inst.Material
-	if type(material) == "table" then
-		return material.Name
-	end
-	return nil
+	return RobloxEnum.name(inst.Material)
 end
 
 local function named(root: any, name: string): any
@@ -929,7 +918,7 @@ Check.test("v3 night is purple mist with budgeted bloom and a low-quality fallba
 	Check.eq(gradeBlue > gradeRed, true, "grade tint is violet")
 	local skyRed, skyGreen, skyBlue = channels(TownLook.SKY_ATMOSPHERE_COLOR)
 	Check.eq(skyRed > skyGreen and skyBlue > skyGreen, true, "horizon violet")
-	Check.eq(skyBlue > 180 and skyRed > 160, true, "horizon is a bright dusk")
+	Check.eq(skyBlue < 180 and skyRed < 170, true, "horizon is not near-white")
 	local shiftRed, shiftGreen, shiftBlue = channels(TownLook.SKY_COLOR_SHIFT_TOP)
 	Check.eq(shiftRed > shiftGreen and shiftBlue > shiftGreen, true, "zenith shift")
 	Check.eq(shiftBlue > 120, true, "zenith shift is violet")
@@ -2367,6 +2356,15 @@ Check.test("every registered kit builds on the town when UnionAsync returns an a
 			string.find(tostring(highFolder:GetAttribute("CensusLine")), "[TownCensus] quality=10 ", 1, true) ~= nil,
 			true
 		)
+		local slate = installRoblox().Enum.Material.Slate
+		Check.eq(type(slate), "userdata")
+		Check.eq(installRoblox().typeof(slate), "EnumItem")
+		Check.eq(slate.Name, "Slate")
+		Check.eq(lowFolder:GetAttribute("CensusTinted") > 0, true, "q1 tinted")
+		Check.eq(highFolder:GetAttribute("CensusTinted") > 0, true, "q10 tinted")
+		Check.eq(highFolder:GetAttribute("CensusMoss") > 0, true, "q10 moss")
+		Check.eq(highFolder:GetAttribute("CensusIvy") > 0, true, "q10 ivy")
+		Check.eq(highFolder:GetAttribute("CensusRoots") > 0, true, "q10 roots")
 		Check.eq(lowFolder:GetAttribute("CensusParts") > 0, true)
 		Check.eq(highFolder:GetAttribute("CensusLights") <= TownLook.LIGHT_CAP, true)
 		Check.eq(highFolder:GetAttribute("CensusEmitters") <= TownLook.EMITTER_CAP, true)
@@ -2655,6 +2653,13 @@ Check.test("town census line and attributes survive the build", function()
 	local line = root:GetAttribute("CensusLine")
 	Check.eq(type(line) == "string", true, tostring(line))
 	Check.eq(string.find(line, "[TownCensus] quality=10 ", 1, true) ~= nil, true, line)
+	Check.eq(string.find(line, "tinted=", 1, true) ~= nil, true, line)
+	Check.eq(string.find(line, "moss=", 1, true) ~= nil, true, line)
+	Check.eq(string.find(line, "ivy=", 1, true) ~= nil, true, line)
+	Check.eq(string.find(line, "roots=", 1, true) ~= nil, true, line)
+	Check.eq(root:GetAttribute("CensusTinted") > 0, true, tostring(root:GetAttribute("CensusTinted")))
+	Check.eq(root:GetAttribute("CensusMoss") > 0, true, tostring(root:GetAttribute("CensusMoss")))
+	Check.eq(root:GetAttribute("CensusIvy") > 0, true, tostring(root:GetAttribute("CensusIvy")))
 	Check.eq(root:GetAttribute("CensusQuality"), 10)
 	Check.eq(root:GetAttribute("CensusParts") > 0, true, tostring(root:GetAttribute("CensusParts")))
 	Check.eq(root:GetAttribute("CensusLights") > 0, true, tostring(root:GetAttribute("CensusLights")))

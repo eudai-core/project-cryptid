@@ -1381,9 +1381,23 @@ publishCensus = function(town: Folder)
 	local enabledLights = 0
 	local emitters = 0
 	local highlights = 0
+	local tinted = 0
+	local moss = 0
+	local ivy = 0
+	local roots = 0
 	local kitParts: { [string]: number } = {}
 	for _, inst in town:GetDescendants() do
 		local className = inst.ClassName
+		if inst:GetAttribute("TownMaterialPass") == true then
+			tinted += 1
+		end
+		if inst.Name == "MossPatch" then
+			moss += 1
+		elseif inst.Name == "IvyWedge" or inst.Name == "IvyLeaf" then
+			ivy += 1
+		elseif inst.Name == "Gnarl" then
+			roots += 1
+		end
 		if CENSUS_PART[className] == true then
 			parts += 1
 			local cursor = inst.Parent
@@ -1407,13 +1421,17 @@ publishCensus = function(town: Folder)
 		end
 	end
 	local line = string.format(
-		"[TownCensus] quality=%d parts=%d lights=%d enabledLights=%d emitters=%d highlights=%d",
+		"[TownCensus] quality=%d parts=%d lights=%d enabledLights=%d emitters=%d highlights=%d tinted=%d moss=%d ivy=%d roots=%d",
 		quality,
 		parts,
 		lights,
 		enabledLights,
 		emitters,
-		highlights
+		highlights,
+		tinted,
+		moss,
+		ivy,
+		roots
 	)
 	warn(line)
 	local names = {}
@@ -1436,6 +1454,10 @@ publishCensus = function(town: Folder)
 	town:SetAttribute("CensusEnabledLights", enabledLights)
 	town:SetAttribute("CensusEmitters", emitters)
 	town:SetAttribute("CensusHighlights", highlights)
+	town:SetAttribute("CensusTinted", tinted)
+	town:SetAttribute("CensusMoss", moss)
+	town:SetAttribute("CensusIvy", ivy)
+	town:SetAttribute("CensusRoots", roots)
 	town:SetAttribute("CensusLine", line)
 end
 

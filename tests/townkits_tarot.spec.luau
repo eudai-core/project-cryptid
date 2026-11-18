@@ -6,6 +6,8 @@ local fs = require("@lune/fs")
 local luau = require("@lune/luau")
 
 local Check = require("./check")
+local RobloxEnum = require("./roblox_enum")
+local enumTypeof = RobloxEnum.typeof(typeof)
 
 local function makeInstance(className: string): any
 	local inst = {
@@ -351,19 +353,8 @@ local roblox = {
 			)
 		end,
 	},
-	Enum = setmetatable({}, {
-		__index = function(self, enumName)
-			local bucket = setmetatable({}, {
-				__index = function(items, itemName)
-					local item = { Name = itemName, EnumType = enumName, Value = 0 }
-					rawset(items, itemName, item)
-					return item
-				end,
-			})
-			rawset(self, enumName, bucket)
-			return bucket
-		end,
-	}),
+	Enum = RobloxEnum.library(nil),
+	typeof = enumTypeof,
 	Instance = {
 		new = function(className: string)
 			return makeInstance(className)
@@ -433,7 +424,7 @@ local function loadModule(path: string): any
 			error = error,
 			assert = assert,
 			type = type,
-			typeof = typeof,
+			typeof = enumTypeof,
 			pairs = pairs,
 			ipairs = ipairs,
 			next = next,
@@ -630,7 +621,7 @@ local function assertTent(model: any, detail: boolean)
 					and localPos.Y < 5.3
 				Check.eq(blocksDoor, false, inst.Name .. " blocks the door")
 			end
-			local materialName = if type(inst.Material) == "table" then inst.Material.Name else nil
+			local materialName = RobloxEnum.name(inst.Material)
 			if materialName == "Neon" then
 				Check.eq(TownLook.NEON_ROLES[inst:GetAttribute("NeonRole")] == true, true, inst.Name)
 			end

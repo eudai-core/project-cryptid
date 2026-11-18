@@ -133,8 +133,14 @@ function Kit.clearGeometryCache()
 end
 
 local function isBasePart(value: any): boolean
+	if typeof(value) == "Instance" then
+		local ok, matched = pcall(function()
+			return value:IsA("BasePart")
+		end)
+		return ok and matched == true
+	end
 	if type(value) ~= "table" then
-		return typeof(value) == "Instance"
+		return false
 	end
 	if type(value.SetAttribute) ~= "function" or type(value.ClassName) ~= "string" then
 		return false

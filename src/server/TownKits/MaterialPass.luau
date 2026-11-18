@@ -141,11 +141,17 @@ end
 
 local function materialName(part: any): string
 	local material = part.Material
-	if type(material) == "table" and type(material.Name) == "string" then
-		return material.Name
-	end
 	if type(material) == "string" then
 		return material
+	end
+	local kind = typeof(material)
+	if kind == "EnumItem" or type(material) == "table" or type(material) == "userdata" then
+		local ok, name = pcall(function()
+			return material.Name
+		end)
+		if ok and type(name) == "string" then
+			return name
+		end
 	end
 	return ""
 end
@@ -175,13 +181,19 @@ end
 
 local function positionOf(part: any): any
 	local cf = part.CFrame
-	if type(cf) ~= "table" and typeof(cf) ~= "CFrame" then
+	if typeof(cf) ~= "CFrame" and type(cf) ~= "table" and type(cf) ~= "userdata" then
 		return nil
 	end
-	if cf.Position ~= nil then
+	local okPos, pos = pcall(function()
 		return cf.Position
+	end)
+	if okPos and pos ~= nil then
+		return pos
 	end
-	if cf.X ~= nil then
+	local okX, x = pcall(function()
+		return cf.X
+	end)
+	if okX and type(x) == "number" then
 		return Vector3.new(cf.X, cf.Y, cf.Z)
 	end
 	return nil
