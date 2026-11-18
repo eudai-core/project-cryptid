@@ -27,8 +27,10 @@ local Names = require(Shared:WaitForChild("Config"):WaitForChild("Remotes")) :: 
 local ProfileQuery = require(Shared:WaitForChild("Logic"):WaitForChild("ProfileQuery")) :: any
 local PolicyGate = require(Shared:WaitForChild("Logic"):WaitForChild("PolicyGate")) :: any
 local Shop = require(Shared:WaitForChild("Config"):WaitForChild("Shop")) :: any
+local Monetisation = require(Shared:WaitForChild("Config"):WaitForChild("Monetisation")) :: any
 local TarotAccess = require(Shared:WaitForChild("Logic"):WaitForChild("TarotAccess")) :: any
 local TarotCases = require(Shared:WaitForChild("Config"):WaitForChild("TarotCases")) :: any
+local TarotSample = require(Shared:WaitForChild("Logic"):WaitForChild("TarotSample")) :: any
 local TarotShop = require(Shared:WaitForChild("Logic"):WaitForChild("TarotShop")) :: any
 local ShopStock = require(Shared:WaitForChild("Logic"):WaitForChild("ShopStock")) :: any
 local Town = require(Shared:WaitForChild("Config"):WaitForChild("Town")) :: any
@@ -187,7 +189,7 @@ local function publish(session: any, credit: number)
 		relicsBought = session.relicsBought or 0,
 		relicsSpent = session.relicsSpent or 0,
 		tarotPaidEnabled = TarotAccess.enabled(
-			TarotCases.PAID_TAROT_ENABLED,
+			Monetisation.PAID_TAROT_ENABLED,
 			RunService:IsStudio(),
 			StudioQaHooks.args()
 		),
@@ -570,11 +572,12 @@ local function markShopOpen(session: any, shopId: string)
 	session.player:SetAttribute(ShopAnchors.OPEN_TOKEN, session.townShopToken)
 end
 
-local function noteShop(session: any, message: any)
+local function noteShop(session: any, shopId: string, message: any)
 	if type(message) ~= "string" or message == "" then
 		return
 	end
 	session.townShopNotice += 1
+	session.player:SetAttribute(ShopAnchors.NOTICE_SHOP, shopId)
 	session.player:SetAttribute(ShopAnchors.NOTICE, message)
 	session.player:SetAttribute(ShopAnchors.NOTICE_TOKEN, session.townShopNotice)
 end
@@ -738,7 +741,7 @@ local function onShopBuy(session: any, shopId: any, itemId: any, requestId: any,
 	end
 	local result =
 		TownShop.buy(session.profile, parsedShop, parsedItem, parsedRequest, parsedQty, shopGate(session, parsedShop))
-	noteShop(session, result.message)
+	noteShop(session, parsedShop, result.message)
 	commit(session, result.code == "ok")
 end
 
@@ -758,7 +761,7 @@ local function onShopSell(session: any, shopId: any, itemId: any, requestId: any
 	end
 	local result =
 		TownShop.sell(session.profile, parsedShop, parsedItem, parsedRequest, parsedQty, shopGate(session, parsedShop))
-	noteShop(session, result.message)
+	noteShop(session, parsedShop, result.message)
 	commit(session, result.code == "ok")
 end
 
@@ -864,7 +867,7 @@ local function onTarotOpen(session: any, caseId: any, requestId: any)
 	if type(result.reveal) == "table" then
 		session.tarotReveal = result.reveal
 	end
-	noteShop(session, result.message)
+	noteShop(session, TarotCases.SHOP_ID, result.message)
 	if result.code == "ok" then
 		commit(session, true)
 	elseif result.code == "replay" then
@@ -883,7 +886,7 @@ local function onTarotBuy(session: any, caseId: any, requestId: any)
 		return
 	end
 	local decision = TarotShop.buy(session.profile, caseId, requestId, tarotContext(session))
-	noteShop(session, decision.message)
+	noteShop(session, TarotCases.SHOP_ID, decision.message)
 	TarotService.prompt(session.player, decision)
 end
 
@@ -1147,18 +1150,10 @@ function PlayerSession.onPlayer(player: Player): boolean
 	end
 
 	QaGrant.apply(profile, player.UserId)
-	local tarotSample = false
-	if
-		StudioQaHooks.tarotSample() == true
-		and type(profile.tarot) == "table"
-		and type(profile.tarot.tokens) == "table"
-	then
-		local pale = profile.tarot.tokens.pale
-		if type(pale) == "number" and pale + TarotCases.STUDIO_SAMPLE <= TarotCases.CASE_CAP then
-			profile.tarot.tokens.pale = pale + TarotCases.STUDIO_SAMPLE
-			tarotSample = true
-		end
-	end
+	local inStudio = RunService:IsStudio()
+	local grantedPale = TarotSample.grant(profile, "pale", inStudio, StudioQaHooks.tarotSample())
+	local grantedBlood = TarotSample.grant(profile, "blood", inStudio, StudioQaHooks.tarotBloodSample())
+	local tarotSample = grantedPale == true or grantedBlood == true
 
 	local lockExpiresAt = os.time() + Save.LOCK_TTL_SECONDS
 	if type(loaded.lockExpiresAt) == "number" then

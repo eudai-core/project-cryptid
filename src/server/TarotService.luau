@@ -8,7 +8,7 @@ local MonetisationService = require(script.Parent:WaitForChild("MonetisationServ
 local StudioQaHooks = require(script.Parent:WaitForChild("Dev"):WaitForChild("StudioQaHooks"))
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
-local TarotCases = require(Shared:WaitForChild("Config"):WaitForChild("TarotCases"))
+local Monetisation = require(Shared:WaitForChild("Config"):WaitForChild("Monetisation"))
 local TarotAccess = require(Shared:WaitForChild("Logic"):WaitForChild("TarotAccess"))
 
 local TarotService = {}
@@ -17,7 +17,7 @@ function TarotService.context(session: any, gate: any): any
 	return {
 		now = StudioQaHooks.unixNow(),
 		entropy = os.time(),
-		paidEnabled = TarotAccess.enabled(TarotCases.PAID_TAROT_ENABLED, RunService:IsStudio(), StudioQaHooks.args()),
+		paidEnabled = TarotAccess.enabled(Monetisation.PAID_TAROT_ENABLED, RunService:IsStudio(), StudioQaHooks.args()),
 		policyAllows = session.paidRandom == true,
 		gate = gate,
 		rng = function(seed: number)

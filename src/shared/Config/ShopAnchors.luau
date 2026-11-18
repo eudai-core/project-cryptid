@@ -79,6 +79,7 @@ local ShopAnchors = {
 	OPEN_ID = "TownShopId",
 	OPEN_TOKEN = "TownShopToken",
 	NOTICE = "TownShopNotice",
+	NOTICE_SHOP = "TownShopNoticeShop",
 	NOTICE_TOKEN = "TownShopNoticeToken",
 }
 

@@ -9,6 +9,8 @@
 -- `relics` opens the shop gate once the rite has reached it.
 -- `rebirthready` fills the tier-1 rite requirements. Studio only. No remote.
 -- `seedv9` writes a v9 save before load. `rebirth6` writes a v10 save at six rites.
+-- `tarot` marks a Pale deck sample. `tarotblood` marks a Blood deck sample.
+-- `tarotpaid` marks the paid tent framework. Callers still require Studio.
 
 local QaArgs = {}
 
@@ -23,6 +25,7 @@ export type Tokens = {
 	relics: boolean,
 	analytics: boolean,
 	tarot: boolean,
+	tarotBlood: boolean,
 	tarotPaid: boolean,
 	rebirthReady: boolean,
 	seedV9: boolean,
@@ -41,6 +44,7 @@ local function empty(): Tokens
 		relics = false,
 		analytics = false,
 		tarot = false,
+		tarotBlood = false,
 		tarotPaid = false,
 		rebirthReady = false,
 		seedV9 = false,
@@ -78,6 +82,9 @@ function QaArgs.parse(args: any): Tokens
 			index += 1
 		elseif key == "tarot" then
 			tokens.tarot = true
+			index += 1
+		elseif key == "tarotblood" then
+			tokens.tarotBlood = true
 			index += 1
 		elseif key == "tarotpaid" then
 			tokens.tarotPaid = true
@@ -132,6 +139,13 @@ function QaArgs.parse(args: any): Tokens
 		end
 	end
 	return tokens
+end
+
+function QaArgs.tarotBlood(isStudio: boolean, args: any): boolean
+	if isStudio ~= true then
+		return false
+	end
+	return QaArgs.parse(args).tarotBlood == true
 end
 
 function QaArgs.seedV9(isStudio: boolean, args: any): boolean
