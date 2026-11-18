@@ -44,7 +44,6 @@ local FINE_BRICK = 0.24
 local COARSE_COURSE = 0.82
 local COARSE_BRICK = 1.12
 local TONES = { "Wall", "Soot", "Void", "Ash", "Stone", "Wall", "Soot" }
-local ROMAN = { "XII", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI" }
 local CORNERS = {
 	{ -2.45, -2.45 },
 	{ 2.45, -2.45 },
@@ -115,12 +114,6 @@ local function halfWidth(y: number): number
 end
 
 local function toneAt(course: number, index: number): string
-	if (course + index) % 17 == 0 then
-		return "Blood"
-	end
-	if (course * 5 + index) % 23 == 0 then
-		return "Moss"
-	end
 	local pick = (course * 5 + index) % #TONES
 	return TONES[pick + 1]
 end
@@ -461,57 +454,34 @@ local function buildDial(parent: Instance, pivot: any): any
 		name = "DialHalo",
 		size = Vector3.new(0.12, 4.8, 4.8),
 		cf = CFrame.new(0, CLOCK_Y, -2.88) * CFrame.Angles(0, math.rad(90), 0),
-		material = NEON,
-		color = "DuskViolet",
+		material = BONE,
+		color = "NightSky",
 		decor = true,
 		shadow = false,
 		shape = Enum.PartType.Cylinder,
-		neonRole = "sign",
 	})
 	local face = place(parent, pivot, {
 		name = "Dial",
 		size = Vector3.new(0.16, 4.15, 4.15),
 		cf = CFrame.new(0, CLOCK_Y, -3.02) * CFrame.Angles(0, math.rad(90), 0),
-		material = NEON,
-		color = "DuskViolet",
+		material = BONE,
+		color = "NightSky",
 		decor = true,
 		shadow = false,
 		shape = Enum.PartType.Cylinder,
-		neonRole = "sign",
 	})
-	local gui = Instance.new("SurfaceGui")
-	gui.Name = "DialGui"
-	gui.Face = Enum.NormalId.Right
-	gui.LightInfluence = 0
-	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-	gui.PixelsPerStud = 28
-	gui.Parent = face
 	for n = 0, 11 do
 		local theta = n * (math.pi / 6)
-		local label = Instance.new("TextLabel")
-		label.Name = "Numeral"
-		label.BackgroundTransparency = 1
-		label.AnchorPoint = Vector2.new(0.5, 0.5)
-		label.Text = ROMAN[n + 1]
-		label.TextColor3 = UITheme.color("Gold")
-		label.TextSize = 15
-		label.TextScaled = false
-		label.Size = UDim2.fromScale(0.2, 0.16)
-		label.Position = UDim2.fromScale(0.5 + math.sin(theta) * 0.32, 0.5 - math.cos(theta) * 0.32)
-		label.Parent = gui
-		local cap = Instance.new("UITextSizeConstraint")
-		cap.MinTextSize = 10
-		cap.MaxTextSize = 16
-		cap.Parent = label
 		place(parent, pivot, {
-			name = "HourMark",
-			size = Vector3.new(0.12, 0.12, 0.12),
-			cf = hubLocal * CFrame.new(math.sin(theta) * 2.15, math.cos(theta) * 2.15, -0.02),
+			name = "Numeral",
+			size = Vector3.new(0.16, 0.28, 0.06),
+			cf = hubLocal
+				* CFrame.new(math.sin(theta) * 1.72, math.cos(theta) * 1.72, -0.14)
+				* CFrame.Angles(0, 0, -theta),
 			material = METAL,
-			color = "Gold",
+			color = "Void",
 			decor = true,
 			shadow = false,
-			shape = Enum.PartType.Ball,
 		})
 	end
 	for n = 0, 59 do
@@ -524,7 +494,7 @@ local function buildDial(parent: Instance, pivot: any): any
 					* CFrame.new(math.sin(theta) * 1.78, math.cos(theta) * 1.78, -0.04)
 					* CFrame.Angles(0, 0, -theta),
 				material = METAL,
-				color = "Gold",
+				color = "Soot",
 				decor = true,
 				shadow = false,
 			})
@@ -539,7 +509,7 @@ local function buildDial(parent: Instance, pivot: any): any
 				* CFrame.new(math.sin(theta) * 2.22, math.cos(theta) * 2.22, -0.02)
 				* CFrame.Angles(0, 0, -theta),
 			material = METAL,
-			color = "GoldBright",
+			color = "Soot",
 			decor = true,
 			shadow = false,
 		})
@@ -547,18 +517,18 @@ local function buildDial(parent: Instance, pivot: any): any
 	local hour = place(parent, pivot, {
 		name = "HourHand",
 		size = Vector3.new(0.1, 0.85, 0.06),
-		cf = hubLocal * CFrame.new(0, 0.35, -0.08),
+		cf = hubLocal * CFrame.new(0, 0.35, -0.16),
 		material = METAL,
-		color = "Gold",
+		color = "Void",
 		decor = true,
 		shadow = false,
 	})
 	local minute = place(parent, pivot, {
 		name = "MinuteHand",
 		size = Vector3.new(0.07, 1.15, 0.05),
-		cf = hubLocal * CFrame.new(0, 0.5, -0.12),
-		material = BONE,
-		color = "Bone",
+		cf = hubLocal * CFrame.new(0, 0.5, -0.2),
+		material = METAL,
+		color = "Void",
 		decor = true,
 		shadow = false,
 	})
@@ -583,7 +553,7 @@ local function buildDial(parent: Instance, pivot: any): any
 		shape = Enum.PartType.Ball,
 		neonRole = "eye",
 	})
-	local faceGlow = addGlow(pupil, "FaceGlow", 16, 2.2, "DuskViolet", false)
+	local faceGlow = addGlow(face, "FaceGlow", 10, 0.45, "DuskViolet", false)
 	local rod = place(parent, pivot, {
 		name = "PendulumRod",
 		size = Vector3.new(0.06, 2.4, 0.06),
@@ -610,8 +580,8 @@ local function buildDial(parent: Instance, pivot: any): any
 		faceGlow = faceGlow,
 		hour = hour,
 		minute = minute,
-		hourLocal = CFrame.new(0, 0.35, -0.08),
-		minuteLocal = CFrame.new(0, 0.5, -0.12),
+		hourLocal = CFrame.new(0, 0.35, -0.16),
+		minuteLocal = CFrame.new(0, 0.5, -0.2),
 		pendPivot = pivot * CFrame.new(0, 8.15, -3.18),
 		rod = rod,
 		bob = bob,
@@ -1021,11 +991,14 @@ local function paintFace(model: Instance, rig: any, blood: boolean)
 		return
 	end
 	if rig.dial ~= nil then
-		rig.dial.Color = color
-		rig.dial.Material = Enum.Material.Neon
+		rig.dial.Material = Enum.Material.SmoothPlastic
+		rig.dial.Color = UITheme.color("NightSky")
+		rig.dial:SetAttribute("NeonRole", nil)
 	end
 	if rig.halo ~= nil then
-		rig.halo.Color = color
+		rig.halo.Material = Enum.Material.SmoothPlastic
+		rig.halo.Color = UITheme.color("NightSky")
+		rig.halo:SetAttribute("NeonRole", nil)
 	end
 	if rig.core ~= nil then
 		rig.core.Color = color
