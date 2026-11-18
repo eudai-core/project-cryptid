@@ -67,6 +67,18 @@ local TownLook = {
 		incense = table.freeze({ rate = 5, life = 2.4, speed = 0.5, size = 0.55, spread = 12 }),
 		mote = table.freeze({ rate = 4, life = 2.6, speed = 0.35, size = 0.14, spread = 36 }),
 	}),
+	PLAZA_LIGHT = table.freeze({
+		lantern = table.freeze({ range = 14, brightness = 0.85 }),
+		crystal = table.freeze({ range = 6, brightness = 0.42 }),
+		brazier = table.freeze({ range = 7, brightness = 0.34 }),
+	}),
+	PLAZA_VFX = table.freeze({
+		lift = 0.15,
+		fog = table.freeze({ rate = 5, life = 2.2, speed = 0.22, size = 3.6, spread = 10 }),
+		firefly = table.freeze({ rate = 3, life = 2.2, speed = 0.55, size = 0.16, spread = 42 }),
+		mote = table.freeze({ rate = 4, life = 2.4, speed = 0.28, size = 0.14, spread = 32 }),
+		brazier = table.freeze({ rate = 6, life = 1.1, speed = 1.15, size = 0.42, spread = 14 }),
+	}),
 	CROW_COUNT = 3,
 	NEON_ROLES = table.freeze({
 		flame = true,
