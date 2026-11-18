@@ -240,12 +240,36 @@ local function identity(): any
 	return newCFrame(0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1)
 end
 
+local function colorFromHex(hex: string): any
+	local raw = string.gsub(string.upper(hex), "#", "")
+	local function channel(startAt: number): number
+		return (tonumber(string.sub(raw, startAt, startAt + 1), 16) or 0) / 255
+	end
+	local color = {
+		R = channel(1),
+		G = channel(3),
+		B = channel(5),
+	}
+	function color:ToHex(): string
+		local function byte(value: number): number
+			return math.clamp(math.floor(value * 255 + 0.5), 0, 255)
+		end
+		return string.format("#%02X%02X%02X", byte(self.R), byte(self.G), byte(self.B))
+	end
+	return setmetatable(color, {
+		__index = function(_, key)
+			if key == "Hex" then
+				error("Hex is not a valid member of Color3", 2)
+			end
+			return nil
+		end,
+	})
+end
+
 local services = {}
 local roblox = {
 	Color3 = {
-		fromHex = function(hex: string)
-			return { Hex = hex }
-		end,
+		fromHex = colorFromHex,
 	},
 	Vector3 = {
 		new = function(x: number?, y: number?, z: number?)
@@ -528,7 +552,9 @@ local function assertKit(model: any)
 			kitParts += 1
 			Check.eq(inst.Anchored, true, inst.Name)
 			Check.eq(inst.Transparency or 0, 0, inst.Name)
-			local hex = if inst.Color ~= nil then inst.Color.Hex else nil
+			local hex = if inst.Color ~= nil and type(inst.Color.ToHex) == "function"
+				then string.gsub(inst.Color:ToHex(), "#", "")
+				else nil
 			Check.eq(BANNED[hex] == true, false, tostring(inst.Name) .. " bright " .. tostring(hex))
 			if inst:GetAttribute("TownDecor") == true then
 				Check.eq(inst.CanCollide, false, inst.Name)
@@ -798,7 +824,11 @@ Check.test("kit animation is one Lune-safe helper", function()
 	for _, inst in town:GetDescendants() do
 		if inst.ClassName == "PointLight" then
 			Check.eq(inst.Shadows, false, inst.Name)
-			if inst.Color ~= nil and inst.Color.Hex == "FFB36B" then
+			if
+				inst.Color ~= nil
+				and type(inst.Color.ToHex) == "function"
+				and string.gsub(inst.Color:ToHex(), "#", "") == "FFB36B"
+			then
 				candle = true
 			end
 		end

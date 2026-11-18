@@ -229,11 +229,36 @@ end
 
 local tags: { [string]: { any } } = {}
 local services: { [string]: any } = {}
+
+local function colorFromHex(hex: string): any
+	local raw = string.gsub(string.upper(hex), "#", "")
+	local function channel(startAt: number): number
+		return (tonumber(string.sub(raw, startAt, startAt + 1), 16) or 0) / 255
+	end
+	local color = {
+		R = channel(1),
+		G = channel(3),
+		B = channel(5),
+	}
+	function color:ToHex(): string
+		local function byte(value: number): number
+			return math.clamp(math.floor(value * 255 + 0.5), 0, 255)
+		end
+		return string.format("#%02X%02X%02X", byte(self.R), byte(self.G), byte(self.B))
+	end
+	return setmetatable(color, {
+		__index = function(_, key)
+			if key == "Hex" then
+				error("Hex is not a valid member of Color3", 2)
+			end
+			return nil
+		end,
+	})
+end
+
 local roblox = {
 	Color3 = {
-		fromHex = function(hex: string)
-			return { Hex = hex }
-		end,
+		fromHex = colorFromHex,
 	},
 	Vector3 = {
 		new = function(x: number?, y: number?, z: number?)
@@ -437,10 +462,10 @@ local MaterialPass = loadModule("src/server/TownKits/MaterialPass.luau")
 local TownKits = loadModule("src/server/TownKits/init.luau")
 
 local function hexOf(inst: any): string
-	if inst.Color == nil then
+	if inst.Color == nil or type(inst.Color.ToHex) ~= "function" then
 		return ""
 	end
-	return string.upper(tostring(inst.Color.Hex or ""))
+	return string.upper(string.gsub(inst.Color:ToHex(), "#", ""))
 end
 
 local function materialOf(inst: any): string
@@ -762,4 +787,33 @@ Check.test("quality 1 to 3 adds no nature detail", function()
 	Check.eq(MaterialPass.last.natureParts, 0)
 	Check.eq(town:FindFirstChild(TownMaterials.NATURE_FOLDER), nil)
 	Check.eq(countParts(town) < withNature, true)
+end)
+
+Check.test("Color3 matches Studio: ToHex and channels, and Hex is not a member", function()
+	local color = roblox.Color3.fromHex("E8E0CF")
+	Check.eq(color:ToHex(), "#E8E0CF")
+	Check.near(color.R, 232 / 255, 0.0001)
+	Check.near(color.G, 224 / 255, 0.0001)
+	Check.near(color.B, 207 / 255, 0.0001)
+	local ok, err = pcall(function()
+		return color.Hex
+	end)
+	Check.eq(ok, false)
+	Check.eq(string.find(tostring(err), "Hex is not a valid member of Color3", 1, true) ~= nil, true)
+	for _, fileName in fs.readDir("src/server/TownKits") do
+		if string.sub(fileName, -5) == ".luau" then
+			local kitSource = fs.readFile("src/server/TownKits/" .. fileName)
+			Check.eq(string.find(kitSource, ".Hex", 1, true), nil, fileName)
+		end
+	end
+	local town = buildSample()
+	Check.eq(MaterialPass.replace(town, { qualityLevel = 1 }), nil)
+	local tooth = nil
+	for _, inst in town:GetDescendants() do
+		if inst.Name == "Tooth" then
+			tooth = inst
+		end
+	end
+	Check.eq(tooth:GetAttribute(TownMaterials.ROLE_ATTRIBUTE), "Bone")
+	Check.eq(hexOf(tooth), "E8E0CF")
 end)

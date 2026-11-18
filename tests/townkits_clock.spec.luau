@@ -240,12 +240,36 @@ local function identity(): any
 	return newCFrame(0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1)
 end
 
+local function colorFromHex(hex: string): any
+	local raw = string.gsub(string.upper(hex), "#", "")
+	local function channel(startAt: number): number
+		return (tonumber(string.sub(raw, startAt, startAt + 1), 16) or 0) / 255
+	end
+	local color = {
+		R = channel(1),
+		G = channel(3),
+		B = channel(5),
+	}
+	function color:ToHex(): string
+		local function byte(value: number): number
+			return math.clamp(math.floor(value * 255 + 0.5), 0, 255)
+		end
+		return string.format("#%02X%02X%02X", byte(self.R), byte(self.G), byte(self.B))
+	end
+	return setmetatable(color, {
+		__index = function(_, key)
+			if key == "Hex" then
+				error("Hex is not a valid member of Color3", 2)
+			end
+			return nil
+		end,
+	})
+end
+
 local services = {}
 local roblox = {
 	Color3 = {
-		fromHex = function(hex: string)
-			return { Hex = hex }
-		end,
+		fromHex = colorFromHex,
 	},
 	Vector3 = {
 		new = function(x: number?, y: number?, z: number?)
@@ -578,7 +602,9 @@ local function assertTower(model: any, detail: boolean)
 		if inst:GetAttribute("TownKitPart") == true then
 			kitParts += 1
 			Check.eq(inst.Anchored, true, inst.Name)
-			local hex = if inst.Color ~= nil then inst.Color.Hex else nil
+			local hex = if inst.Color ~= nil and type(inst.Color.ToHex) == "function"
+				then string.gsub(inst.Color:ToHex(), "#", "")
+				else nil
 			Check.eq(ALLOWED[hex] == true, true, tostring(inst.Name) .. " " .. tostring(hex))
 			Check.eq(BANNED_HEX[hex] == true, false, tostring(inst.Name) .. " " .. tostring(hex))
 			local localPos = localOf(inst)
@@ -703,7 +729,7 @@ local function assertTower(model: any, detail: boolean)
 	local crowLocal = localOf(crow)
 	Check.near(crowLocal.X, -0.9, 0.05)
 	Check.near(crowLocal.Y, 15, 0.05)
-	Check.eq(faceGlow.Color.Hex, "E0263A")
+	Check.eq(string.gsub(faceGlow.Color:ToHex(), "#", ""), "E0263A")
 	Check.eq(faceGlow.Shadows, false)
 	local dial = nil
 	for _, inst in model:GetDescendants() do
@@ -711,7 +737,7 @@ local function assertTower(model: any, detail: boolean)
 			dial = inst
 		end
 	end
-	Check.eq(dial.Color.Hex, "F3E6C8")
+	Check.eq(string.gsub(dial.Color:ToHex(), "#", ""), "F3E6C8")
 	local life = 0
 	local grouped = 0
 	for _, inst in model:GetDescendants() do

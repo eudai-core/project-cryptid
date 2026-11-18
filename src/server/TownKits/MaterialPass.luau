@@ -150,12 +150,14 @@ local function materialName(part: any): string
 	return ""
 end
 
+local function channelByte(channel: number): number
+	return math.clamp(math.floor(channel * 255 + 0.5), 0, 255)
+end
+
+-- Color3 has ToHex() and R/G/B. It has no Hex field; reading one throws in Studio.
 local function hexOf(color: any): string
 	if color == nil then
 		return ""
-	end
-	if type(color.Hex) == "string" then
-		return string.upper(string.gsub(color.Hex, "#", ""))
 	end
 	if type(color.ToHex) == "function" then
 		local ok, hex = pcall(function()
@@ -165,11 +167,8 @@ local function hexOf(color: any): string
 			return string.upper(string.gsub(hex, "#", ""))
 		end
 	end
-	if type(color.R) == "number" then
-		local function byte(channel: number): number
-			return math.clamp(math.floor(channel * 255 + 0.5), 0, 255)
-		end
-		return string.format("%02X%02X%02X", byte(color.R), byte(color.G), byte(color.B))
+	if type(color.R) == "number" and type(color.G) == "number" and type(color.B) == "number" then
+		return string.format("%02X%02X%02X", channelByte(color.R), channelByte(color.G), channelByte(color.B))
 	end
 	return ""
 end
