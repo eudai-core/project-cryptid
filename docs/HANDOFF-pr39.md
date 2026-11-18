@@ -14,4 +14,4 @@ Branch: `cursor/town-integration-17b`
 
 ## Head
 
-Filled in after the item 1 commit is created. Until that amend lands, the parent is `4799e392e68db082c5cd7958a5a3a055c0e53a93`.
+`7647a67f0c29b057de14e8b2bbf24f1c3a5c4db6`
