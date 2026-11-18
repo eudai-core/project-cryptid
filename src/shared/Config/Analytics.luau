@@ -209,6 +209,7 @@ local Analytics = {
 	RATE_WINDOW_SECONDS = 60,
 	MAX_FIELDS = 3,
 	MAX_CUSTOM_NAMES = 15,
+	MAX_RETURN_DAY = 10000000,
 	STARTING_CASH = Economy.STARTING_CASH,
 }
 
@@ -277,8 +278,7 @@ end
 function Analytics.onboarded(profile: any): string
 	local state = if type(profile) == "table" then profile.onboarding else nil
 	local step = if type(state) == "table" then state.step else nil
-	local skipped = if type(state) == "table" then state.skipped else nil
-	if type(step) == "number" and step >= 8 and skipped ~= true then
+	if type(step) == "number" and step >= Analytics.GOAL_COUNT then
 		return "Onboarded - Yes"
 	end
 	return "Onboarded - No"

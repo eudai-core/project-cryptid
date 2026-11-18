@@ -25,6 +25,7 @@ function Remotes.create(): Folder
 		Names.REDUCED_MOTION,
 		Names.RETURN_TO_LAIR,
 		Names.PEDLAR_BUY,
+		Names.REQUEST_PEDLAR_OPEN,
 		Names.BIND_AT_ONCE,
 		Names.CLAIM_HAUL,
 		Names.CLAIM_DAILY,
@@ -32,6 +33,7 @@ function Remotes.create(): Folder
 		Names.BUY_SKILL,
 		Names.OPEN_RELICS,
 		Names.BUY_RELIC,
+		Names.REBIRTH,
 	}
 	for _, name in names do
 		local remote = Instance.new("RemoteEvent")

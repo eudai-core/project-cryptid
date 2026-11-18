@@ -668,7 +668,7 @@ end)
 
 Check.test("migrations run in order from every older dataVersion and are idempotent", function()
 	local targets = Schema.migrationTargets()
-	Check.eq(#targets, 8)
+	Check.eq(#targets, 9)
 	Check.eq(targets[1], 2)
 	Check.eq(targets[2], 3)
 	Check.eq(targets[3], 4)
@@ -677,8 +677,9 @@ Check.test("migrations run in order from every older dataVersion and are idempot
 	Check.eq(targets[6], 7)
 	Check.eq(targets[7], 8)
 	Check.eq(targets[8], 9)
-	Check.eq(targets[7] < targets[8], true)
-	Check.eq(Save.DATA_VERSION, 9)
+	Check.eq(targets[9], 10)
+	Check.eq(targets[8] < targets[9], true)
+	Check.eq(Save.DATA_VERSION, 10)
 
 	local fromV1 = legacy(1)
 	local once = Schema.migrate(fromV1)
@@ -752,7 +753,7 @@ Check.test("migrations run in order from every older dataVersion and are idempot
 	skillsOnly.autoCollect = nil
 	skillsOnly.passes = nil
 	local fromV5 = Schema.migrate(skillsOnly, 4242)
-	Check.eq(fromV5.dataVersion, 9)
+	Check.eq(fromV5.dataVersion, 10)
 	Check.eq(fromV5.skills[1], "h1")
 	Check.eq(fromV5.daily.step, 1)
 	Check.eq(fromV5.daily.lastClaimDay, -1)
@@ -776,7 +777,7 @@ Check.test("migrations run in order from every older dataVersion and are idempot
 	offering.onboarding.step = 8
 	offering.lastSeenUnix = 20
 	local fromV6 = Schema.migrate(offering, 1)
-	Check.eq(fromV6.dataVersion, 9)
+	Check.eq(fromV6.dataVersion, 10)
 	Check.eq(fromV6.skills[1], "h1")
 	Check.eq(fromV6.settings.sfx, 0.5)
 	Check.eq(fromV6.lastSeenUnix, 20)
@@ -788,7 +789,7 @@ Check.test("migrations run in order from every older dataVersion and are idempot
 	rite.onboarding.step = 4
 	rite.onboarding.playSeconds = 0
 	local recomputed = Schema.migrate(rite, 1)
-	Check.eq(recomputed.dataVersion, 9)
+	Check.eq(recomputed.dataVersion, 10)
 	Check.eq(recomputed.onboarding.step, 2)
 	Check.eq(recomputed.onboarding.playSeconds, 5)
 
@@ -811,7 +812,7 @@ Check.test("migrations run in order from every older dataVersion and are idempot
 	v7.autoCollect = nil
 	v7.passes = nil
 	local fromV7 = Schema.migrate(v7, 50)
-	Check.eq(fromV7.dataVersion, 9)
+	Check.eq(fromV7.dataVersion, 10)
 	Check.eq(fromV7.cash, 45)
 	Check.eq(fromV7.skills[1], "h1")
 	Check.eq(#fromV7.skills, 1)
@@ -838,7 +839,7 @@ Check.test("migrations run in order from every older dataVersion and are idempot
 	v8.skills = { "h1" }
 	v8.analytics = nil
 	local fromV8 = Schema.migrate(v8, 50)
-	Check.eq(fromV8.dataVersion, 9)
+	Check.eq(fromV8.dataVersion, 10)
 	Check.eq(fromV8.cash, 33)
 	Check.eq(fromV8.skills[1], "h1")
 	Check.eq(fromV8.passes.extraPads, false)
@@ -847,7 +848,7 @@ Check.test("migrations run in order from every older dataVersion and are idempot
 	fromV8.analytics.lastReturnDay = 6
 	fromV8.analytics.funnelStep = 4
 	local keptAnalytics = Schema.migrate(fromV8, 50)
-	Check.eq(keptAnalytics.dataVersion, 9)
+	Check.eq(keptAnalytics.dataVersion, 10)
 	Check.eq(keptAnalytics.cash, 33)
 	Check.eq(keptAnalytics.analytics.lastReturnDay, 6)
 	Check.eq(keptAnalytics.analytics.funnelStep, 4)
@@ -860,7 +861,7 @@ Check.test("migrations run in order from every older dataVersion and are idempot
 	Check.eq(cleaned.analytics.lastReturnDay, 0)
 
 	local future = Schema.newProfile(20, "starter")
-	future.dataVersion = 10
+	future.dataVersion = 11
 	Check.eq(Schema.migrate(future), nil)
 end)
 

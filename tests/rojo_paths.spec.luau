@@ -313,6 +313,7 @@ end)
 -- These names are created at runtime, or by the engine, so they are not in the Rojo tree.
 local RUNTIME_PATH = {
 	["ReplicatedStorage.PedlarBoard"] = true,
+	["ReplicatedStorage.TitheState"] = true,
 	["Workspace.Plots"] = true,
 	["Workspace.Town"] = true,
 	["Workspace.Camera"] = true,
