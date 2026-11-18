@@ -22,7 +22,6 @@ local WOOD = UITheme.materials.wood
 local BONE = UITheme.materials.candle
 local STONE = UITheme.materials.altar
 local METAL = UITheme.materials.iron
-local GLASS = UITheme.materials.glass
 local NEON = UITheme.materials.neon
 
 local BLOCKOUT = {
@@ -211,7 +210,7 @@ local function cylinderBetween(
 	local length = math.max(distance(a, b), 0.05)
 	local mid = Vector3.new((a.X + b.X) * 0.5, (a.Y + b.Y) * 0.5, (a.Z + b.Z) * 0.5)
 	local cf = CFrame.lookAt(mid, b) * CFrame.Angles(0, math.rad(90), 0)
-	place(parent, pivot, {
+	return place(parent, pivot, {
 		name = name,
 		size = Vector3.new(length, diameter, diameter),
 		cf = cf,
@@ -221,6 +220,99 @@ local function cylinderBetween(
 		shadow = shadow,
 		shape = Enum.PartType.Cylinder,
 	})
+end
+
+local swings: { any } = {}
+local turns: { any } = {}
+
+local function clearMotion()
+	table.clear(swings)
+	table.clear(turns)
+end
+
+local function bindSwing(hinge: any, part: any, group: { any })
+	table.insert(group, {
+		part = part,
+		localCf = hinge:Inverse() * part.CFrame,
+	})
+end
+
+local function trackTurn(part: any)
+	table.insert(turns, {
+		part = part,
+		base = part.CFrame,
+	})
+end
+
+local function playMotion(model: Instance)
+	local swingShot = table.clone(swings)
+	local turnShot = table.clone(turns)
+	Kit.animate(model, function(_dt, elapsed)
+		for _, swing in swingShot do
+			local angle = math.sin(elapsed * swing.speed + swing.phase) * swing.amp
+			local cf = swing.hinge * CFrame.Angles(0, 0, angle)
+			for _, item in swing.parts do
+				item.part.CFrame = cf * item.localCf
+			end
+		end
+		local spin = CFrame.Angles(elapsed * 0.8, 0, 0)
+		for _, item in turnShot do
+			item.part.CFrame = item.base * spin
+		end
+	end)
+end
+
+local function hullSkin(parent: Instance, pivot: any)
+	local bands = {
+		{ region = VAULT, rows = 8, cols = 18 },
+		{ region = BOW_A, rows = 4, cols = 6 },
+		{ region = BOW_B, rows = 4, cols = 5 },
+		{ region = STERN, rows = 4, cols = 8 },
+	}
+	for _, band in bands do
+		local region = band.region
+		for row = 0, band.rows - 1 do
+			for col = 0, band.cols - 1 do
+				for _, side in { -1, 1 } do
+					local t = (row + 0.5) / band.rows
+					local along = (col + 0.5) / band.cols
+					if row % 2 == 1 then
+						along += 0.45 / band.cols
+						if along > 0.98 then
+							along = 0.98
+						end
+					end
+					local z = region.z0 + (region.z1 - region.z0) * along
+					local nx, ny, nz = courseNormal(t, side)
+					local at = pointOn(region, z, t, side, nx, ny, nz, 0.2)
+					local cf = CFrame.lookAt(at, at + Vector3.new(nx, ny, nz))
+					place(parent, pivot, {
+						className = if row % 2 == 0 then "WedgePart" else nil,
+						name = "Shingle",
+						size = Vector3.new(0.78, 0.42, 0.1),
+						cf = cf,
+						material = WOOD,
+						color = if (row + col) % 2 == 0 then "Bark" else "ShipWood",
+						decor = true,
+						shadow = true,
+					})
+					if row % 3 == 0 and col % 2 == 0 then
+						local nail = at + Vector3.new(nx, ny, nz) * 0.08
+						place(parent, pivot, {
+							name = "Nail",
+							size = Vector3.new(0.1, 0.1, 0.1),
+							cf = CFrame.new(nail),
+							material = METAL,
+							color = "Gold",
+							decor = true,
+							shadow = false,
+							shape = Enum.PartType.Ball,
+						})
+					end
+				end
+			end
+		end
+	end
 end
 
 local function buildHall(parent: Instance, pivot: any)
@@ -525,35 +617,49 @@ local function buildDetail(parent: Instance, pivot: any)
 	local lanterns = {
 		{ x = -6.05, z = -4.2, swing = 0.72 },
 		{ x = 6.05, z = 1.4, swing = -0.66 },
-		{ x = -6.05, z = 6.6, swing = 0.5 },
-		{ x = 6.05, z = -6.4, swing = -0.58 },
+		{ x = -6.05, z = 6.8, swing = 0.5 },
 	}
-	for _, lamp in lanterns do
+	for index, lamp in lanterns do
 		local top = Vector3.new(lamp.x, 5.55, lamp.z)
 		local hung = Vector3.new(lamp.x + lamp.swing, 3.95, lamp.z)
-		cylinderBetween(parent, pivot, "LanternChain", top, hung, 0.07, METAL, "Gold", true, false)
+		local hinge = pivot * CFrame.new(top)
+		local group = {}
+		bindSwing(
+			hinge,
+			cylinderBetween(parent, pivot, "LanternChain", top, hung, 0.07, METAL, "Gold", true, false),
+			group
+		)
 		local tilt = lamp.swing * 0.42
-		place(parent, pivot, {
-			name = "LanternHousing",
-			size = Vector3.new(0.95, 0.62, 0.62),
-			cf = CFrame.new(hung) * CFrame.Angles(0, 0, math.rad(90) + tilt),
-			material = METAL,
-			color = "Gold",
-			decor = true,
-			shadow = false,
-			shape = Enum.PartType.Cylinder,
-		})
-		place(parent, pivot, {
-			name = "LanternGlass",
-			size = Vector3.new(0.72, 0.4, 0.4),
-			cf = CFrame.new(hung) * CFrame.Angles(0, 0, math.rad(90) + tilt),
-			material = GLASS,
-			color = "Bone",
-			decor = true,
-			shadow = false,
-			shape = Enum.PartType.Cylinder,
-		})
-		place(parent, pivot, {
+		bindSwing(
+			hinge,
+			place(parent, pivot, {
+				name = "LanternHousing",
+				size = Vector3.new(0.95, 0.62, 0.62),
+				cf = CFrame.new(hung) * CFrame.Angles(0, 0, math.rad(90) + tilt),
+				material = METAL,
+				color = "Gold",
+				decor = true,
+				shadow = false,
+				shape = Enum.PartType.Cylinder,
+			}),
+			group
+		)
+		bindSwing(
+			hinge,
+			place(parent, pivot, {
+				name = "LanternGlass",
+				size = Vector3.new(0.78, 0.46, 0.46),
+				cf = CFrame.new(hung) * CFrame.Angles(0, 0, math.rad(90) + tilt),
+				material = NEON,
+				color = "Candle",
+				decor = true,
+				shadow = false,
+				shape = Enum.PartType.Cylinder,
+				neonRole = "flame",
+			}),
+			group
+		)
+		local wick = place(parent, pivot, {
 			name = "LanternWick",
 			size = Vector3.new(0.22, 0.22, 0.22),
 			cf = CFrame.new(hung.X, hung.Y + 0.08, hung.Z),
@@ -563,6 +669,21 @@ local function buildDetail(parent: Instance, pivot: any)
 			shadow = false,
 			shape = Enum.PartType.Ball,
 			neonRole = "flame",
+		})
+		bindSwing(hinge, wick, group)
+		local light = Instance.new("PointLight")
+		light.Name = "LanternLight"
+		light.Color = UITheme.color("Candle")
+		light.Range = 12
+		light.Brightness = 1.15
+		light.Shadows = false
+		light.Parent = wick
+		table.insert(swings, {
+			hinge = hinge,
+			amp = 0.28,
+			speed = 1.05 + index * 0.08,
+			phase = lamp.swing * 3,
+			parts = group,
 		})
 	end
 	cylinderBetween(
@@ -609,16 +730,16 @@ local function buildDetail(parent: Instance, pivot: any)
 		true,
 		false
 	)
-	place(parent, pivot, {
+	trackTurn(place(parent, pivot, {
 		name = "Roast",
-		size = Vector3.new(1.35, 0.48, 0.48),
+		size = Vector3.new(1.7, 0.62, 0.62),
 		cf = CFrame.new(5.6, 2.55, -12.6),
 		material = BONE,
 		color = "Bark",
 		decor = true,
 		shadow = false,
 		shape = Enum.PartType.Cylinder,
-	})
+	}))
 	for index = -3, 3 do
 		place(parent, pivot, {
 			name = "Filigree",
@@ -629,6 +750,20 @@ local function buildDetail(parent: Instance, pivot: any)
 			decor = true,
 			shadow = false,
 			shape = Enum.PartType.Ball,
+		})
+	end
+	hullSkin(parent, pivot)
+	for _, side in { -1, 1 } do
+		place(parent, pivot, {
+			name = "RuneBand",
+			size = Vector3.new(18.6, 0.16, 0.16),
+			cf = CFrame.new(side * 6.35, 4.15, 2.1) * CFrame.Angles(0, math.rad(90), 0),
+			material = NEON,
+			color = "FlameBlue",
+			decor = true,
+			shadow = false,
+			shape = Enum.PartType.Cylinder,
+			neonRole = "rune",
 		})
 	end
 	place(parent, pivot, {
@@ -669,7 +804,7 @@ local function dressChimney(model: Instance)
 	end
 end
 
-local function repositionKept(model: Instance, pivot: any)
+local function repositionKept(model: Instance, pivot: any, detail: boolean)
 	local sign = findNamed(model, "Sign", "Part")
 	local signParts = {}
 	if sign ~= nil then
@@ -680,6 +815,28 @@ local function repositionKept(model: Instance, pivot: any)
 		table.insert(signParts, trim)
 	end
 	moveTo(sign, pivot * CFrame.new(0, 8.4, -19.2), signParts)
+	if detail then
+		place(model, pivot, {
+			name = "BowlMark",
+			size = Vector3.new(1.35, 0.72, 0.14),
+			cf = CFrame.new(0, 10.4, -19.05),
+			material = NEON,
+			color = "FlameBlue",
+			decor = true,
+			shadow = false,
+			neonRole = "sign",
+		})
+		place(model, pivot, {
+			name = "BowlMark",
+			size = Vector3.new(0.7, 0.28, 0.1),
+			cf = CFrame.new(0, 10.15, -19.12),
+			material = NEON,
+			color = "Bone",
+			decor = true,
+			shadow = false,
+			neonRole = "sign",
+		})
+	end
 
 	local bowl = findNamed(model, "Bowl", "Part")
 	local flameParts = {}
@@ -690,6 +847,36 @@ local function repositionKept(model: Instance, pivot: any)
 		end
 	end
 	moveTo(bowl, pivot * CFrame.new(5.6, 1.05, -12.6), flameParts)
+	if detail then
+		if bowl ~= nil then
+			bowl.Size = Vector3.new(2.8, 0.8, 2.8)
+		end
+		local hearth = findNamed(model, "Flame", "Part")
+		if hearth ~= nil then
+			hearth.Size = Vector3.new(2.6, 3.1, 2.6)
+			local light = Instance.new("PointLight")
+			light.Name = "HearthLight"
+			light.Color = UITheme.color("FlameBlue")
+			light.Range = 16
+			light.Brightness = 1.5
+			light.Shadows = false
+			light.Parent = hearth
+		end
+		for index = 0, 2 do
+			local width = 1.35 - index * 0.28
+			place(model, pivot, {
+				className = "WedgePart",
+				name = "HearthTongue",
+				size = Vector3.new(width, 1.35, width),
+				cf = CFrame.new(5.6, 2.6 + index * 1.15, -12.6),
+				material = NEON,
+				color = "FlameBlue",
+				decor = true,
+				shadow = false,
+				neonRole = "flame",
+			})
+		end
+	end
 
 	local crow = findNamed(model, "CrowBody", "Part")
 	local crowParts = {}
@@ -708,6 +895,7 @@ function Longship.replace(townFolder: Instance, refs: any): any
 	if model == nil or model:GetAttribute("TownKit") == "Longship" then
 		return nil
 	end
+	clearMotion()
 	local level = Kit.resolveQuality(refs)
 	local detail = Kit.detailEnabled(level)
 	local beforeParts = Kit.countParts(model)
@@ -765,8 +953,9 @@ function Longship.replace(townFolder: Instance, refs: any): any
 	if detail then
 		buildDetail(folder, pivot)
 		dressChimney(model)
+		playMotion(model)
 	end
-	repositionKept(model, pivot)
+	repositionKept(model, pivot, detail)
 
 	local door = findNamed(folder, "DoorAnchor", "Part")
 	for _, prompt in prompts do

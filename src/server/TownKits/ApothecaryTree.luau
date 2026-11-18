@@ -394,7 +394,7 @@ local function buildEye(parent: Instance, pivot: any)
 	local eyeAt = outwardAt(9.55, 0, 0.55)
 	local pupilAt = outwardAt(9.55, 0, 1.25)
 	local ringAt = outwardAt(9.55, 0, 0.16)
-	place(parent, pivot, {
+	local ring = place(parent, pivot, {
 		name = "EyeRing",
 		size = Vector3.new(0.28, 2.55, 2.55),
 		cf = CFrame.new(ringAt) * CFrame.Angles(0, math.rad(90), 0),
@@ -426,7 +426,120 @@ local function buildEye(parent: Instance, pivot: any)
 		shape = Enum.PartType.Ball,
 	})
 	local glow = TownLook.APOTHECARY_LIGHT.eye
-	addGlow(eye, "EyeGlow", glow.range, glow.brightness, "Rift")
+	addGlow(eye, "EyeGlow", glow.range + 8, glow.brightness * 3.2, "Rift")
+	addGlow(ring, "EyeBacklight", glow.range + 4, glow.brightness * 2.4, "Rift")
+end
+
+local sways: { any } = {}
+
+local function clearMotion()
+	table.clear(sways)
+end
+
+local function playMotion(model: Instance)
+	local snapshot = table.clone(sways)
+	Kit.animate(model, function(_dt, elapsed)
+		for _, sway in snapshot do
+			local angle = math.sin(elapsed * sway.speed + sway.phase) * sway.amp
+			sway.part.CFrame = sway.hinge * CFrame.Angles(0, 0, angle) * sway.localCf
+		end
+	end)
+end
+
+local function trackSway(part: any, phase: number)
+	local hinge = CFrame.new(part.CFrame.Position + Vector3.new(0, 1.05, 0))
+	table.insert(sways, {
+		part = part,
+		hinge = hinge,
+		localCf = hinge:Inverse() * part.CFrame,
+		phase = phase,
+		amp = 0.22,
+		speed = 0.85,
+	})
+end
+
+local function hidesShopFace(at: any): boolean
+	local door = at.Z < -3.4 and math.abs(at.X) < 2.5 and at.Y < 5.4 and at.Y > 0.2
+	local sign = math.abs(at.X) < 4.7 and at.Y > 4.6 and at.Y < 7.8 and at.Z < -3.85
+	return door or sign
+end
+
+local function buildBark(parent: Instance, pivot: any)
+	for seg = 1, #SPINE - 1 do
+		local low = SPINE[seg]
+		local high = SPINE[seg + 1]
+		for step = 0, 5 do
+			local alpha = (step + 0.5) / 6
+			local y = low.Y + (high.Y - low.Y) * alpha
+			for slot = 0, 11 do
+				local angle = (slot + (step % 2) * 0.5) * (2 * math.pi / 12)
+				local at = outwardAt(y, angle, 0.06)
+				if not hidesShopFace(at) then
+					place(parent, pivot, {
+						className = if (step + slot) % 2 == 0 then "WedgePart" else nil,
+						name = "Scale",
+						size = Vector3.new(0.55, 0.7, 0.12),
+						cf = CFrame.lookAt(at, Vector3.new(at.X * 0.2, at.Y, at.Z * 0.2)),
+						material = WOOD,
+						color = if (step + slot) % 2 == 0 then "Bark" else "ShipWood",
+						decor = true,
+						shadow = true,
+					})
+				end
+			end
+		end
+	end
+	for _, tuft in TUFTS do
+		for leaf = 0, 5 do
+			local theta = leaf * (2 * math.pi / 6)
+			local at = tuft.at + Vector3.new(math.cos(theta) * 0.8, (leaf % 2) * 0.25, math.sin(theta) * 0.8)
+			place(parent, pivot, {
+				className = "WedgePart",
+				name = "Leaf",
+				size = Vector3.new(0.7, 0.28, 0.35),
+				cf = CFrame.new(at) * CFrame.Angles(0.4, theta, 0.2),
+				material = BONE,
+				color = "RiftDim",
+				decor = true,
+				shadow = true,
+			})
+		end
+	end
+	for turn = 0, 35 do
+		local y = 1.2 + turn * 0.55
+		if y < SPINE[#SPINE].Y then
+			local angle = turn * 0.7
+			local a = outwardAt(y, angle, 0.02)
+			local b = outwardAt(y + 0.55, angle + 0.35, 0.02)
+			if not hidesShopFace(a) and not hidesShopFace(b) then
+				cylinderBetween(parent, pivot, "Vine", a, b, 0.08, WOOD, "RiftDim", true, false)
+			end
+		end
+	end
+	for step = 0, 9 do
+		local y = 3.8 + step * 1.45
+		for _, angle in { -1.2, 1.2, -2.15, 2.15 } do
+			local at = outwardAt(y, angle, 0.14)
+			if y < SPINE[#SPINE].Y and not hidesShopFace(at) then
+				local center = spineAt(y)
+				place(parent, pivot, {
+					name = "Rune",
+					size = Vector3.new(0.5, 1.05, 0.12),
+					cf = CFrame.lookAt(at, Vector3.new(center.X, at.Y, center.Z)),
+					material = NEON,
+					color = "Rift",
+					decor = true,
+					shadow = false,
+					neonRole = "rune",
+				})
+			end
+		end
+	end
+	for _, inst in parent:GetDescendants() do
+		if inst.Name == "Orb" then
+			trackSway(inst, inst.CFrame.Position.X * 0.35 + inst.CFrame.Position.Z)
+		end
+	end
 end
 
 local function buildDetail(parent: Instance, pivot: any, door: Instance)
@@ -515,8 +628,8 @@ local function buildDetail(parent: Instance, pivot: any, door: Instance)
 			parent,
 			pivot,
 			"OrbCord",
-			at + Vector3.new(0, 1.05, 0),
-			at + Vector3.new(0, 0.2, 0),
+			at + Vector3.new(0, 1.15, 0),
+			at + Vector3.new(0, 0.45, 0),
 			0.06,
 			METAL,
 			"Gold",
@@ -524,8 +637,18 @@ local function buildDetail(parent: Instance, pivot: any, door: Instance)
 			false
 		)
 		place(parent, pivot, {
+			name = "Flask",
+			size = Vector3.new(1.05, 0.48, 0.48),
+			cf = CFrame.new(at) * CFrame.Angles(0, 0, math.rad(90)),
+			material = GLASS,
+			color = "Rift",
+			decor = true,
+			shadow = false,
+			shape = Enum.PartType.Cylinder,
+		})
+		place(parent, pivot, {
 			name = "Orb",
-			size = Vector3.new(0.62, 0.62, 0.62),
+			size = Vector3.new(0.36, 0.36, 0.36),
 			cf = CFrame.new(at),
 			material = NEON,
 			color = "Rift",
@@ -680,6 +803,7 @@ local function buildDetail(parent: Instance, pivot: any, door: Instance)
 		spread = vfx.steam.spread,
 		lift = 1.4,
 	}, "Bone")
+	buildBark(parent, pivot)
 end
 
 local function lightFlames(model: Instance)
@@ -784,6 +908,7 @@ function ApothecaryTree.replace(townFolder: Instance, refs: any): any
 	if model == nil or model:GetAttribute("TownKit") == "ApothecaryTree" then
 		return nil
 	end
+	clearMotion()
 	local level = Kit.resolveQuality(refs)
 	local detail = Kit.detailEnabled(level)
 	local beforeParts = Kit.countParts(model)
@@ -837,6 +962,7 @@ function ApothecaryTree.replace(townFolder: Instance, refs: any): any
 	buildEye(folder, pivot)
 	if detail then
 		buildDetail(folder, pivot, door)
+		playMotion(model)
 	end
 	repositionKept(model, pivot)
 	lightFlames(model)

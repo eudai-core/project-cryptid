@@ -390,7 +390,7 @@ local function buildSigil(parent: Instance, pivot: any)
 		shape = Enum.PartType.Ball,
 	})
 	local eyeGlow = TownLook.TAROT_LIGHT.eye
-	addGlow(eye, "EyeGlow", eyeGlow.range, eyeGlow.brightness, "TentCloth")
+	addGlow(eye, "EyeGlow", eyeGlow.range + 6, eyeGlow.brightness * 4, "TentCloth")
 	place(parent, pivot, {
 		name = "Lantern",
 		size = Vector3.new(0.72, 0.48, 0.48),
@@ -451,6 +451,143 @@ local function buildSigil(parent: Instance, pivot: any)
 		decor = true,
 		shadow = false,
 	})
+end
+
+local spins: { any } = {}
+
+local function clearMotion()
+	table.clear(spins)
+end
+
+local function playMotion(model: Instance)
+	local snapshot = table.clone(spins)
+	Kit.animate(model, function(_dt, elapsed)
+		local spin = CFrame.Angles(0, elapsed * 0.55, 0)
+		for _, item in snapshot do
+			item.part.CFrame = item.base * spin
+		end
+	end)
+end
+
+local function trackSpin(part: any)
+	table.insert(spins, {
+		part = part,
+		base = part.CFrame,
+	})
+end
+
+local function hidesSign(x: number, y: number, z: number): boolean
+	return math.abs(x) < 4.7 and y > 8.05 and y < 11.15 and z < -4.55
+end
+
+local function canvasField(parent: Instance, pivot: any, side: number)
+	for row = 0, 13 do
+		for col = 0, 11 do
+			local x = -4.1 + (col + (if row % 2 == 0 then 0.15 else 0.55)) * 0.72
+			local rise = row * 0.34
+			local z = side * (-3.15 + row * 0.22)
+			local y = 6.15 + rise
+			if not hidesSign(x, y, z) then
+				place(parent, pivot, {
+					className = if (row + col) % 3 == 0 then "WedgePart" else nil,
+					name = "Stitch",
+					size = Vector3.new(0.62, 0.1, 0.38),
+					cf = CFrame.new(x, y, z) * CFrame.Angles(side * 0.55, 0, 0),
+					material = CLOTH,
+					color = if (row + col) % 2 == 0 then "TentCloth" else "NightSky",
+					decor = true,
+					shadow = false,
+				})
+			end
+		end
+	end
+end
+
+local function buildCanvas(parent: Instance, pivot: any)
+	canvasField(parent, pivot, 1)
+	canvasField(parent, pivot, -1)
+	for _, side in { -1, 1 } do
+		for row = 0, 9 do
+			for col = 0, 7 do
+				local z = -2.6 + (col + (if row % 2 == 0 then 0.2 else 0.6)) * 0.7
+				local y = 6.4 + row * 0.32
+				local x = side * (3.55 + row * 0.08)
+				if not hidesSign(x, y, z) then
+					place(parent, pivot, {
+						name = "Stitch",
+						size = Vector3.new(0.16, 0.42, 0.55),
+						cf = CFrame.new(x, y, z),
+						material = CLOTH,
+						color = if (row + col) % 2 == 0 then "TentCloth" else "Gold",
+						decor = true,
+						shadow = false,
+					})
+				end
+			end
+		end
+		for band = 0, 6 do
+			place(parent, pivot, {
+				name = "Filigree",
+				size = Vector3.new(0.1, 0.52, 0.52),
+				cf = CFrame.new(side * 3.9, 1.3 + band * 0.75, -3.35) * CFrame.Angles(0, 0, math.rad(90)),
+				material = METAL,
+				color = "Gold",
+				decor = true,
+				shadow = false,
+				shape = Enum.PartType.Cylinder,
+			})
+		end
+	end
+	for band = 0, 4 do
+		place(parent, pivot, {
+			name = "Stripe",
+			size = Vector3.new(7.4, 0.22, 0.12),
+			cf = CFrame.new(0, 2.2 + band * 0.85, -3.55),
+			material = CLOTH,
+			color = if band % 2 == 0 then "TentCloth" else "Gold",
+			decor = true,
+			shadow = false,
+		})
+		place(parent, pivot, {
+			name = "Stripe",
+			size = Vector3.new(7.4, 0.18, 0.1),
+			cf = CFrame.new(0, 2.55 + band * 0.85, 3.2),
+			material = CLOTH,
+			color = if band % 2 == 0 then "Gold" else "TentCloth",
+			decor = true,
+			shadow = false,
+		})
+	end
+	for _, side in { -1, 1 } do
+		local bowl = place(parent, pivot, {
+			name = "Brazier",
+			size = Vector3.new(1.15, 0.42, 1.15),
+			cf = CFrame.new(side * 3.35, 0.55, -5.15),
+			material = METAL,
+			color = "Gold",
+			decor = true,
+			shadow = true,
+		})
+		local flame = place(parent, pivot, {
+			name = "BrazierFlame",
+			size = Vector3.new(0.7, 1.15, 0.7),
+			cf = CFrame.new(side * 3.35, 1.35, -5.15),
+			material = NEON,
+			color = "Gold",
+			decor = true,
+			shadow = false,
+			shape = Enum.PartType.Ball,
+			neonRole = "flame",
+		})
+		addGlow(flame, "BrazierGlow", 8, 0.7, "Gold")
+		addGlow(bowl, "LampGlow", 7, 0.45, "TentCloth")
+	end
+	for _, name in { "Crystal", "CrystalCore" } do
+		local part = findNamed(parent, name, "Part")
+		if part ~= nil then
+			trackSpin(part)
+		end
+	end
 end
 
 local function buildDetail(parent: Instance, pivot: any)
@@ -572,7 +709,7 @@ local function buildDetail(parent: Instance, pivot: any)
 			shape = Enum.PartType.Ball,
 		})
 		local sconceGlow = TownLook.TAROT_LIGHT.sconce
-		addGlow(sconceWick, "SconceGlow", sconceGlow.range, 0.9, "Gold")
+		addGlow(sconceWick, "SconceGlow", sconceGlow.range + 2, 1.15, "TentCloth")
 	end
 	place(parent, pivot, {
 		name = "Moon",
@@ -704,6 +841,7 @@ local function buildDetail(parent: Instance, pivot: any)
 		lift = 0.55,
 		drift = 0.22,
 	}, "Gold")
+	buildCanvas(parent, pivot)
 end
 
 local function lightFlames(model: Instance)
@@ -752,6 +890,7 @@ function TarotTent.replace(townFolder: Instance, refs: any): any
 	if model == nil or model:GetAttribute("TownKit") == "TarotTent" then
 		return nil
 	end
+	clearMotion()
 	local level = Kit.resolveQuality(refs)
 	local detail = Kit.detailEnabled(level)
 	local beforeParts = Kit.countParts(model)
@@ -805,6 +944,7 @@ function TarotTent.replace(townFolder: Instance, refs: any): any
 	buildSigil(folder, pivot)
 	if detail then
 		buildDetail(folder, pivot)
+		playMotion(model)
 	end
 	repositionKept(model, pivot)
 	lightFlames(model)

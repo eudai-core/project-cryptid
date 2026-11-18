@@ -338,6 +338,50 @@ function Kit.tuneEmitter(emitter: any, spec: any)
 	end
 end
 
+function Kit.animate(model: any, step: any)
+	-- selene: allow(global_usage)
+	if _G.LUNE == true then
+		return
+	end
+	if model == nil or type(step) ~= "function" then
+		return
+	end
+	local ok, err = pcall(function()
+		local runService = game:GetService("RunService")
+		local started = os.clock()
+		local connection: any = nil
+		local function stop()
+			if connection == nil then
+				return
+			end
+			local link = connection
+			connection = nil
+			pcall(function()
+				link:Disconnect()
+			end)
+		end
+		connection = runService.Heartbeat:Connect(function(dt)
+			if model.Parent == nil then
+				stop()
+				return
+			end
+			local stepped, stepErr = pcall(step, dt, os.clock() - started)
+			if not stepped then
+				stop()
+				warn(stepErr)
+			end
+		end)
+		pcall(function()
+			model.Destroying:Connect(function()
+				stop()
+			end)
+		end)
+	end)
+	if not ok then
+		warn(err)
+	end
+end
+
 function Kit.promptAnchor(model: any, localCf: any): any
 	local shopId = model.Name
 	local pivot = if type(model.GetPivot) == "function" then model:GetPivot() else model.PrimaryPart.CFrame

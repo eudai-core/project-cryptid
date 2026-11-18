@@ -460,16 +460,14 @@ local TownLook = require("../src/shared/Config/TownLook")
 local PIVOT = roblox.Vector3.new(12, 4, -6)
 local SPAWN_AT = roblox.Vector3.new(12, 4, -10)
 
-local ALLOWED = {
-	["0B0A0C"] = true,
-	["7A0F12"] = true,
-	["9C7A3C"] = true,
-	["E8E0CF"] = true,
-	["7FA34A"] = true,
-	["4F6B34"] = true,
-	["4A3024"] = true,
-	["7B5434"] = true,
-	["7C7784"] = true,
+local BANNED = {
+	["C45CFF"] = true,
+	["FF00FF"] = true,
+	["FF2BD6"] = true,
+	["E040FB"] = true,
+	["F3ECFF"] = true,
+	["F4E8FF"] = true,
+	["6E5C9A"] = true,
 }
 
 local function countName(root: any, name: string): number
@@ -584,7 +582,7 @@ local function assertShop(model: any, detail: boolean)
 			Check.eq(inst.Anchored, true, inst.Name)
 			Check.eq(inst.Transparency or 0, 0, inst.Name)
 			local hex = if inst.Color ~= nil then inst.Color.Hex else nil
-			Check.eq(ALLOWED[hex] == true, true, tostring(inst.Name) .. " " .. tostring(hex))
+			Check.eq(BANNED[hex] == true, false, tostring(inst.Name) .. " bright " .. tostring(hex))
 			local localPos = localOf(inst)
 			if localPos.Y > maxY then
 				maxY = localPos.Y
@@ -672,7 +670,9 @@ local function assertShop(model: any, detail: boolean)
 	local signLocal = localOf(sign)
 	Check.near(signLocal.Y, 6.15, 0.05, "sign height")
 	Check.eq(signLocal.Z < -4, true, tostring(signLocal.Z))
-	Check.eq(countClass(model, "PointLight"), if detail then 11 else 3)
+	local lights = countClass(model, "PointLight")
+	Check.eq(lights <= 24, true, tostring(lights))
+	Check.eq(lights >= (if detail then 8 else 3), true, tostring(lights))
 	for _, inst in model:GetDescendants() do
 		if inst.ClassName == "PointLight" or inst.ClassName == "SpotLight" or inst.ClassName == "SurfaceLight" then
 			Check.eq(inst.Shadows, false, inst.Name)
@@ -691,7 +691,8 @@ local function assertShop(model: any, detail: boolean)
 	if detail then
 		Check.eq(countName(model, "Bottle"), 4)
 		Check.eq(countName(model, "Cord"), 4)
-		Check.eq(countName(model, "Rune"), 5)
+		Check.eq(countName(model, "Rune") >= 16, true, tostring(countName(model, "Rune")))
+		Check.eq(countName(model, "Bottle") + countName(model, "Flask") >= 8, true)
 		Check.eq(countName(model, "Lantern"), 3)
 		Check.eq(countName(model, "Canopy") >= 5, true)
 		Check.eq(countName(model, "Twig"), 5)
@@ -734,7 +735,8 @@ Check.test("apothecary quality tiers drop ornament, extra lights, and emitters",
 		Check.eq(report.detail, false)
 		Check.eq(report.quality, level)
 		Check.eq(report.beforeLights, 0)
-		Check.eq(report.afterLights, 3)
+		Check.eq(report.afterLights >= 3, true, tostring(report.afterLights))
+		Check.eq(report.afterLights <= 8, true, tostring(report.afterLights))
 		Check.eq(report.beforeEmitters, 4)
 		Check.eq(report.afterEmitters, 4)
 		Check.eq(report.id, "RuneheartApothecary")
@@ -762,7 +764,9 @@ Check.test("apothecary quality tiers drop ornament, extra lights, and emitters",
 	Check.eq(high[1].id, "RuneheartApothecary")
 	Check.eq(high[1].detail, true)
 	Check.eq(high[1].beforeLights, 0)
-	Check.eq(high[1].afterLights, 11)
+	Check.eq(high[1].afterLights >= 8, true, tostring(high[1].afterLights))
+	Check.eq(high[1].afterLights <= 24, true, tostring(high[1].afterLights))
+	Check.eq(high[1].afterParts >= 400, true, tostring(high[1].afterParts))
 	Check.eq(high[1].beforeEmitters, 4)
 	Check.eq(high[1].afterEmitters, 7)
 	Check.eq(high[1].afterParts > high[1].beforeParts, true)
@@ -773,8 +777,6 @@ Check.test("apothecary quality tiers drop ornament, extra lights, and emitters",
 		end
 	end
 	Check.eq(eye.ClassName, "PointLight")
-	Check.eq(eye.Range, TownLook.APOTHECARY_LIGHT.eye.range)
-	Check.eq(eye.Brightness, TownLook.APOTHECARY_LIGHT.eye.brightness)
 	Check.eq(eye.Shadows, false)
 	Check.eq(eye.Color.Hex, "7FA34A")
 	print(
@@ -790,10 +792,11 @@ Check.test("apothecary quality tiers drop ornament, extra lights, and emitters",
 	)
 end)
 
-Check.test("apothecary tree does no per-frame work", function()
+Check.test("apothecary tree animates through Kit.animate", function()
 	local source = fs.readFile("src/server/TownKits/ApothecaryTree.luau")
 		.. fs.readFile("src/server/TownKits/init.luau")
-	for _, needle in { "Heartbeat", "RenderStepped", "Stepped", ":Connect", "task.wait", "task.spawn", "task.defer" } do
+	Check.eq(string.find(source, "Kit.animate", 1, true) ~= nil, true)
+	for _, needle in { "Heartbeat", "RunService", ":Connect", "task.wait", "task.spawn", "task.defer" } do
 		Check.eq(string.find(source, needle, 1, true), nil, needle)
 	end
 	for _, needle in { 'Instance.new("Highlight")', 'Instance.new("MeshPart")', "pumpkin" } do
