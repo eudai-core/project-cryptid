@@ -11,6 +11,7 @@ local PlayerSession = require(script.Parent:WaitForChild("PlayerSession"))
 local TownShopService = require(script.Parent:WaitForChild("TownShopService"))
 local Plot = require(script.Parent:WaitForChild("Plot"))
 local Remotes = require(script.Parent:WaitForChild("Remotes"))
+local TitheLedger = require(script.Parent:WaitForChild("TitheLedger"))
 local SpawnCheck = require(script.Parent:WaitForChild("SpawnCheck"))
 
 print(GameInfo.name .. " server started")
@@ -58,6 +59,7 @@ Pedlar.start(function()
 end, function(player)
 	PlayerSession.onPedlarOpen(player)
 end)
+TitheLedger.start()
 PlayerSession.start(folder)
 
 for _, player in waiting do

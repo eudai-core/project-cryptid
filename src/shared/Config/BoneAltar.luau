@@ -2,7 +2,19 @@
 
 -- Bone Altar I–X. Levels I–II each add LINEAR_BONUS. Level L >= 3 adds
 -- TAIL_BASE × TAIL_DECAY^(L−TAIL_OFFSET). l3 multiplies that add. Every cost
--- is × REBIRTH_FACTOR^r. r stays 0 until a rebirth spec writes the field.
+-- is × REBIRTH_FACTOR^r. r is profile.rebirths. The launch cap is Rebirth.LAUNCH_CAP.
+
+local function import(lunePath: string, getRoblox: () -> any): any
+	-- selene: allow(global_usage)
+	if _G.LUNE == true then
+		return require(lunePath)
+	end
+	return require(getRoblox())
+end
+
+local Rebirth = import("./Rebirth", function()
+	return script.Parent:WaitForChild("Rebirth")
+end)
 
 local MAX_LEVEL = 10
 local LINEAR_LEVELS = 2
@@ -14,7 +26,7 @@ local L3_FACTOR = 1.2
 local L3_SKILL = "l3"
 local REBIRTH_FACTOR = 1.5
 local REBIRTH_FIELD = "rebirths"
-local MAX_REBIRTHS = 40
+local MAX_REBIRTHS = Rebirth.LAUNCH_CAP
 local FIRST_COST = 300
 local SECOND_COST = 1500
 local TAIL_FIRST_COST = 8000

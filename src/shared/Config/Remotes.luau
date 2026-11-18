@@ -22,6 +22,7 @@ local Remotes = {
 	BUY_RELIC = "RequestRelic",
 	SHOP_BUY = "RequestShopBuy",
 	SHOP_SELL = "RequestShopSell",
+	REBIRTH = "RequestRebirth",
 }
 
 return table.freeze(Remotes)

@@ -33,6 +33,9 @@ export type Profile = {
 	firstJoinUnix: number,
 	lastSeenUnix: number,
 	tithe: number,
+	rebirths: number,
+	familiarId: string,
+	everHeld1M: boolean,
 	bowl: number,
 	offline: {
 		rate: number,
