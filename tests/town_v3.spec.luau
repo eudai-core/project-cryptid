@@ -107,6 +107,7 @@ local VISUAL_FILES = {
 	"src/server/TownKits/WeepingWell.luau",
 	"src/server/TownKits/ApothecaryTree.luau",
 	"src/server/TownKits/TarotTent.luau",
+	"src/server/TownKits/Portals.luau",
 }
 
 local function makeInstance(className: string): any
@@ -1838,6 +1839,129 @@ Check.test("every registered kit builds on the town when UnionAsync returns an a
 		end
 		Check.eq(seen >= 1, true, "shop kits")
 	end
+	local function portalOf(folder: any, id: string): any
+		for _, inst in descendants(folder) do
+			if inst.Name == id and inst.ClassName == "Model" then
+				return inst
+			end
+		end
+		return nil
+	end
+	local function assertPortal(model: any, id: string, detail: boolean)
+		Check.truthy(model, id)
+		Check.eq(model:GetAttribute("TownKit"), "Portals", id)
+		Check.eq(model:GetAttribute("KitDetail"), detail, id)
+		Check.eq(model.PrimaryPart.Name, "Root", id)
+		Check.eq(model:GetAttribute("KitAfterParts") > model:GetAttribute("KitBeforeParts"), true, id)
+		local vortex = 0
+		local rings = 0
+		local spirals = 0
+		local lights = 0
+		local locks = 0
+		local prompts = 0
+		local anchors = 0
+		local mesh = 0
+		local wedges = 0
+		local scriptSource = nil
+		local signText = ""
+		local extra = 0
+		local core = 0
+		local particles = 0
+		for _, inst in descendants(model) do
+			if inst.Name == "Vortex" then
+				vortex += 1
+				Check.eq(materialName(inst), "Neon", id)
+				Check.eq(inst:GetAttribute("NeonRole"), "portal", id)
+			elseif inst.Name == "VortexRing" then
+				rings += 1
+				Check.eq(inst:GetAttribute("TownSpin"), true, id)
+			elseif inst.Name == "VortexSpiral" then
+				spirals += 1
+			elseif inst.Name == "LockIcon" and inst.ClassName == "Model" then
+				locks += 1
+			elseif inst.Name == "VortexSpin" and inst.ClassName == "Script" then
+				scriptSource = inst.Source
+			elseif inst.Name == "SignText" and type(inst.Text) == "string" then
+				signText ..= inst.Text
+			elseif string.sub(inst.Name, -12) == "PromptAnchor" then
+				anchors += 1
+			end
+			if inst.ClassName == "ProximityPrompt" then
+				prompts += 1
+			elseif inst.ClassName == "MeshPart" then
+				mesh += 1
+			elseif inst.ClassName == "WedgePart" then
+				wedges += 1
+			elseif inst.ClassName == "PointLight" then
+				lights += 1
+				Check.eq(inst.Shadows, false, id)
+			elseif inst.ClassName == "ParticleEmitter" and inst:GetAttribute("TownEffect") == id then
+				local life = inst.Lifetime
+				particles += inst.Rate * life.Max
+				if inst:GetAttribute("TownFlame") == "extra" then
+					extra += 1
+				elseif inst:GetAttribute("TownFlame") == "core" then
+					core += 1
+				end
+			end
+		end
+		Check.eq(vortex, 1, id)
+		Check.eq(locks, 1, id)
+		Check.eq(prompts, 0, id)
+		Check.eq(anchors, 0, id)
+		Check.eq(mesh, 0, id)
+		Check.eq(wedges > 0, true, id)
+		Check.eq(rings >= 4, true, id)
+		Check.eq(core, 1, id)
+		Check.eq(particles <= TownLook.VFX_MAX_PARTICLES, true, id .. " " .. tostring(particles))
+		if id == "WhisperingWoods" then
+			Check.contains(signText, "Whispering Woods")
+		elseif id == "SunkenMarsh" then
+			Check.contains(signText, "Sunken Marsh")
+			Check.contains(signText, "Level 25+")
+		else
+			Check.contains(signText, "Bone Quarry")
+		end
+		Check.eq(type(scriptSource), "string", id)
+		Check.eq(string.find(scriptSource, "LUNE", 1, true) ~= nil, true, id)
+		Check.eq(string.find(scriptSource, "Heartbeat", 1, true) ~= nil, true, id)
+		local chunk = luau.load(scriptSource, {
+			environment = {
+				_G = _G,
+				pcall = pcall,
+				rawget = rawget,
+				type = type,
+			},
+		})
+		chunk()
+		if detail then
+			Check.eq(
+				model:GetAttribute("KitAfterParts") >= 200,
+				true,
+				id .. " " .. tostring(model:GetAttribute("KitAfterParts"))
+			)
+			Check.eq(spirals > 0, true, id)
+			Check.eq(extra >= 1, true, id)
+			Check.eq(lights >= 1, true, id)
+		else
+			Check.eq(spirals, 0, id)
+			Check.eq(extra, 0, id)
+			Check.eq(lights, 1, id)
+		end
+		print(
+			string.format(
+				"portal %s detail=%s parts=%s lights=%s emitters=%s particles=%.2f rings=%d wedges=%d",
+				id,
+				tostring(detail),
+				tostring(model:GetAttribute("KitAfterParts")),
+				tostring(lights),
+				tostring(model:GetAttribute("KitAfterEmitters")),
+				particles,
+				rings,
+				wedges
+			)
+		)
+	end
 	local ok, err = pcall(function()
 		local lowFolder = buildAt(1)
 		local highFolder = buildAt(10)
@@ -1854,6 +1978,24 @@ Check.test("every registered kit builds on the town when UnionAsync returns an a
 		Check.eq(high:GetAttribute("KitAfterParts") > low:GetAttribute("KitAfterParts"), true)
 		assertShopAnchors(lowFolder)
 		assertShopAnchors(highFolder)
+		for _, id in REQUIRED_PORTALS do
+			local lowPortal = portalOf(lowFolder, id)
+			local highPortal = portalOf(highFolder, id)
+			assertPortal(lowPortal, id, false)
+			assertPortal(highPortal, id, true)
+			Check.eq(highPortal:GetAttribute("KitAfterParts") > lowPortal:GetAttribute("KitAfterParts"), true, id)
+		end
+		local Portals = loadModule("src/server/TownKits/Portals.luau")
+		local function countPortalParts(folder: any): number
+			local total = 0
+			for _, id in REQUIRED_PORTALS do
+				total += Kit.countParts(portalOf(folder, id))
+			end
+			return total
+		end
+		local before = countPortalParts(highFolder)
+		Check.eq(Portals.replace(highFolder, { qualityLevel = 10 }), nil)
+		Check.eq(countPortalParts(highFolder), before, "second replace")
 	end)
 	TownKits.strict = false
 	TownKits.forceQuality = nil
