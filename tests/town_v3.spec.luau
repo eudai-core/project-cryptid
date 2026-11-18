@@ -108,6 +108,7 @@ local VISUAL_FILES = {
 	"src/server/TownKits/ApothecaryTree.luau",
 	"src/server/TownKits/TarotTent.luau",
 	"src/server/TownKits/Portals.luau",
+	"src/server/TownKits/ClockTower.luau",
 }
 
 local function makeInstance(className: string): any
@@ -1792,6 +1793,7 @@ Check.test("every registered kit builds on the town when UnionAsync returns an a
 		Longship = "HowlingHorn",
 		ApothecaryTree = "RuneheartApothecary",
 		TarotTent = "VeilAndFate",
+		ClockTower = "DuskAndDial",
 	}
 	local function assertPromptAnchor(model: any, shopName: string)
 		local want = shopName .. "PromptAnchor"
