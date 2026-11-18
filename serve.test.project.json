@@ -11,6 +11,17 @@
       "$className": "Workspace",
       "$properties": {
         "StreamingEnabled": false
+      },
+      "Terrain": {
+        "$className": "Terrain",
+        "Clouds": {
+          "$className": "Clouds",
+          "$properties": {
+            "Cover": 0.5,
+            "Density": 0.4,
+            "Color": [0.3764705882352941, 0.2901960784313726, 0.43137254901960786]
+          }
+        }
       }
     },
     "Lighting": {

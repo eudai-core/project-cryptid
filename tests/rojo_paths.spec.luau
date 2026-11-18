@@ -241,7 +241,9 @@ local function scanFile(
 		if localName ~= nil and exprAt ~= nil then
 			local node, nextI, hadWait = parseExpr(clean, exprAt, scriptNode, locals, misses, checked, filePath)
 			if hadWait or node ~= nil then
-				if node ~= nil then
+				local after = skipWs(clean, nextI)
+				local nextCh = string.sub(clean, after, after)
+				if node ~= nil and nextCh ~= ":" and nextCh ~= "." then
 					locals[localName] = node
 				end
 				i = math.max(nextI, i + 1)
