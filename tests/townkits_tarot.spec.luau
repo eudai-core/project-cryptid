@@ -380,6 +380,9 @@ local function modulePath(fromFile: string, spec: string): string
 end
 
 local function sandboxRequire(spec: string): any
+	if string.sub(spec, 1, 6) == "@lune/" then
+		return require(spec)
+	end
 	local caller = debug.info(2, "s")
 	local fromFile = string.match(caller, '^%[string "(.*)"%]$') or caller
 	local path = modulePath(fromFile, spec)
@@ -742,7 +745,7 @@ Check.test("tarot tent quality tiers drop ornament, extra lights, and emitters",
 		Check.eq(report.afterLights, 3)
 		Check.eq(report.beforeEmitters, 2)
 		Check.eq(report.afterEmitters, 2)
-		Check.eq(report.afterParts, 43)
+		Check.eq(report.afterParts, 44)
 		Check.eq(report.id, "VeilAndFate")
 		local again = TarotTent.replace(town, { qualityLevel = 10 })
 		Check.eq(again, nil)
@@ -772,7 +775,7 @@ Check.test("tarot tent quality tiers drop ornament, extra lights, and emitters",
 	Check.eq(high[1].afterLights, 6)
 	Check.eq(high[1].beforeEmitters, 2)
 	Check.eq(high[1].afterEmitters, 4)
-	Check.eq(high[1].afterParts, 94)
+	Check.eq(high[1].afterParts, 95)
 	local eye = nil
 	local lantern = nil
 	for _, inst in highModel:GetDescendants() do
@@ -811,9 +814,10 @@ Check.test("tarot tent does no per-frame work and does not wait on a service roo
 		Check.eq(string.find(source, needle, 1, true), nil, needle)
 	end
 	Check.eq(string.find(source, 'script.Parent:WaitForChild("Kit")', 1, true) ~= nil, true)
-	Check.eq(string.find(source, 'script:WaitForChild("TarotTent")', 1, true) ~= nil, true)
-	Check.eq(string.find(source, 'script:WaitForChild("Longship")', 1, true) ~= nil, true)
+	Check.eq(string.find(source, 'script:WaitForChild("TarotTent")', 1, true), nil)
+	Check.eq(string.find(source, 'script:WaitForChild("Longship")', 1, true), nil)
 	Check.eq(string.find(source, 'script.Parent:WaitForChild("Longship")', 1, true), nil)
 	Check.eq(string.find(source, 'script.Parent:WaitForChild("TarotTent")', 1, true), nil)
+	Check.eq(string.find(source, "function TownKits.discover", 1, true) ~= nil, true)
 	Check.eq(string.find(source, 'Instance.new("ParticleEmitter")', 1, true) ~= nil, true)
 end)

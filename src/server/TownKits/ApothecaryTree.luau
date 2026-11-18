@@ -727,6 +727,7 @@ function ApothecaryTree.replace(townFolder: Instance, refs: any): any
 	for _, prompt in prompts do
 		prompt.Parent = if anchor ~= nil then anchor else model
 	end
+	Kit.promptAnchor(model, CFrame.new(0, 3, -7.37))
 
 	local afterParts = Kit.countParts(model)
 	local afterLights = Kit.countLights(model)

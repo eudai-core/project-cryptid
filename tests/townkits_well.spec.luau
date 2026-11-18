@@ -372,6 +372,9 @@ local function modulePath(fromFile: string, spec: string): string
 end
 
 local function sandboxRequire(spec: string): any
+	if string.sub(spec, 1, 6) == "@lune/" then
+		return require(spec)
+	end
 	local caller = debug.info(2, "s")
 	local fromFile = string.match(caller, '^%[string "(.*)"%]$') or caller
 	local path = modulePath(fromFile, spec)

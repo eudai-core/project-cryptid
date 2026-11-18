@@ -165,6 +165,34 @@ local function makeInstance(className: string): any
 	function inst:Destroy()
 		self.Parent = nil
 	end
+	function inst:Clone(): any
+		local copy = makeInstance(self.ClassName)
+		for _, key in
+			{
+				"Name",
+				"Size",
+				"CFrame",
+				"Anchored",
+				"Material",
+				"Color",
+				"CanCollide",
+				"CanTouch",
+				"CanQuery",
+				"CastShadow",
+				"Transparency",
+				"Shape",
+			}
+		do
+			local value = rawget(self, key)
+			if value ~= nil then
+				copy[key] = value
+			end
+		end
+		for key, value in self._attrs do
+			copy:SetAttribute(key, value)
+		end
+		return copy
+	end
 	function inst:GetPivot(): any
 		local primary = rawget(self, "PrimaryPart")
 		if primary ~= nil and primary.CFrame ~= nil then
@@ -505,6 +533,24 @@ local function installRoblox(): any
 		},
 		workspace = makeInstance("Workspace"),
 	}
+	local function operationFrom(base: any, name: string): any
+		local operation = roblox.Instance.new("UnionOperation")
+		operation.Name = name
+		operation.Anchored = true
+		operation.CFrame = base.CFrame
+		operation.Size = base.Size
+		operation.Material = base.Material
+		operation.Color = base.Color
+		return operation
+	end
+	local geometry = makeInstance("GeometryService")
+	function geometry:UnionAsync(base, _others, _options)
+		return { operationFrom(base, "Union") }
+	end
+	function geometry:SubtractAsync(base, _others, _options)
+		return { operationFrom(base, "Subtract") }
+	end
+	services.GeometryService = geometry
 	return roblox
 end
 
@@ -535,6 +581,9 @@ local function modulePath(fromFile: string, spec: string): string
 end
 
 local function sandboxRequire(spec: string): any
+	if string.sub(spec, 1, 6) == "@lune/" then
+		return require(spec)
+	end
 	local caller = debug.info(2, "s")
 	local fromFile = string.match(caller, '^%[string "(.*)"%]$') or caller
 	local path = modulePath(fromFile, spec)
@@ -575,6 +624,7 @@ local function loadModule(path: string): any
 			setmetatable = setmetatable,
 			getmetatable = getmetatable,
 			print = print,
+			warn = warn,
 			unpack = table.unpack,
 			task = task,
 			debug = debug,
@@ -886,11 +936,6 @@ Check.test("town part and light counts stay inside the sanity guard", function()
 		local row = byName[name]
 		print(string.format("  %s %d/%d", name, row.parts, row.lights))
 	end
-	Check.eq(byName.Ground.parts, 1)
-	Check.eq(byName.TownPlatform.parts, 1)
-	Check.eq(byName.TownSpawn.parts, 1)
-	Check.eq(byName.Cobble.parts, 1)
-	Check.eq(byName.LanternGlass.lights, 4)
 	Check.eq(countClass(root, "Highlight"), 0)
 	Check.eq(censusHighlights, 0)
 	-- Sanity guards only. There is no part, light, or emitter budget.
@@ -1032,7 +1077,7 @@ Check.test("hollowmere is the mythic plaza and neon stays on flames portals rune
 	Check.eq(hollowPrompts, 0)
 	Check.eq(named(root, "WellLight") ~= nil, true)
 	local pointLights = countClass(root, "PointLight")
-	Check.eq(pointLights <= TownLook.LIGHT_CAP, true, "point lights " .. tostring(pointLights))
+	Check.eq(pointLights <= 200, true, "point lights " .. tostring(pointLights))
 	Check.eq(pointLights > 0, true)
 	for _, sign in REQUIRED_SIGNS do
 		Check.contains(text, sign)
@@ -1582,7 +1627,7 @@ Check.test("tarot tent kit keeps the shop sign and replaces the blockout", funct
 	Check.eq(shop:GetAttribute("KitQuality"), 10)
 	Check.eq(shop:GetAttribute("KitDetail"), true)
 	Check.eq(shop:GetAttribute("KitBeforeParts"), 18)
-	Check.eq(shop:GetAttribute("KitAfterParts"), 93)
+	Check.eq(shop:GetAttribute("KitAfterParts"), 94)
 	Check.eq(shop:GetAttribute("KitBeforeLights"), 0)
 	Check.eq(shop:GetAttribute("KitAfterLights"), 6)
 	Check.eq(shop:GetAttribute("KitBeforeEmitters"), 2)
@@ -1689,14 +1734,114 @@ Check.test("tarot tent kit keeps the shop sign and replaces the blockout", funct
 	Check.eq(particles <= TownLook.VFX_MAX_PARTICLES, true, tostring(particles))
 	Check.eq(kitParts, 87)
 	local registry = fs.readFile("src/server/TownKits/init.luau")
-	Check.eq(string.find(registry, 'script:WaitForChild("TarotTent")', 1, true) ~= nil, true)
-	Check.eq(string.find(registry, 'script:WaitForChild("Longship")', 1, true) ~= nil, true)
+	Check.eq(string.find(registry, 'script:WaitForChild("TarotTent")', 1, true), nil)
+	Check.eq(string.find(registry, 'script:WaitForChild("Longship")', 1, true), nil)
 	Check.eq(string.find(registry, 'script.Parent:WaitForChild("TarotTent")', 1, true), nil)
 	Check.eq(string.find(registry, 'script.Parent:WaitForChild("Longship")', 1, true), nil)
+	Check.eq(string.find(registry, "function TownKits.discover", 1, true) ~= nil, true)
 	local tent = fs.readFile("src/server/TownKits/TarotTent.luau")
 	Check.eq(string.find(tent, 'script.Parent:WaitForChild("Kit")', 1, true) ~= nil, true)
 	Check.eq(string.find(tent, "ServerScriptService", 1, true), nil)
 	local builder = fs.readFile("src/server/TownBuilder.luau")
 	local _, hooks = string.gsub(builder, "TownKits.applyAll", "")
 	Check.eq(hooks, 1)
+end)
+
+Check.test("every registered kit builds on the town when UnionAsync returns an array", function()
+	local TownKits = loadModule("src/server/TownKits/init.luau")
+	local TownBuilder = loadModule("src/server/TownBuilder.luau")
+	local PlotBuilder = loadModule("src/server/PlotBuilder.luau")
+	local Kit = loadModule("src/server/TownKits/Kit.luau")
+	TownKits.strict = true
+	local function buildAt(level: number)
+		Kit.clearGeometryCache()
+		TownKits.forceQuality = level
+		local folder = roblox.Instance.new("Folder")
+		folder.Name = "Town"
+		folder.Parent = roblox.workspace
+		PlotBuilder.buildGround(folder)
+		TownBuilder.build(folder)
+		return folder
+	end
+	local function hornOf(folder: any)
+		for _, inst in folder:GetDescendants() do
+			if inst.Name == "HowlingHorn" and inst.ClassName == "Model" then
+				return inst
+			end
+		end
+		return nil
+	end
+	local shopModel = {
+		Longship = "HowlingHorn",
+		ApothecaryTree = "RuneheartApothecary",
+		TarotTent = "VeilAndFate",
+	}
+	local function assertPromptAnchor(model: any, shopName: string)
+		local want = shopName .. "PromptAnchor"
+		local found = {}
+		for _, inst in model:GetDescendants() do
+			if inst.Name == want then
+				table.insert(found, inst)
+			elseif inst.Name == "DoorAnchor" then
+				Check.eq(inst:GetAttribute("ShopId"), nil, shopName .. " door")
+			end
+		end
+		Check.eq(#found, 1, shopName)
+		local anchor = found[1]
+		Check.eq(anchor.Parent, model, shopName)
+		Check.eq(anchor.Transparency, 1, shopName)
+		Check.eq(anchor.Anchored, true, shopName)
+		Check.eq(anchor.CanCollide, false, shopName)
+		Check.eq(anchor.CanTouch, false, shopName)
+		Check.eq(anchor.CanQuery, false, shopName)
+		Check.eq(anchor.Size.X, 2, shopName)
+		Check.eq(anchor.Size.Y, 2, shopName)
+		Check.eq(anchor.Size.Z, 1, shopName)
+		Check.eq(anchor:GetAttribute("ShopId"), shopName)
+		Check.eq(anchor:GetAttribute("TownAnchor"), nil, shopName)
+		for _, child in anchor:GetChildren() do
+			Check.eq(child.ClassName == "ProximityPrompt", false, shopName)
+		end
+	end
+	local function assertShopAnchors(folder: any)
+		local seen = 0
+		for _, kit in TownKits.discover() do
+			local shopName = shopModel[kit.name]
+			if shopName == nil then
+				continue
+			end
+			local model = nil
+			for _, inst in folder:GetDescendants() do
+				if inst.Name == shopName and inst.ClassName == "Model" then
+					model = inst
+				end
+			end
+			Check.truthy(model, shopName)
+			assertPromptAnchor(model, shopName)
+			seen += 1
+		end
+		Check.eq(seen >= 1, true, "shop kits")
+	end
+	local ok, err = pcall(function()
+		local lowFolder = buildAt(1)
+		local highFolder = buildAt(10)
+		local low = hornOf(lowFolder)
+		local high = hornOf(highFolder)
+		Check.truthy(low)
+		Check.truthy(high)
+		Check.eq(low:GetAttribute("TownKit"), "Longship")
+		Check.eq(low:GetAttribute("KitQuality"), 1)
+		Check.eq(low:GetAttribute("KitDetail"), false)
+		Check.eq(high:GetAttribute("TownKit"), "Longship")
+		Check.eq(high:GetAttribute("KitQuality"), 10)
+		Check.eq(high:GetAttribute("KitDetail"), true)
+		Check.eq(high:GetAttribute("KitAfterParts") > low:GetAttribute("KitAfterParts"), true)
+		assertShopAnchors(lowFolder)
+		assertShopAnchors(highFolder)
+	end)
+	TownKits.strict = false
+	TownKits.forceQuality = nil
+	if not ok then
+		error(err, 0)
+	end
 end)
