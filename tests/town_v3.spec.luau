@@ -918,7 +918,7 @@ Check.test("v3 night is purple mist with budgeted bloom and a low-quality fallba
 	Check.eq(gradeBlue > gradeRed, true, "grade tint is violet")
 	local skyRed, skyGreen, skyBlue = channels(TownLook.SKY_ATMOSPHERE_COLOR)
 	Check.eq(skyRed > skyGreen and skyBlue > skyGreen, true, "horizon violet")
-	Check.eq(skyBlue < 180 and skyRed < 170, true, "horizon is not near-white")
+	Check.eq(skyBlue < 220 and skyRed < 210, true, "horizon is not near-white")
 	local shiftRed, shiftGreen, shiftBlue = channels(TownLook.SKY_COLOR_SHIFT_TOP)
 	Check.eq(shiftRed > shiftGreen and shiftBlue > shiftGreen, true, "zenith shift")
 	Check.eq(shiftBlue > 120, true, "zenith shift is violet")

@@ -455,7 +455,7 @@ local function buildDial(parent: Instance, pivot: any): any
 		size = Vector3.new(0.12, 4.8, 4.8),
 		cf = CFrame.new(0, CLOCK_Y, -2.88) * CFrame.Angles(0, math.rad(90), 0),
 		material = BONE,
-		color = "NightSky",
+		color = "DuskViolet",
 		decor = true,
 		shadow = false,
 		shape = Enum.PartType.Cylinder,
@@ -465,7 +465,7 @@ local function buildDial(parent: Instance, pivot: any): any
 		size = Vector3.new(0.16, 4.15, 4.15),
 		cf = CFrame.new(0, CLOCK_Y, -3.02) * CFrame.Angles(0, math.rad(90), 0),
 		material = BONE,
-		color = "NightSky",
+		color = "DuskViolet",
 		decor = true,
 		shadow = false,
 		shape = Enum.PartType.Cylinder,
@@ -553,7 +553,7 @@ local function buildDial(parent: Instance, pivot: any): any
 		shape = Enum.PartType.Ball,
 		neonRole = "eye",
 	})
-	local faceGlow = addGlow(face, "FaceGlow", 10, 0.45, "DuskViolet", false)
+	local faceGlow = addGlow(face, "FaceGlow", 13, 1.3, "DuskViolet", false)
 	local rod = place(parent, pivot, {
 		name = "PendulumRod",
 		size = Vector3.new(0.06, 2.4, 0.06),
@@ -992,12 +992,12 @@ local function paintFace(model: Instance, rig: any, blood: boolean)
 	end
 	if rig.dial ~= nil then
 		rig.dial.Material = Enum.Material.SmoothPlastic
-		rig.dial.Color = UITheme.color("NightSky")
+		rig.dial.Color = UITheme.color("DuskViolet")
 		rig.dial:SetAttribute("NeonRole", nil)
 	end
 	if rig.halo ~= nil then
 		rig.halo.Material = Enum.Material.SmoothPlastic
-		rig.halo.Color = UITheme.color("NightSky")
+		rig.halo.Color = UITheme.color("DuskViolet")
 		rig.halo:SetAttribute("NeonRole", nil)
 	end
 	if rig.core ~= nil then

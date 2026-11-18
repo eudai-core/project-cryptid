@@ -623,8 +623,8 @@ local function buildHanger(parent: Instance, pivot: any)
 	local light = Instance.new("PointLight")
 	light.Name = "SupplyLight"
 	light.Color = UITheme.color("Rift")
-	light.Range = 14
-	light.Brightness = 2.2
+	light.Range = 18
+	light.Brightness = 2.8
 	light.Shadows = false
 	light.Enabled = true
 	light.Parent = globe

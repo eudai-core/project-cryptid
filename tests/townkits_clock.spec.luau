@@ -729,7 +729,7 @@ local function assertTower(model: any, detail: boolean)
 			dial = inst
 		end
 	end
-	Check.eq(string.gsub(dial.Color:ToHex(), "#", ""), "140C22")
+	Check.eq(string.gsub(dial.Color:ToHex(), "#", ""), "A56BFF")
 	Check.eq(dial.Material.Name, "SmoothPlastic")
 	local life = 0
 	local grouped = 0
