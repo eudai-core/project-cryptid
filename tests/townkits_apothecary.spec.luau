@@ -240,12 +240,36 @@ local function identity(): any
 	return newCFrame(0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1)
 end
 
+local function colorFromHex(hex: string): any
+	local raw = string.gsub(string.upper(hex), "#", "")
+	local function channel(startAt: number): number
+		return (tonumber(string.sub(raw, startAt, startAt + 1), 16) or 0) / 255
+	end
+	local color = {
+		R = channel(1),
+		G = channel(3),
+		B = channel(5),
+	}
+	function color:ToHex(): string
+		local function byte(value: number): number
+			return math.clamp(math.floor(value * 255 + 0.5), 0, 255)
+		end
+		return string.format("#%02X%02X%02X", byte(self.R), byte(self.G), byte(self.B))
+	end
+	return setmetatable(color, {
+		__index = function(_, key)
+			if key == "Hex" then
+				error("Hex is not a valid member of Color3", 2)
+			end
+			return nil
+		end,
+	})
+end
+
 local services = {}
 local roblox = {
 	Color3 = {
-		fromHex = function(hex: string)
-			return { Hex = hex }
-		end,
+		fromHex = colorFromHex,
 	},
 	Vector3 = {
 		new = function(x: number?, y: number?, z: number?)
@@ -583,7 +607,9 @@ local function assertShop(model: any, detail: boolean)
 			kitParts += 1
 			Check.eq(inst.Anchored, true, inst.Name)
 			Check.eq(inst.Transparency or 0, 0, inst.Name)
-			local hex = if inst.Color ~= nil then inst.Color.Hex else nil
+			local hex = if inst.Color ~= nil and type(inst.Color.ToHex) == "function"
+				then string.gsub(inst.Color:ToHex(), "#", "")
+				else nil
 			Check.eq(ALLOWED[hex] == true, true, tostring(inst.Name) .. " " .. tostring(hex))
 			local localPos = localOf(inst)
 			if localPos.Y > maxY then
@@ -776,7 +802,7 @@ Check.test("apothecary quality tiers drop ornament, extra lights, and emitters",
 	Check.eq(eye.Range, TownLook.APOTHECARY_LIGHT.eye.range)
 	Check.eq(eye.Brightness, TownLook.APOTHECARY_LIGHT.eye.brightness)
 	Check.eq(eye.Shadows, false)
-	Check.eq(eye.Color.Hex, "7FA34A")
+	Check.eq(string.gsub(eye.Color:ToHex(), "#", ""), "7FA34A")
 	print(
 		string.format(
 			"apothecary q10 parts=%d lights=%d emitters=%d beforeParts=%d beforeLights=%d beforeEmitters=%d",

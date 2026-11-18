@@ -107,6 +107,8 @@ local VISUAL_FILES = {
 	"src/server/TownKits/WeepingWell.luau",
 	"src/server/TownKits/ApothecaryTree.luau",
 	"src/server/TownKits/TarotTent.luau",
+	"src/server/TownKits/MaterialPass.luau",
+	"src/shared/Config/TownMaterials.luau",
 }
 
 local function makeInstance(className: string): any
@@ -397,6 +399,32 @@ function newCFrame(
 	})
 end
 
+local function colorFromHex(hex: string): any
+	local raw = string.gsub(string.upper(hex), "#", "")
+	local function channel(startAt: number): number
+		return (tonumber(string.sub(raw, startAt, startAt + 1), 16) or 0) / 255
+	end
+	local color = {
+		R = channel(1),
+		G = channel(3),
+		B = channel(5),
+	}
+	function color:ToHex(): string
+		local function byte(value: number): number
+			return math.clamp(math.floor(value * 255 + 0.5), 0, 255)
+		end
+		return string.format("#%02X%02X%02X", byte(self.R), byte(self.G), byte(self.B))
+	end
+	return setmetatable(color, {
+		__index = function(_, key)
+			if key == "Hex" then
+				error("Hex is not a valid member of Color3", 2)
+			end
+			return nil
+		end,
+	})
+end
+
 local roblox: any = nil
 
 local function installRoblox(): any
@@ -406,9 +434,7 @@ local function installRoblox(): any
 	local services = {}
 	roblox = {
 		Color3 = {
-			fromHex = function(hex: string)
-				return { Hex = hex }
-			end,
+			fromHex = colorFromHex,
 		},
 		Vector3 = {
 			new = function(x: number?, y: number?, z: number?)
@@ -841,10 +867,10 @@ Check.test("v3 night is purple mist with budgeted bloom and a low-quality fallba
 	local lighting = installRoblox().game:GetService("Lighting")
 	Check.eq(lighting.Technology, nil)
 	Check.eq(lighting.ClockTime, UITheme.lighting.clockTime)
-	Check.eq(lighting.Ambient.Hex, TownLook.SKY_AMBIENT)
-	Check.eq(lighting.OutdoorAmbient.Hex, TownLook.SKY_OUTDOOR_AMBIENT)
-	Check.eq(lighting.ColorShift_Top.Hex, TownLook.SKY_COLOR_SHIFT_TOP)
-	Check.eq(lighting.FogColor.Hex, UITheme.world.NightMist)
+	Check.eq(string.gsub(lighting.Ambient:ToHex(), "#", ""), TownLook.SKY_AMBIENT)
+	Check.eq(string.gsub(lighting.OutdoorAmbient:ToHex(), "#", ""), TownLook.SKY_OUTDOOR_AMBIENT)
+	Check.eq(string.gsub(lighting.ColorShift_Top:ToHex(), "#", ""), TownLook.SKY_COLOR_SHIFT_TOP)
+	Check.eq(string.gsub(lighting.FogColor:ToHex(), "#", ""), UITheme.world.NightMist)
 	Check.eq(lighting.FogStart, 250)
 	Check.eq(lighting.FogEnd, 1100)
 	Check.eq(lighting.Brightness, 1.5)
@@ -852,15 +878,15 @@ Check.test("v3 night is purple mist with budgeted bloom and a low-quality fallba
 	Check.eq(atmosphere.Density, TownLook.SKY_ATMOSPHERE_DENSITY)
 	Check.eq(atmosphere.Haze, TownLook.SKY_ATMOSPHERE_HAZE)
 	Check.eq(atmosphere.Glare, TownLook.SKY_ATMOSPHERE_GLARE)
-	Check.eq(atmosphere.Color.Hex, TownLook.SKY_ATMOSPHERE_COLOR)
-	Check.eq(atmosphere.Decay.Hex, TownLook.SKY_ATMOSPHERE_DECAY)
+	Check.eq(string.gsub(atmosphere.Color:ToHex(), "#", ""), TownLook.SKY_ATMOSPHERE_COLOR)
+	Check.eq(string.gsub(atmosphere.Decay:ToHex(), "#", ""), TownLook.SKY_ATMOSPHERE_DECAY)
 	local bloom = lighting:FindFirstChildOfClass("BloomEffect")
 	Check.eq(bloom.Enabled, true)
 	Check.eq(bloom.Intensity, 0.45)
 	Check.eq(bloom.Size, 28)
 	Check.eq(bloom.Threshold, 1.5)
 	local grade = lighting:FindFirstChildOfClass("ColorCorrectionEffect")
-	Check.eq(grade.TintColor.Hex, TownLook.SKY_GRADE_TINT)
+	Check.eq(string.gsub(grade.TintColor:ToHex(), "#", ""), TownLook.SKY_GRADE_TINT)
 	Check.eq(grade.Saturation, TownLook.SKY_GRADE_SATURATION)
 	Check.eq(grade.Saturation < UITheme.lighting.colorSaturation, true)
 	local gradeRed, gradeGreen, gradeBlue = channels(TownLook.SKY_GRADE_TINT)
@@ -892,7 +918,7 @@ Check.test("v3 night is purple mist with budgeted bloom and a low-quality fallba
 	Check.eq(clouds.ClassName, "Clouds")
 	Check.eq(clouds.Cover, TownLook.CLOUD_COVER)
 	Check.eq(clouds.Density, TownLook.CLOUD_DENSITY)
-	Check.eq(clouds.Color.Hex, TownLook.CLOUD_COLOR)
+	Check.eq(string.gsub(clouds.Color:ToHex(), "#", ""), TownLook.CLOUD_COLOR)
 end)
 
 Check.test("town part and light counts stay inside the sanity guard", function()
@@ -1856,4 +1882,95 @@ Check.test("every registered kit builds on the town when UnionAsync returns an a
 	if not ok then
 		error(err, 0)
 	end
+end)
+
+Check.test("all-kit town keeps the material pass inside the census guard", function()
+	local TownMaterials = require("../src/shared/Config/TownMaterials")
+	local MaterialPass = loadModule("src/server/TownKits/MaterialPass.luau")
+	local root = townRoot()
+	local before = countClass(root, "Part") + countClass(root, "WedgePart") + countClass(root, "UnionOperation")
+	Check.eq(MaterialPass.replace(root, { qualityLevel = 10 }), nil)
+	local report = MaterialPass.last
+	local after = countClass(root, "Part") + countClass(root, "WedgePart") + countClass(root, "UnionOperation")
+	Check.eq(after, before)
+	Check.eq(report.variantsApplied, 0)
+	Check.eq(report.natureParts > 0, true, tostring(report.natureParts))
+	Check.eq(report.parts <= 20000, true, tostring(report.parts))
+	Check.eq(report.lights <= 200, true, tostring(report.lights))
+	Check.eq(report.emitters <= 200, true, tostring(report.emitters))
+	Check.eq(report.parts <= TownLook.PART_CAP, true)
+	Check.eq(report.lights <= TownLook.LIGHT_CAP, true)
+	Check.eq(report.emitters <= TownLook.EMITTER_CAP, true)
+	local built = named(root, TownMaterials.NATURE_FOLDER)
+	Check.truthy(built, "MaterialNature")
+	local moss = 0
+	local ivyWedge = 0
+	local ivyLeaf = 0
+	local roots = 0
+	for _, inst in descendants(built) do
+		if inst.Name == "MossPatch" then
+			moss += 1
+		elseif inst.Name == "IvyWedge" then
+			ivyWedge += 1
+		elseif inst.Name == "IvyLeaf" then
+			ivyLeaf += 1
+		elseif inst.Name == "Gnarl" then
+			roots += 1
+		end
+	end
+	Check.eq(moss > 0, true, "default quality moss " .. tostring(moss))
+	Check.eq(ivyWedge > 0, true, "default quality ivy " .. tostring(ivyWedge))
+	Check.eq(ivyLeaf > 0, true, "default quality ivy leaf " .. tostring(ivyLeaf))
+	Check.eq(roots > 0, true, "default quality roots " .. tostring(roots))
+	local nature = built
+	local roles = { AgedBrick = 0, MossyCobble = 0, WornDarkTimber = 0, SlateShingle = 0, WeatheredStone = 0, Bone = 0 }
+	for _, inst in descendants(root) do
+		local role = inst:GetAttribute(TownMaterials.ROLE_ATTRIBUTE)
+		if type(role) == "string" then
+			Check.eq(roles[role] ~= nil, true, tostring(role))
+			roles[role] += 1
+		end
+		if materialName(inst) == "Neon" or inst.Name == "Root" or inst:GetAttribute("ShopId") ~= nil then
+			Check.eq(role, nil, tostring(inst.Name))
+		end
+		if inst.ClassName == "SurfaceGui" then
+			Check.eq(inst.Parent:GetAttribute(TownMaterials.ROLE_ATTRIBUTE), nil, "sign")
+		end
+		local variant = inst.MaterialVariant
+		Check.eq(variant == nil or variant == "", true, tostring(inst.Name))
+	end
+	local pedlar = named(root, "PalePedlar")
+	for _, inst in descendants(pedlar) do
+		Check.eq(inst:GetAttribute(TownMaterials.ROLE_ATTRIBUTE), nil, "pedlar " .. tostring(inst.Name))
+	end
+	Check.eq(roles.MossyCobble > 0, true)
+	Check.eq(roles.WornDarkTimber > 0, true)
+	Check.eq(roles.WeatheredStone > 0, true)
+	local service = installRoblox().game:GetService("MaterialService")
+	Check.eq(service:FindFirstChild("AgedBrick").ClassName, "MaterialVariant")
+	Check.eq(service:FindFirstChild("MossyCobble").ClassName, "MaterialVariant")
+	Check.eq(service:FindFirstChild("WornDarkTimber").ClassName, "MaterialVariant")
+	Check.eq(service:FindFirstChild("SlateShingle").ClassName, "MaterialVariant")
+	Check.eq(service:FindFirstChild("WeatheredStone").ClassName, "MaterialVariant")
+	Check.eq(service:FindFirstChild("Bone").ClassName, "MaterialVariant")
+	print(
+		string.format(
+			"all-kit material pass tinted=%d nature=%d moss=%d ivyWedge=%d ivyLeaf=%d roots=%d parts=%d lights=%d emitters=%d cobble=%d timber=%d stone=%d shingle=%d bone=%d brick=%d",
+			report.tinted,
+			report.natureParts,
+			moss,
+			ivyWedge,
+			ivyLeaf,
+			roots,
+			report.parts,
+			report.lights,
+			report.emitters,
+			roles.MossyCobble,
+			roles.WornDarkTimber,
+			roles.WeatheredStone,
+			roles.SlateShingle,
+			roles.Bone,
+			roles.AgedBrick
+		)
+	)
 end)
