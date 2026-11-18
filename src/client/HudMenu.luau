@@ -2,6 +2,7 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local QaShots = require(script.Parent:WaitForChild("QaShots"))
 local UiFactory = require(script.Parent:WaitForChild("UiFactory"))
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local UITheme = require(Shared:WaitForChild("UITheme")) :: any
@@ -143,6 +144,7 @@ function HudMenu.mount(parent: Instance, onCalm: () -> (), controls: any)
 		calm.TextColor3 = UITheme.color("Bone")
 	end
 
+	QaShots.conceal(root)
 	return api
 end
 

@@ -173,6 +173,12 @@ local function syncLantern(session: any)
 	end
 end
 
+local function markQaNoHud(player: Player)
+	if StudioQaHooks.noHud() then
+		player:SetAttribute("QaNoHud", true)
+	end
+end
+
 local function publish(session: any, credit: number)
 	session.revision += 1
 	local profile = session.profile
@@ -222,6 +228,7 @@ local function publish(session: any, credit: number)
 	player:SetAttribute("NextDailyUnix", Daily.nextReset(offeringNow))
 	session.snapshot.Value = HttpService:JSONEncode(snap)
 	player:SetAttribute("StateRevision", session.revision)
+	markQaNoHud(player)
 	Plot.sync(session.plot, profile, session.guide)
 	syncLantern(session)
 end
@@ -1071,6 +1078,7 @@ function PlayerSession.onPlayer(player: Player): boolean
 	if sessions[player] ~= nil then
 		return true
 	end
+	markQaNoHud(player)
 	local fallback = Plot.fallbackSpawn()
 	if fallback ~= nil then
 		player.RespawnLocation = fallback

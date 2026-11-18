@@ -8,6 +8,7 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
 local Motion = require(script.Parent:WaitForChild("Motion"))
+local QaShots = require(script.Parent:WaitForChild("QaShots"))
 local ThemeBind = require(script.Parent:WaitForChild("ThemeBind"))
 local UiFactory = require(script.Parent:WaitForChild("UiFactory"))
 local Shared = ReplicatedStorage:WaitForChild("Shared")
@@ -1070,6 +1071,10 @@ function SkillTree.mount(parent: Instance, player: Player, isReduced: () -> bool
 	end
 
 	openTree = function()
+		if QaShots.hidden() then
+			screen.Enabled = false
+			return
+		end
 		if isOpen or not SkillRules.gateOpen(readNumber("OnboardingStep")) or not characterAlive() then
 			return
 		end
@@ -1123,6 +1128,13 @@ function SkillTree.mount(parent: Instance, player: Player, isReduced: () -> bool
 
 	closeButton.Activated:Connect(closeTree)
 	rites.Activated:Connect(openTree)
+	player:GetAttributeChangedSignal("QaNoHud"):Connect(function()
+		if QaShots.hidden() then
+			closeTree()
+			screen.Enabled = false
+		end
+	end)
+	QaShots.concealEnabled(screen)
 
 	local function refreshGate()
 		rites.Visible = SkillRules.gateOpen(readNumber("OnboardingStep"))
