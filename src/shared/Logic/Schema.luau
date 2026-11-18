@@ -656,7 +656,7 @@ end
 
 local function migrateToV9(profile: any, raw: any, _version: number, _now: number): boolean
 	profile.analytics = parseAnalytics(raw)
-	return applyWares(profile, raw)
+	return true
 end
 
 local function familiarIdOf(value: any): string?
@@ -679,7 +679,7 @@ local function migrateToV10(profile: any, raw: any, version: number, _now: numbe
 		profile.rebirths = count
 		profile.familiarId = familiarId
 		profile.everHeld1M = raw.everHeld1M
-		return true
+		return applyWares(profile, raw)
 	end
 	local earned = profile.totalEarned
 	if type(earned) ~= "number" or not Money.isFinite(earned) or earned < 0 then
@@ -695,7 +695,7 @@ local function migrateToV10(profile: any, raw: any, version: number, _now: numbe
 	profile.rebirths = 0
 	profile.familiarId = ""
 	profile.everHeld1M = held
-	return true
+	return applyWares(profile, raw)
 end
 
 local MIGRATION_STEPS: { { to: number, apply: (any, any, number, number) -> boolean } } = {

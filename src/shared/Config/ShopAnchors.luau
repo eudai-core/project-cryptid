@@ -15,7 +15,17 @@ local Town = import("./Town", function()
 	return script.Parent:WaitForChild("Town")
 end)
 
-local PEDLAR_ID = Town.PEDLAR_ID
+local function stallId(): string
+	for _, spec in Town.DISTRICTS do
+		if spec.kind == "pedlar" then
+			return spec.id
+		end
+	end
+	return "PalePedlar"
+end
+
+local PEDLAR_ID = stallId()
+local PEDLAR_PROMPT = if type(Town.PEDLAR_PROMPT_NAME) == "string" then Town.PEDLAR_PROMPT_NAME else "Pedlar"
 
 local function shop(shopId: string, displayName: string, catalogueId: string)
 	return table.freeze({
@@ -51,9 +61,9 @@ local LIST = table.freeze({
 		actionText = "Browse",
 		mode = "pedlar",
 		catalogueId = PEDLAR_ID,
-		promptKind = Town.PEDLAR_PROMPT_NAME,
-		promptPath = table.freeze({ "Districts", PEDLAR_ID, Town.PEDLAR_HOST, Town.PEDLAR_PROMPT_NAME }),
-		fallbackPath = table.freeze({ "Hollowmere", PEDLAR_ID, PEDLAR_ID .. "PromptAnchor" }),
+		promptKind = PEDLAR_PROMPT,
+		modelPath = table.freeze({ "Districts", PEDLAR_ID }),
+		fallbackPath = table.freeze({ "Districts", PEDLAR_ID, PEDLAR_ID .. "PromptAnchor" }),
 	}),
 })
 

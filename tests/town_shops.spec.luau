@@ -82,6 +82,17 @@ local function node(name: string, className: string, attributes: { [string]: any
 	function self:IsA(class: string)
 		return self.ClassName == class
 	end
+	function self:GetDescendants()
+		local out = {}
+		local function walkNodes(current: any)
+			for _, child in current.children do
+				table.insert(out, child)
+				walkNodes(child)
+			end
+		end
+		walkNodes(self)
+		return out
+	end
 	return self
 end
 
@@ -145,8 +156,8 @@ Check.test("anchor paths match the kit contract", function()
 		Check.eq(entry.actionText, "Enter", shopId)
 	end
 	local pedlar = ShopAnchors.get(ShopAnchors.PEDLAR_ID)
-	Check.eq(ShopAnchors.pathText(pedlar.promptPath), "Districts.PalePedlar.Floor.Pedlar")
-	Check.eq(ShopAnchors.pathText(pedlar.fallbackPath), "Hollowmere.PalePedlar.PalePedlarPromptAnchor")
+	Check.eq(ShopAnchors.pathText(pedlar.modelPath), "Districts.PalePedlar")
+	Check.eq(ShopAnchors.pathText(pedlar.fallbackPath), "Districts.PalePedlar.PalePedlarPromptAnchor")
 	Check.eq(pedlar.actionText, "Browse")
 	Check.eq(pedlar.mode, "pedlar")
 	Check.eq(ShopAnchors.get("VeilAndFate").mode, "soon")
@@ -200,12 +211,11 @@ Check.test("present anchors bind without waiting and a missing anchor is listed"
 	local stall = add(districts, node("PalePedlar", "Model", nil, quiet))
 	local floor = add(stall, node("Floor", "Part", nil, quiet))
 	add(floor, node("Pedlar", "ProximityPrompt", { Kind = "Pedlar" }, quiet))
-	local fallback = add(hollow, node("PalePedlar", "Model", nil, quiet))
-	add(fallback, node("PalePedlarPromptAnchor", "Part", { ShopId = "PalePedlar" }, quiet))
+	local fallback = add(stall, node("PalePedlarPromptAnchor", "Part", { ShopId = "PalePedlar" }, quiet))
 	local _missing, created = bindNow(full, quiet)
 	Check.eq(#quiet, 0)
 	Check.eq(#created, 5)
-	Check.eq(fallback:FindFirstChild("PalePedlarPromptAnchor"):FindFirstChildWhichIsA("ProximityPrompt"), nil)
+	Check.eq(fallback:FindFirstChildWhichIsA("ProximityPrompt"), nil)
 	Check.eq(countClass(full, "ProximityPrompt"), 6)
 
 	local waits = {}
@@ -252,14 +262,12 @@ Check.test("the pedlar prompt is kept, and the fallback is used only when it is 
 	local function townWith(prompt: boolean, anchor: boolean)
 		local waits = {}
 		local root = node("Town", "Folder", nil, waits)
-		local hollow = add(root, node("Hollowmere", "Folder", nil, waits))
+		local districts = add(root, node("Districts", "Folder", nil, waits))
+		local stall = add(districts, node("PalePedlar", "Model", nil, waits))
 		if anchor then
-			local model = add(hollow, node("PalePedlar", "Model", nil, waits))
-			add(model, node("PalePedlarPromptAnchor", "Part", { ShopId = "PalePedlar" }, waits))
+			add(stall, node("PalePedlarPromptAnchor", "Part", { ShopId = "PalePedlar" }, waits))
 		end
 		if prompt then
-			local districts = add(root, node("Districts", "Folder", nil, waits))
-			local stall = add(districts, node("PalePedlar", "Model", nil, waits))
 			local host = add(stall, node("Floor", "Part", nil, waits))
 			add(host, node(Town.PEDLAR_PROMPT_NAME, "ProximityPrompt", nil, waits))
 		end
@@ -300,6 +308,24 @@ Check.test("a mismatched shop id does not get a prompt", function()
 		end
 	end
 	Check.eq(found, true)
+end)
+
+Check.test("a step-0 profile can buy at each town shop", function()
+	for _, entry in ShopAnchors.list() do
+		local profile = purse()
+		profile.onboarding.step = 0
+		local gate = openGate()
+		gate.step = 0
+		if ShopAnchors.sells(entry) then
+			local item = purchasable(entry.shopId)
+			local result = TownShop.buy(profile, entry.shopId, item.id, "step0-" .. entry.shopId, 1, gate)
+			Check.eq(result.code, "ok", entry.shopId)
+			Check.eq(profile.onboarding.step, 0, entry.shopId)
+		else
+			local result = TownShop.buy(profile, entry.shopId, "reed_cage", "step0-soon", 1, gate)
+			Check.eq(result.code, "soon", entry.shopId)
+		end
+	end
 end)
 
 Check.test("every counter validates a cash purchase and keeps it through save and load", function()
@@ -365,9 +391,11 @@ Check.test("bad shop arguments are refused and a client price is not trusted", f
 		TownShop.buy(profile, "PalePedlar", "reed_cage", "t-far", 1, openGate(Town.BUY_DISTANCE + 1)).code,
 		"distance"
 	)
+	local earlyProfile = purse()
+	earlyProfile.onboarding.step = 0
 	local early = openGate()
-	early.step = Shop.GATE_STEP - 1
-	Check.eq(TownShop.buy(profile, "PalePedlar", "reed_cage", "t-step", 1, early).code, "step")
+	early.step = 0
+	Check.eq(TownShop.buy(earlyProfile, "PalePedlar", "reed_cage", "t-step", 1, early).code, "ok")
 	local shut = openGate()
 	shut.opened = false
 	Check.eq(TownShop.buy(profile, "PalePedlar", "reed_cage", "t-shut", 1, shut).code, "open")
@@ -481,7 +509,37 @@ Check.test("later lanterns and cryptids are not for sale, and wares migrate with
 	raw.wares = { counts = { reed_cage = -1 } }
 	Check.eq(Schema.migrate(raw, 4_000), nil)
 	local save = fs.readFile("src/shared/Config/Save.luau")
-	Check.contains(save, "DATA_VERSION = 9")
+	Check.contains(save, "DATA_VERSION = 10")
+	local v9 = Schema.deepCopy(purse())
+	v9.dataVersion = 9
+	v9.wares = nil
+	v9.cash = 80
+	local fromV9 = Schema.migrate(v9, 5_000)
+	Check.eq(fromV9.dataVersion, 10)
+	Check.eq(fromV9.cash, 80)
+	Check.eq(fromV9.rebirths, 0)
+	Check.eq(next(fromV9.wares.counts), nil)
+	local v10 = Schema.deepCopy(purse())
+	v10.wares = nil
+	v10.cash = 44
+	v10.rebirths = 2
+	v10.familiarId = "fam_1"
+	v10.everHeld1M = true
+	v10.cryptids["kept"] = {
+		speciesId = "hodag",
+		mutation = "",
+		traits = {},
+		acquiredAt = 1,
+		source = "pedlar",
+	}
+	local keptLedger = Schema.migrate(v10, 5_000)
+	Check.eq(keptLedger.dataVersion, 10)
+	Check.eq(keptLedger.cash, 44)
+	Check.eq(keptLedger.rebirths, 2)
+	Check.eq(keptLedger.familiarId, "fam_1")
+	Check.eq(keptLedger.everHeld1M, true)
+	Check.eq(keptLedger.cryptids["kept"].speciesId, "hodag")
+	Check.eq(next(keptLedger.wares.counts), nil)
 	local catalogue = fs.readFile("src/shared/Config/TownShops.luau")
 	Check.contains(catalogue, "-- PLACEHOLDER: pending design")
 	Check.eq(string.find(catalogue, "Robux", 1, true), nil)
@@ -537,7 +595,21 @@ Check.test("shop remotes are server checked and the placeholder panel shows each
 	Check.contains(service, "prompt.ObjectText = entry.displayName")
 	Check.contains(service, "task.spawn")
 	local interactions = fs.readFile("src/client/Interactions.luau")
-	Check.contains(interactions, "ShopAnchors.PROMPT_KIND")
+	Check.contains(interactions, 'kindName == "SkillShrine"')
+	Check.eq(string.find(interactions, "ShopAnchors", 1, true), nil)
+	Check.eq(string.find(interactions, '"Pedlar"', 1, true), nil)
+	Check.eq(string.find(session, "Shop.GATE_STEP", 1, true), nil)
+	Check.eq(string.find(session, "PEDLAR_HOST", 1, true), nil)
+	local anchors = fs.readFile("src/shared/Config/ShopAnchors.luau")
+	Check.eq(string.find(anchors, "PEDLAR_HOST", 1, true), nil)
+	local browse = fs.readFile("src/shared/Logic/PedlarBrowse.luau")
+	Check.eq(string.find(browse, "PEDLAR_HOST", 1, true), nil)
+	local pedlar = fs.readFile("src/server/Pedlar.luau")
+	Check.eq(string.find(pedlar, "PedlarBoard", 1, true), nil)
+	Check.eq(string.find(pedlar, "ShopRoll", 1, true), nil)
+	Check.eq(string.find(pedlar, "StockLight", 1, true), nil)
+	Check.eq(string.find(pedlar, "StockGlow", 1, true), nil)
+	Check.contains(pedlar, "PromptTriggered")
 	Check.contains(session, "Shop.CRYPTID_REFUSAL")
 	Check.contains(session, "SetAttribute(Shop.OPEN_TOKEN, session.pedlarOpenToken)")
 end)

@@ -530,12 +530,11 @@ local function pedlarDistance(player: Player): number?
 	if model == nil then
 		return nil
 	end
-	local host = model:FindFirstChild(Town.PEDLAR_HOST)
-	if host ~= nil and host:IsA("BasePart") then
-		return distanceTo(player, host)
-	end
 	if model:IsA("Model") then
 		return distanceTo(player, model.PrimaryPart)
+	end
+	if model:IsA("BasePart") then
+		return distanceTo(player, model)
 	end
 	return nil
 end
@@ -572,11 +571,14 @@ local function grantPedlarOpen(session: any): boolean
 		return false
 	end
 	local onboarding = session.profile.onboarding
-	local step = if type(onboarding) == "table" then onboarding.step else nil
+	local step = 0
+	if type(onboarding) == "table" and type(onboarding.step) == "number" then
+		step = onboarding.step
+	end
 	local opened, at = PedlarBrowse.tryOpen(
 		pedlarDistance(session.player),
 		step,
-		Shop.GATE_STEP,
+		0,
 		Town.PROMPT_DISTANCE,
 		os.clock(),
 		session.lastPedlarOpenAt,
@@ -1243,10 +1245,14 @@ function PlayerSession.onTownShopOpen(player: Player, shopId: any)
 		grantPedlarOpen(session)
 		return
 	end
+	local step = session.profile.onboarding.step
+	if type(step) ~= "number" then
+		step = 0
+	end
 	local opened, at = PedlarBrowse.tryOpen(
 		shopDistance(player, parsed),
-		session.profile.onboarding.step,
-		Shop.GATE_STEP,
+		step,
+		0,
 		Town.PROMPT_DISTANCE,
 		os.clock(),
 		session.lastTownShopOpenAt,

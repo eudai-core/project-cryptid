@@ -11,9 +11,6 @@ end
 local Economy = import("../Config/Economy", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Economy")
 end)
-local Shop = import("../Config/Shop", function()
-	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("Shop")
-end)
 local ShopAnchors = import("../Config/ShopAnchors", function()
 	return script.Parent.Parent:WaitForChild("Config"):WaitForChild("ShopAnchors")
 end)
@@ -145,9 +142,6 @@ local function ensure(profile: any): boolean
 	if type(profile) ~= "table" then
 		return false
 	end
-	if profile.wares == nil then
-		profile.wares = TownShop.fresh()
-	end
 	local wares = profile.wares
 	if type(wares) ~= "table" or type(wares.counts) ~= "table" or type(wares.receipts) ~= "table" then
 		return false
@@ -187,29 +181,24 @@ local function owned(profile: any, itemId: string): number
 	return value
 end
 
--- Only the open flag, the measured distance, and the onboarding step are read.
--- A price, a cash figure, or a grant stuffed into the same table is ignored.
+-- Only the open flag and the measured distance are read.
+-- A price, a cash figure, a grant, or an onboarding step stuffed into the same table is ignored.
 local function readGate(gate: any): any
 	if type(gate) ~= "table" then
 		return {
 			opened = false,
 			distance = nil,
-			step = nil,
 		}
 	end
 	return {
 		opened = gate.opened == true,
 		distance = gate.distance,
-		step = gate.step,
 	}
 end
 
 local function gateCode(gate: any): string?
 	if gate.opened ~= true then
 		return "open"
-	end
-	if type(gate.step) ~= "number" or gate.step < Shop.GATE_STEP then
-		return "step"
 	end
 	if RemoteArgs.withinDistance(gate.distance, Town.BUY_DISTANCE) ~= true then
 		return "distance"
