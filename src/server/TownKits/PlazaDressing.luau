@@ -442,50 +442,6 @@ local function addFlame(parent: Instance, token: string)
 	emitter.Parent = parent
 end
 
--- Same contract as Kit.animate: no work under Lune, Heartbeat on the server,
--- pcall around each step, and the connection drops when the model is destroyed.
-local function animate(model: Instance, step: (number, number) -> ())
-	-- selene: allow(global_usage)
-	if _G.LUNE == true then
-		return
-	end
-	local ran, run = pcall(function()
-		return game:GetService("RunService")
-	end)
-	if not ran or run == nil or run.Heartbeat == nil or type(run.Heartbeat.Connect) ~= "function" then
-		return
-	end
-	local origin = os.clock()
-	local connection: any = nil
-	local function onHeartbeat(dt: number)
-		local ok = pcall(step, dt, os.clock() - origin)
-		if not ok and connection ~= nil then
-			pcall(function()
-				connection:Disconnect()
-			end)
-		end
-	end
-	local hooked, result = pcall(function()
-		return run.Heartbeat:Connect(onHeartbeat)
-	end)
-	if not hooked or result == nil then
-		return
-	end
-	connection = result
-	local function stop()
-		pcall(function()
-			connection:Disconnect()
-		end)
-	end
-	if model.Destroying ~= nil and type(model.Destroying.Connect) == "function" then
-		pcall(function()
-			model.Destroying:Connect(function()
-				stop()
-			end)
-		end)
-	end
-end
-
 local function drive(flicker: { any }, sways: { any }, dt: number, t: number)
 	if dt < 0 then
 		return
@@ -1348,7 +1304,7 @@ function PlazaDressing.replace(townFolder: Instance, refs: any): any
 	placeLife(folder, keep, detail)
 	local flicker = budget.flicker
 	local motion = sways
-	animate(folder, function(dt: number, t: number)
+	Kit.animate(folder, function(dt: number, t: number)
 		drive(flicker, motion, dt, t)
 	end)
 

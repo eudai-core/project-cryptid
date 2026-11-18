@@ -73,7 +73,7 @@ local DOOM_CLASS = {
 }
 
 -- Roblox server identity cannot assign Script.Source. When that write fails, the kit
--- spins the same parts from Heartbeat. Under Lune the source returns before any API.
+-- spins the same parts through Kit.animate. Under Lune the source returns before any API.
 local SPIN_SOURCE = [=[
 if type(_G) == "table" and rawget(_G, "LUNE") == true then
 	return
@@ -124,25 +124,6 @@ pcall(function()
 	end)
 end)
 ]=]
-
-local spinRigs: { any } = {}
-local spinConnected = false
-
-local function stepPortalSpin(dt: number)
-	local step = if type(dt) == "number" then dt else 0
-	for _, rig in spinRigs do
-		rig.elapsed += step
-		local axis = rig.axis
-		if axis ~= nil and axis.CFrame ~= nil then
-			for index, part in rig.parts do
-				local relative = rig.relative[index]
-				if relative ~= nil and part.CFrame ~= nil then
-					part.CFrame = axis.CFrame * CFrame.Angles(rig.speed[index] * rig.elapsed, 0, 0) * relative
-				end
-			end
-		end
-	end
-end
 
 local function distance(a: any, b: any): number
 	local dx = a.X - b.X
@@ -840,28 +821,23 @@ local function bindModuleSpin(model: Instance, axis: any)
 			speed[#parts] = if type(rate) == "number" then rate else 0.6
 		end
 	end
-	table.insert(spinRigs, {
-		axis = axis,
-		parts = parts,
-		relative = relative,
-		speed = speed,
-		elapsed = 0,
-	})
-	if spinConnected then
-		return
-	end
-	local ok, runService = pcall(function()
-		return game:GetService("RunService")
+	local spun = 0
+	Kit.animate(model, function(dt: number, elapsed: number)
+		if type(elapsed) ~= "number" then
+			return
+		end
+		local step = if type(dt) == "number" then dt else 0
+		spun += step
+		if axis == nil or axis.CFrame == nil then
+			return
+		end
+		for index, part in parts do
+			local offset = relative[index]
+			if offset ~= nil and part.CFrame ~= nil then
+				part.CFrame = axis.CFrame * CFrame.Angles(speed[index] * spun, 0, 0) * offset
+			end
+		end
 	end)
-	if not ok or runService == nil then
-		return
-	end
-	local heartbeat = runService.Heartbeat
-	if heartbeat == nil or type(heartbeat.Connect) ~= "function" then
-		return
-	end
-	spinConnected = true
-	heartbeat:Connect(stepPortalSpin)
 end
 
 local function attachSpin(model: Instance, axis: any)

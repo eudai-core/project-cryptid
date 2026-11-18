@@ -772,6 +772,21 @@ Check.test("kit animation is one Lune-safe helper", function()
 	for _, needle in { "Heartbeat", "RunService", ":Connect", "task.wait", "task.spawn", "task.defer" } do
 		Check.eq(string.find(ship, needle, 1, true), nil, needle)
 	end
+	local switched = {
+		"src/server/TownKits/ClockTower.luau",
+		"src/server/TownKits/Lanternwright.luau",
+		"src/server/TownKits/PalePedlar.luau",
+		"src/server/TownKits/PlazaDressing.luau",
+	}
+	for _, path in switched do
+		local text = fs.readFile(path)
+		Check.eq(string.find(text, "Kit.animate", 1, true) ~= nil, true, path)
+		for _, needle in { "Heartbeat", "RunService", "TweenService", "task.wait", "task.spawn" } do
+			Check.eq(string.find(text, needle, 1, true), nil, path .. " " .. needle)
+		end
+	end
+	local portals = fs.readFile("src/server/TownKits/Portals.luau")
+	Check.eq(string.find(portals, "Kit.animate", 1, true) ~= nil, true)
 	local ran = false
 	Kit.animate({ Parent = {} }, function()
 		ran = true

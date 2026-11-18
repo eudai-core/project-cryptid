@@ -97,60 +97,6 @@ local function addPoint(parent: Instance, name: string, range: number, brightnes
 	light.Parent = parent
 end
 
-local function animate(model: any, step: (number, number) -> ())
-	-- selene: allow(global_usage)
-	if _G.LUNE == true then
-		return
-	end
-	local connection: any = nil
-	local function stop()
-		if connection ~= nil and type(connection.Disconnect) == "function" then
-			pcall(function()
-				connection:Disconnect()
-			end)
-		end
-		connection = nil
-	end
-	local function watch()
-		local destroying = if model ~= nil then model.Destroying else nil
-		if destroying == nil or type(destroying.Connect) ~= "function" then
-			return
-		end
-		pcall(function()
-			destroying:Connect(function()
-				stop()
-			end)
-		end)
-	end
-	local bound = pcall(function()
-		local runService = game:GetService("RunService")
-		connection = runService.Heartbeat:Connect(function(dt)
-			step(if type(dt) == "number" then dt else 0, os.clock())
-		end)
-	end)
-	if bound and connection ~= nil then
-		watch()
-		return
-	end
-	pcall(function()
-		local tweens = game:GetService("TweenService")
-		if tweens == nil or type(tweens.Create) ~= "function" then
-			return
-		end
-		local clock = Instance.new("NumberValue")
-		clock.Name = "SwingClock"
-		clock.Value = 0
-		clock.Parent = model
-		local info = TweenInfo.new(2.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true)
-		local tween = tweens:Create(clock, info, { Value = 1 })
-		connection = clock:GetPropertyChangedSignal("Value"):Connect(function()
-			step(0, clock.Value)
-		end)
-		tween:Play()
-		watch()
-	end)
-end
-
 local function guardsPrompt(inst: Instance, prompts: { any }): boolean
 	for _, prompt in prompts do
 		local cursor = prompt
@@ -514,7 +460,7 @@ local function buildTradeSign(model: any, parent: Instance, pivot: any)
 		[board] = hinge:Inverse() * board.CFrame,
 		[trim] = hinge:Inverse() * trim.CFrame,
 	}
-	animate(model, function(_dt: number, t: number)
+	Kit.animate(model, function(_dt: number, t: number)
 		local spun = hinge * CFrame.Angles(0, 0, math.sin(t * 0.7) * 0.06)
 		for part, localCf in rest do
 			if part.Parent ~= nil then

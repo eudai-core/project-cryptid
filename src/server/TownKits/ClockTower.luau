@@ -992,53 +992,12 @@ local function readNow(dt: number): number
 	return os.clock() + dt
 end
 
--- Same contract as the forthcoming Kit.animate(model, fn(dt, t)).
--- The integration branch will switch this call over. Do not edit Kit.luau for it.
-local function animate(model: Instance, step: (number, number) -> ())
-	-- selene: allow(global_usage)
-	if _G.LUNE == true then
-		return
-	end
-	local ok, runService = pcall(function()
-		return game:GetService("RunService")
-	end)
-	if not ok or runService == nil then
-		return
-	end
-	local heartbeat = runService.Heartbeat
-	if type(heartbeat) ~= "table" or type(heartbeat.Connect) ~= "function" then
-		return
-	end
-	local connection: any = nil
-	local function disconnect()
-		if connection ~= nil then
-			connection:Disconnect()
-			connection = nil
-		end
-	end
-	local function onStep(dt: number)
-		local moved = pcall(step, dt, readNow(dt))
-		if not moved then
-			disconnect()
-		end
-	end
-	local connected = pcall(function()
-		connection = heartbeat:Connect(onStep)
-	end)
-	if not connected then
-		connection = nil
-		return
-	end
-	pcall(function()
-		model.Destroying:Connect(disconnect)
-	end)
-end
-
 local function driveClock(model: Instance, rig: any)
-	animate(model, function(dt: number, now: number)
-		if type(dt) ~= "number" then
+	Kit.animate(model, function(dt: number, elapsed: number)
+		if type(dt) ~= "number" or type(elapsed) ~= "number" then
 			return
 		end
+		local now = readNow(dt)
 		local minute = 60
 		local seconds = now % minute
 		local minutes = math.floor(now / minute) % minute
