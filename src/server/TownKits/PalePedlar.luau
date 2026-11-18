@@ -97,27 +97,6 @@ local function addPoint(parent: Instance, name: string, range: number, brightnes
 	light.Parent = parent
 end
 
-local function addLife(parent: Instance, name: string)
-	local emitter = Instance.new("ParticleEmitter")
-	emitter.Name = name
-	emitter.Rate = 4
-	emitter.Lifetime = NumberRange.new(2.1, 2.1)
-	emitter.Speed = NumberRange.new(0.15, 0.4)
-	emitter.SpreadAngle = Vector2.new(22, 22)
-	emitter.Rotation = NumberRange.new(0, 360)
-	emitter.RotSpeed = NumberRange.new(-10, 10)
-	emitter.Acceleration = Vector3.new(0, 0.35, 0)
-	emitter.EmissionDirection = Enum.NormalId.Top
-	emitter.LightInfluence = 0
-	emitter.Color = ColorSequence.new(UITheme.color("Bone"))
-	emitter.Size = NumberSequence.new(0.16)
-	emitter.Transparency = NumberSequence.new(0.45)
-	emitter.Enabled = true
-	emitter:SetAttribute("TownEffect", "PedlarLife")
-	emitter:SetAttribute("TownFlame", "extra")
-	emitter.Parent = parent
-end
-
 local function animate(model: any, step: (number, number) -> ())
 	-- selene: allow(global_usage)
 	if _G.LUNE == true then
@@ -414,7 +393,7 @@ local function buildCrates(parent: Instance, pivot: any, detail: boolean)
 	end
 end
 
-local function buildCages(parent: Instance, pivot: any, detail: boolean)
+local function buildCages(parent: Instance, pivot: any)
 	local seats = { -4.4, -1.5, 1.5, 4.4 }
 	for index, x in seats do
 		for bar = 0, 3 do
@@ -445,6 +424,16 @@ local function buildCages(parent: Instance, pivot: any, detail: boolean)
 			decor = true,
 		})
 		place(parent, pivot, {
+			name = "CageChain",
+			size = Vector3.new(1.6, 0.05, 0.05),
+			cf = CFrame.new(x, 3.55, -3.7) * CFrame.Angles(0, 0, math.rad(90)),
+			material = METAL,
+			color = "Soot",
+			decor = true,
+			shadow = false,
+			shape = Enum.PartType.Cylinder,
+		})
+		place(parent, pivot, {
 			name = "Curio",
 			size = Vector3.new(0.28, 0.22, 0.18),
 			cf = CFrame.new(x, 1.75, -3.5) * CFrame.Angles(0.2, sway(index, 0.4), 0.1),
@@ -453,59 +442,18 @@ local function buildCages(parent: Instance, pivot: any, detail: boolean)
 			decor = true,
 			shadow = false,
 		})
-		if detail and index % 2 == 0 then
-			local wick = place(parent, pivot, {
-				name = "CageWick",
-				size = Vector3.new(0.12, 0.12, 0.12),
-				cf = CFrame.new(x, 2.2, -3.5),
-				material = GLASS,
-				color = "Rift",
-				decor = true,
-				shadow = false,
-				shape = Enum.PartType.Ball,
-			})
-			wick.Transparency = 0.35
-			addPoint(wick, "CageGlow", 5, 0.22, "Rift")
-		end
-	end
-end
-
-local function buildCloak(parent: Instance, pivot: any, detail: boolean)
-	local facets = if detail then 7 else 4
-	for index = 1, facets do
-		local y = 1.6 + index * 0.55
-		local width = 2.8 - index * 0.18
-		place(parent, pivot, {
-			className = "WedgePart",
-			name = "CloakFacet",
-			size = Vector3.new(width, 0.55, 0.9),
-			cf = CFrame.new(sway(index, 0.08), y, 4.85)
-				* CFrame.Angles(math.rad(8), sway(index, 0.2), math.rad(sway(index, 6))),
-			material = BONE,
-			color = if index % 2 == 0 then "Bone" else "BoneDim",
-			decor = true,
-		})
-	end
-	place(parent, pivot, {
-		className = "WedgePart",
-		name = "CloakHood",
-		size = Vector3.new(1.3, 0.7, 0.85),
-		cf = CFrame.new(0.05, 5.7, 4.55) * CFrame.Angles(math.rad(-18), 0, math.rad(4)),
-		material = BONE,
-		color = "Bone",
-		decor = true,
-	})
-	if detail then
-		local hem = place(parent, pivot, {
-			name = "CloakHem",
-			size = Vector3.new(2.4, 0.08, 0.7),
-			cf = CFrame.new(0, 1.45, 4.95),
-			material = CLOTH,
-			color = "Bone",
+		local wick = place(parent, pivot, {
+			name = "CageWick",
+			size = Vector3.new(0.16, 0.16, 0.16),
+			cf = CFrame.new(x, 2.15, -3.5),
+			material = GLASS,
+			color = "Rift",
 			decor = true,
 			shadow = false,
+			shape = Enum.PartType.Ball,
 		})
-		addLife(hem, "PaleMotes")
+		wick.Transparency = 0.4
+		addPoint(wick, "CageGlow", 4, 0.16, "Rift")
 	end
 end
 
@@ -597,6 +545,43 @@ local function buildHanger(parent: Instance, pivot: any)
 		decor = true,
 		shape = Enum.PartType.Cylinder,
 	})
+	-- StockGlow is toggled off after a rotation pulse. This globe is a separate
+	-- always-on supplies lantern and is not a child of the tagged PedlarLantern.
+	local globe = place(parent, pivot, {
+		name = "SupplyLantern",
+		size = Vector3.new(0.7, 0.9, 0.7),
+		cf = CFrame.new(-5.19, 5.05, -4.85),
+		material = GLASS,
+		color = "Rift",
+		decor = true,
+		shadow = false,
+	})
+	globe.Transparency = 0.15
+	local light = Instance.new("PointLight")
+	light.Name = "SupplyLight"
+	light.Color = UITheme.color("Rift")
+	light.Range = 10
+	light.Brightness = 0.7
+	light.Shadows = false
+	light.Enabled = true
+	light.Parent = globe
+	local emitter = Instance.new("ParticleEmitter")
+	emitter.Name = "SupplyGlow"
+	emitter.Rate = 3
+	emitter.Lifetime = NumberRange.new(2, 2)
+	emitter.Speed = NumberRange.new(0.1, 0.35)
+	emitter.SpreadAngle = Vector2.new(16, 16)
+	emitter.Rotation = NumberRange.new(0, 360)
+	emitter.RotSpeed = NumberRange.new(-8, 8)
+	emitter.Acceleration = Vector3.new(0, 0.25, 0)
+	emitter.EmissionDirection = Enum.NormalId.Top
+	emitter.LightInfluence = 0
+	emitter.Color = ColorSequence.new(UITheme.color("Rift"))
+	emitter.Size = NumberSequence.new(0.18)
+	emitter.Transparency = NumberSequence.new(0.4)
+	emitter.Enabled = true
+	emitter:SetAttribute("TownEffect", "PedlarSupply")
+	emitter.Parent = globe
 end
 
 function PalePedlar.replace(townFolder: Instance, refs: any): any
@@ -634,8 +619,7 @@ function PalePedlar.replace(townFolder: Instance, refs: any): any
 	buildWheels(folder, pivot)
 	buildCanopy(folder, pivot, detail)
 	buildCrates(folder, pivot, detail)
-	buildCages(folder, pivot, detail)
-	buildCloak(folder, pivot, detail)
+	buildCages(folder, pivot)
 	buildMosaic(folder, pivot, detail)
 	buildTradeSign(model, folder, pivot)
 	buildHanger(folder, pivot)

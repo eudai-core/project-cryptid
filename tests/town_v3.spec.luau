@@ -1125,7 +1125,7 @@ Check.test("hollowmere is the mythic plaza and neon stays on flames portals rune
 		shutters += 1
 		cursor = at + #Town.SHUTTERED
 	end
-	Check.eq(shutters, 4)
+	Check.eq(shutters, 3)
 	local pedlar = named(root, "PalePedlar")
 	Check.truthy(pedlar)
 	for _, inst in descendants(pedlar) do
@@ -1915,11 +1915,22 @@ Check.test("lanternwright takes the free plaza slot and the pedlar counter survi
 	local anchor = nil
 	local mesh = 0
 	local humanoids = 0
+	local amber = 0
+	local windows = 0
+	local glyph = nil
 	for _, inst in descendants(shop) do
 		if inst.Name == "SignText" and inst.ClassName == "TextLabel" then
 			signText = inst.Text
 		elseif inst.Name == "LanternwrightPromptAnchor" then
 			anchor = inst
+		elseif inst.Name == "LanternGlobe" then
+			amber += 1
+			Check.eq(inst.Color.Hex, "FFB36B", "amber lantern")
+		elseif inst.Name == "Window" then
+			windows += 1
+			Check.eq(inst.Color.Hex, "FFB36B", "warm window")
+		elseif inst.Name == "SignGlyph" then
+			glyph = inst
 		elseif inst.ClassName == "ProximityPrompt" then
 			prompts += 1
 		elseif inst.ClassName == "MeshPart" then
@@ -1928,6 +1939,12 @@ Check.test("lanternwright takes the free plaza slot and the pedlar counter survi
 			humanoids += 1
 		end
 	end
+	local districtFolder = named(root, "Districts")
+	Check.truthy(districtFolder, "Districts")
+	Check.eq(districtFolder:FindFirstChild("Lanternwright"), nil)
+	Check.eq(amber >= 12, true, "amber rack " .. tostring(amber))
+	Check.eq(windows >= 2, true, "windows")
+	Check.truthy(glyph, "lantern icon")
 	Check.eq(signText, "The Lanternwright")
 	Check.truthy(anchor, "LanternwrightPromptAnchor")
 	Check.eq(anchor:GetAttribute("ShopId"), "Lanternwright")
@@ -1959,6 +1976,10 @@ Check.test("lanternwright takes the free plaza slot and the pedlar counter survi
 	local pedlarAnchor = nil
 	local promptCount = 0
 	local neon = 0
+	local supply = nil
+	local supplyGlow = nil
+	local cageGlow = 0
+	local cloak = 0
 	for _, inst in descendants(pedlar) do
 		if inst.Name == "Floor" and inst.ClassName == "Part" then
 			floor = inst
@@ -1966,6 +1987,14 @@ Check.test("lanternwright takes the free plaza slot and the pedlar counter survi
 			lantern = inst
 		elseif inst.Name == "StockLight" then
 			stock = inst
+		elseif inst.Name == "SupplyLight" then
+			supply = inst
+		elseif inst.Name == "SupplyGlow" then
+			supplyGlow = inst
+		elseif inst.Name == "CageGlow" then
+			cageGlow += 1
+		elseif inst.Name == "CloakFacet" or inst.Name == "CloakHood" or inst.Name == "CloakHem" then
+			cloak += 1
 		elseif inst.Name == "PalePedlarPromptAnchor" then
 			pedlarAnchor = inst
 		elseif inst.ClassName == "ProximityPrompt" then
@@ -1987,6 +2016,16 @@ Check.test("lanternwright takes the free plaza slot and the pedlar counter survi
 	Check.eq(promptCount, 1)
 	Check.eq(stock.Parent, lantern)
 	Check.eq(stock.Name, "StockLight")
+	Check.truthy(supply, "SupplyLight")
+	Check.eq(supply.Enabled, true)
+	Check.eq(supply.Parent.Name, "SupplyLantern")
+	Check.eq(supply.Parent ~= lantern, true)
+	Check.eq(supply.Color.Hex, "7FA34A")
+	Check.truthy(supplyGlow, "SupplyGlow")
+	Check.eq(supplyGlow.Enabled, true)
+	Check.eq(supplyGlow.Parent.Name, "SupplyLantern")
+	Check.eq(cageGlow, 4)
+	Check.eq(cloak, 0)
 	local Lanterns = require("../src/shared/Config/Lanterns")
 	Check.eq(stock.Range, Lanterns.RANGE)
 	Check.eq(stock.Brightness, Lanterns.BRIGHTNESS)

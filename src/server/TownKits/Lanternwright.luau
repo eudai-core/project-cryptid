@@ -494,32 +494,18 @@ local function hangingLantern(parent: Instance, pivot: any, at: any, token: stri
 end
 
 local function buildLanterns(parent: Instance, pivot: any, detail: boolean)
-	local front = {
-		{ x = -2.7, y = 4.15, token = "Candle", lit = true },
-		{ x = -1.7, y = 3.85, token = "FlameOrange", lit = false },
-		{ x = -0.85, y = 4.25, token = "Gold", lit = detail },
-		{ x = 0.9, y = 4.05, token = "Bone", lit = false },
-		{ x = 1.85, y = 4.4, token = "Candle", lit = true },
-		{ x = 2.65, y = 3.9, token = "Moss", lit = detail },
-	}
-	for _, lamp in front do
-		hangingLantern(parent, pivot, Vector3.new(lamp.x, lamp.y, -3.85), lamp.token, lamp.lit)
+	local frontCount = if detail then 12 else 8
+	for index = 1, frontCount do
+		local x = -3.05 + (index - 0.5) * (6.1 / frontCount)
+		local y = 4.15 + math.sin(index * 1.4) * 0.16
+		hangingLantern(parent, pivot, Vector3.new(x, y, -3.88), "Candle", index % 3 == 1)
 	end
 	if not detail then
 		return
 	end
-	local inner = {
-		{ x = -2.1, y = 4.7, z = -1.6, token = "Gold" },
-		{ x = -0.4, y = 4.9, z = -0.8, token = "Candle" },
-		{ x = 1.2, y = 4.55, z = -1.2, token = "Rift" },
-		{ x = 2.3, y = 4.8, z = 0.4, token = "FlameOrange" },
-		{ x = -2.4, y = 3.4, z = 1.6, token = "Bone" },
-		{ x = 0.4, y = 3.6, z = 2.2, token = "Moss" },
-		{ x = -1.5, y = 5.15, z = -3.2, token = "Candle" },
-		{ x = 1.4, y = 5.05, z = -3.15, token = "Gold" },
-	}
-	for index, lamp in inner do
-		hangingLantern(parent, pivot, Vector3.new(lamp.x, lamp.y, lamp.z), lamp.token, index == 3 or index == 6)
+	for index = 1, 8 do
+		local x = -2.6 + (index - 0.5) * (5.2 / 8)
+		hangingLantern(parent, pivot, Vector3.new(x, 4.85 + sway(index, 0.08), -3.15), "Candle", false)
 	end
 	for index = 1, 5 do
 		place(parent, pivot, {
@@ -710,7 +696,19 @@ local function buildCounter(parent: Instance, pivot: any, detail: boolean)
 	end
 end
 
+local function retireShutteredStall(townFolder: Instance)
+	local districts = townFolder:FindFirstChild("Districts")
+	if districts == nil then
+		return
+	end
+	local stall = districts:FindFirstChild(MODEL_NAME)
+	if stall ~= nil then
+		stall:Destroy()
+	end
+end
+
 function Lanternwright.replace(townFolder: Instance, refs: any): any
+	retireShutteredStall(townFolder)
 	local hollow = townFolder:FindFirstChild("Hollowmere")
 	if hollow == nil or hollow:FindFirstChild(MODEL_NAME) ~= nil then
 		return nil
