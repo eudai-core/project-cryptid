@@ -109,6 +109,8 @@ local VISUAL_FILES = {
 	"src/server/TownKits/TarotTent.luau",
 	"src/server/TownKits/Portals.luau",
 	"src/server/TownKits/ClockTower.luau",
+	"src/server/TownKits/Lanternwright.luau",
+	"src/server/TownKits/PalePedlar.luau",
 }
 
 local function makeInstance(className: string): any
@@ -406,6 +408,7 @@ local function installRoblox(): any
 		return roblox
 	end
 	local services = {}
+	local tagged: { [string]: { any } } = {}
 	roblox = {
 		Color3 = {
 			fromHex = function(hex: string)
@@ -528,7 +531,36 @@ local function installRoblox(): any
 		game = {
 			GetService = function(_, name: string)
 				if services[name] == nil then
-					services[name] = makeInstance(name)
+					local service = makeInstance(name)
+					if name == "CollectionService" then
+						function service:AddTag(inst: any, tag: string)
+							local list = tagged[tag]
+							if list == nil then
+								list = {}
+								tagged[tag] = list
+							end
+							for _, item in list do
+								if item == inst then
+									return
+								end
+							end
+							table.insert(list, inst)
+						end
+						function service:GetTagged(tag: string): { any }
+							local list = tagged[tag]
+							local alive = {}
+							if list == nil then
+								return alive
+							end
+							for _, inst in list do
+								if inst.Parent ~= nil then
+									table.insert(alive, inst)
+								end
+							end
+							return alive
+						end
+					end
+					services[name] = service
 				end
 				return services[name]
 			end,
@@ -1095,7 +1127,7 @@ Check.test("hollowmere is the mythic plaza and neon stays on flames portals rune
 		shutters += 1
 		cursor = at + #Town.SHUTTERED
 	end
-	Check.eq(shutters, 4)
+	Check.eq(shutters, 3)
 	local pedlar = named(root, "PalePedlar")
 	Check.truthy(pedlar)
 	local PedlarBrowse = loadModule("src/shared/Logic/PedlarBrowse.luau")
@@ -1794,6 +1826,8 @@ Check.test("every registered kit builds on the town when UnionAsync returns an a
 		ApothecaryTree = "RuneheartApothecary",
 		TarotTent = "VeilAndFate",
 		ClockTower = "DuskAndDial",
+		Lanternwright = "Lanternwright",
+		PalePedlar = "PalePedlar",
 	}
 	local function assertPromptAnchor(model: any, shopName: string)
 		local want = shopName .. "PromptAnchor"
@@ -1822,6 +1856,15 @@ Check.test("every registered kit builds on the town when UnionAsync returns an a
 			Check.eq(child.ClassName == "ProximityPrompt", false, shopName)
 		end
 	end
+	local function findKitModel(folder: any, kitName: string): any
+		local found = nil
+		for _, inst in folder:GetDescendants() do
+			if inst.ClassName == "Model" and inst:GetAttribute("TownKit") == kitName then
+				found = inst
+			end
+		end
+		return found
+	end
 	local function assertShopAnchors(folder: any)
 		local seen = 0
 		for _, kit in TownKits.discover() do
@@ -1829,17 +1872,12 @@ Check.test("every registered kit builds on the town when UnionAsync returns an a
 			if shopName == nil then
 				continue
 			end
-			local model = nil
-			for _, inst in folder:GetDescendants() do
-				if inst.Name == shopName and inst.ClassName == "Model" then
-					model = inst
-				end
-			end
-			Check.truthy(model, shopName)
+			local model = findKitModel(folder, kit.name)
+			Check.truthy(model, kit.name)
 			assertPromptAnchor(model, shopName)
 			seen += 1
 		end
-		Check.eq(seen >= 1, true, "shop kits")
+		Check.eq(seen, 6, "shop kits")
 	end
 	local function portalOf(folder: any, id: string): any
 		for _, inst in descendants(folder) do
@@ -1978,6 +2016,15 @@ Check.test("every registered kit builds on the town when UnionAsync returns an a
 		Check.eq(high:GetAttribute("KitQuality"), 10)
 		Check.eq(high:GetAttribute("KitDetail"), true)
 		Check.eq(high:GetAttribute("KitAfterParts") > low:GetAttribute("KitAfterParts"), true)
+		for _, kitName in { "Lanternwright", "PalePedlar" } do
+			local lowShop = findKitModel(lowFolder, kitName)
+			local highShop = findKitModel(highFolder, kitName)
+			Check.truthy(lowShop, kitName)
+			Check.truthy(highShop, kitName)
+			Check.eq(lowShop:GetAttribute("KitDetail"), false, kitName)
+			Check.eq(highShop:GetAttribute("KitDetail"), true, kitName)
+			Check.eq(highShop:GetAttribute("KitAfterParts") > lowShop:GetAttribute("KitAfterParts"), true, kitName)
+		end
 		assertShopAnchors(lowFolder)
 		assertShopAnchors(highFolder)
 		for _, id in REQUIRED_PORTALS do
@@ -2004,4 +2051,174 @@ Check.test("every registered kit builds on the town when UnionAsync returns an a
 	if not ok then
 		error(err, 0)
 	end
+end)
+
+Check.test("lanternwright takes the free plaza slot and the pedlar counter survives", function()
+	local root = townRoot()
+	local hollow = named(root, "Hollowmere")
+	local shop = hollow:FindFirstChild("Lanternwright")
+	Check.truthy(shop, "Lanternwright")
+	Check.eq(shop.ClassName, "Model")
+	Check.eq(shop.PrimaryPart.Name, "Root")
+	Check.eq(shop.PrimaryPart.Transparency, 1)
+	local pivot = shop:GetPivot()
+	local radius = math.sqrt(pivot.X * pivot.X + pivot.Z * pivot.Z)
+	local angle = math.deg(math.atan2(pivot.X, pivot.Z))
+	if angle < 0 then
+		angle += 360
+	end
+	Check.near(radius, 44, 0.05, "lanternwright radius")
+	Check.near(angle, 25, 0.05, "lanternwright angle")
+	Check.eq(shop:GetAttribute("TownKit"), "Lanternwright")
+	local signText = ""
+	local prompts = 0
+	local anchor = nil
+	local mesh = 0
+	local humanoids = 0
+	local amber = 0
+	local windows = 0
+	local glyph = nil
+	for _, inst in descendants(shop) do
+		if inst.Name == "SignText" and inst.ClassName == "TextLabel" then
+			signText = inst.Text
+		elseif inst.Name == "LanternwrightPromptAnchor" then
+			anchor = inst
+		elseif inst.Name == "LanternGlobe" then
+			amber += 1
+			Check.eq(inst.Color.Hex, "FFB36B", "amber lantern")
+		elseif inst.Name == "Window" then
+			windows += 1
+			Check.eq(inst.Color.Hex, "FFB36B", "warm window")
+		elseif inst.Name == "SignGlyph" then
+			glyph = inst
+		elseif inst.ClassName == "ProximityPrompt" then
+			prompts += 1
+		elseif inst.ClassName == "MeshPart" then
+			mesh += 1
+		elseif inst.ClassName == "Humanoid" then
+			humanoids += 1
+		end
+	end
+	local districtFolder = named(root, "Districts")
+	Check.truthy(districtFolder, "Districts")
+	Check.eq(districtFolder:FindFirstChild("Lanternwright"), nil)
+	Check.eq(amber >= 12, true, "amber rack " .. tostring(amber))
+	Check.eq(windows >= 2, true, "windows")
+	Check.truthy(glyph, "lantern icon")
+	Check.eq(signText, "The Lanternwright")
+	Check.truthy(anchor, "LanternwrightPromptAnchor")
+	Check.eq(anchor:GetAttribute("ShopId"), "Lanternwright")
+	Check.eq(prompts, 0)
+	Check.eq(mesh, 0)
+	Check.eq(humanoids, 0)
+	Check.eq(shop:GetAttribute("KitAfterParts") > 800, true, tostring(shop:GetAttribute("KitAfterParts")))
+	print(
+		string.format(
+			"lanternwright angle=%.1f radius=%.1f parts=%s lights=%s emitters=%s",
+			angle,
+			radius,
+			tostring(shop:GetAttribute("KitAfterParts")),
+			tostring(shop:GetAttribute("KitAfterLights")),
+			tostring(shop:GetAttribute("KitAfterEmitters"))
+		)
+	)
+
+	local pedlar = nil
+	local districts = named(root, "Districts")
+	Check.truthy(districts, "Districts")
+	pedlar = districts:FindFirstChild("PalePedlar")
+	Check.truthy(pedlar, "PalePedlar")
+	Check.eq(pedlar:GetAttribute("TownKit"), "PalePedlar")
+	local floor = nil
+	local lantern = nil
+	local stock = nil
+	local pedlarPrompt = nil
+	local pedlarAnchor = nil
+	local promptCount = 0
+	local neon = 0
+	local supply = nil
+	local supplyGlow = nil
+	local cageGlow = 0
+	local cloak = 0
+	for _, inst in descendants(pedlar) do
+		if inst.Name == "Floor" and inst.ClassName == "Part" then
+			floor = inst
+		elseif inst.Name == "PedlarLantern" and inst.ClassName == "Part" then
+			lantern = inst
+		elseif inst.Name == "StockLight" then
+			stock = inst
+		elseif inst.Name == "SupplyLight" then
+			supply = inst
+		elseif inst.Name == "SupplyGlow" then
+			supplyGlow = inst
+		elseif inst.Name == "CageGlow" then
+			cageGlow += 1
+		elseif inst.Name == "CloakFacet" or inst.Name == "CloakHood" or inst.Name == "CloakHem" then
+			cloak += 1
+		elseif inst.Name == "PalePedlarPromptAnchor" then
+			pedlarAnchor = inst
+		elseif inst.ClassName == "ProximityPrompt" then
+			promptCount += 1
+			if inst.Name == "Pedlar" then
+				pedlarPrompt = inst
+			end
+		end
+		if materialName(inst) == "Neon" then
+			neon += 1
+		end
+	end
+	Check.truthy(floor, "Floor")
+	Check.truthy(lantern, "PedlarLantern")
+	Check.truthy(stock, "StockLight")
+	Check.truthy(pedlarPrompt, "Pedlar prompt")
+	Check.eq(pedlarPrompt.Parent, floor)
+	Check.eq(pedlarPrompt.ActionText, "Browse the Pedlar's cages")
+	Check.eq(promptCount, 1)
+	Check.eq(stock.Parent, lantern)
+	Check.eq(stock.Name, "StockLight")
+	Check.truthy(supply, "SupplyLight")
+	Check.eq(supply.Enabled, true)
+	Check.eq(supply.Parent.Name, "SupplyLantern")
+	Check.eq(supply.Parent ~= lantern, true)
+	Check.eq(supply.Color.Hex, "7FA34A")
+	Check.truthy(supplyGlow, "SupplyGlow")
+	Check.eq(supplyGlow.Enabled, true)
+	Check.eq(supplyGlow.Parent.Name, "SupplyLantern")
+	Check.eq(cageGlow, 4)
+	Check.eq(cloak, 0)
+	local Lanterns = require("../src/shared/Config/Lanterns")
+	Check.eq(stock.Range, Lanterns.RANGE)
+	Check.eq(stock.Brightness, Lanterns.BRIGHTNESS)
+	Check.eq(stock.Shadows, Lanterns.SHADOWS)
+	Check.eq(floor.Size.X, Town.STALL_WIDTH)
+	Check.eq(floor.Size.Z, Town.STALL_DEPTH)
+	Check.eq(neon, 0)
+	Check.truthy(pedlarAnchor, "PalePedlarPromptAnchor")
+	Check.eq(pedlarAnchor:GetAttribute("ShopId"), "PalePedlar")
+	Check.eq(pedlarAnchor.Parent, pedlar)
+	local collection = installRoblox().game:GetService("CollectionService")
+	local stalls = collection:GetTagged("PedlarStall")
+	local lanterns = collection:GetTagged("PedlarLantern")
+	local stallKept = false
+	local lanternKept = false
+	for _, inst in stalls do
+		if inst == pedlar then
+			stallKept = true
+		end
+	end
+	for _, inst in lanterns do
+		if inst == lantern then
+			lanternKept = true
+		end
+	end
+	Check.eq(stallKept, true, "PedlarStall tag")
+	Check.eq(lanternKept, true, "PedlarLantern tag")
+	print(
+		string.format(
+			"pale pedlar parts=%s lights=%s emitters=%s",
+			tostring(pedlar:GetAttribute("KitAfterParts")),
+			tostring(pedlar:GetAttribute("KitAfterLights")),
+			tostring(pedlar:GetAttribute("KitAfterEmitters"))
+		)
+	)
 end)
