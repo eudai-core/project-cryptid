@@ -399,6 +399,32 @@ function newCFrame(
 	})
 end
 
+local function colorFromHex(hex: string): any
+	local raw = string.gsub(string.upper(hex), "#", "")
+	local function channel(startAt: number): number
+		return (tonumber(string.sub(raw, startAt, startAt + 1), 16) or 0) / 255
+	end
+	local color = {
+		R = channel(1),
+		G = channel(3),
+		B = channel(5),
+	}
+	function color:ToHex(): string
+		local function byte(value: number): number
+			return math.clamp(math.floor(value * 255 + 0.5), 0, 255)
+		end
+		return string.format("#%02X%02X%02X", byte(self.R), byte(self.G), byte(self.B))
+	end
+	return setmetatable(color, {
+		__index = function(_, key)
+			if key == "Hex" then
+				error("Hex is not a valid member of Color3", 2)
+			end
+			return nil
+		end,
+	})
+end
+
 local roblox: any = nil
 
 local function installRoblox(): any
@@ -408,9 +434,7 @@ local function installRoblox(): any
 	local services = {}
 	roblox = {
 		Color3 = {
-			fromHex = function(hex: string)
-				return { Hex = hex }
-			end,
+			fromHex = colorFromHex,
 		},
 		Vector3 = {
 			new = function(x: number?, y: number?, z: number?)
@@ -843,10 +867,10 @@ Check.test("v3 night is purple mist with budgeted bloom and a low-quality fallba
 	local lighting = installRoblox().game:GetService("Lighting")
 	Check.eq(lighting.Technology, nil)
 	Check.eq(lighting.ClockTime, UITheme.lighting.clockTime)
-	Check.eq(lighting.Ambient.Hex, TownLook.SKY_AMBIENT)
-	Check.eq(lighting.OutdoorAmbient.Hex, TownLook.SKY_OUTDOOR_AMBIENT)
-	Check.eq(lighting.ColorShift_Top.Hex, TownLook.SKY_COLOR_SHIFT_TOP)
-	Check.eq(lighting.FogColor.Hex, UITheme.world.NightMist)
+	Check.eq(string.gsub(lighting.Ambient:ToHex(), "#", ""), TownLook.SKY_AMBIENT)
+	Check.eq(string.gsub(lighting.OutdoorAmbient:ToHex(), "#", ""), TownLook.SKY_OUTDOOR_AMBIENT)
+	Check.eq(string.gsub(lighting.ColorShift_Top:ToHex(), "#", ""), TownLook.SKY_COLOR_SHIFT_TOP)
+	Check.eq(string.gsub(lighting.FogColor:ToHex(), "#", ""), UITheme.world.NightMist)
 	Check.eq(lighting.FogStart, 250)
 	Check.eq(lighting.FogEnd, 1100)
 	Check.eq(lighting.Brightness, 1.5)
@@ -854,15 +878,15 @@ Check.test("v3 night is purple mist with budgeted bloom and a low-quality fallba
 	Check.eq(atmosphere.Density, TownLook.SKY_ATMOSPHERE_DENSITY)
 	Check.eq(atmosphere.Haze, TownLook.SKY_ATMOSPHERE_HAZE)
 	Check.eq(atmosphere.Glare, TownLook.SKY_ATMOSPHERE_GLARE)
-	Check.eq(atmosphere.Color.Hex, TownLook.SKY_ATMOSPHERE_COLOR)
-	Check.eq(atmosphere.Decay.Hex, TownLook.SKY_ATMOSPHERE_DECAY)
+	Check.eq(string.gsub(atmosphere.Color:ToHex(), "#", ""), TownLook.SKY_ATMOSPHERE_COLOR)
+	Check.eq(string.gsub(atmosphere.Decay:ToHex(), "#", ""), TownLook.SKY_ATMOSPHERE_DECAY)
 	local bloom = lighting:FindFirstChildOfClass("BloomEffect")
 	Check.eq(bloom.Enabled, true)
 	Check.eq(bloom.Intensity, 0.45)
 	Check.eq(bloom.Size, 28)
 	Check.eq(bloom.Threshold, 1.5)
 	local grade = lighting:FindFirstChildOfClass("ColorCorrectionEffect")
-	Check.eq(grade.TintColor.Hex, TownLook.SKY_GRADE_TINT)
+	Check.eq(string.gsub(grade.TintColor:ToHex(), "#", ""), TownLook.SKY_GRADE_TINT)
 	Check.eq(grade.Saturation, TownLook.SKY_GRADE_SATURATION)
 	Check.eq(grade.Saturation < UITheme.lighting.colorSaturation, true)
 	local gradeRed, gradeGreen, gradeBlue = channels(TownLook.SKY_GRADE_TINT)
@@ -894,7 +918,7 @@ Check.test("v3 night is purple mist with budgeted bloom and a low-quality fallba
 	Check.eq(clouds.ClassName, "Clouds")
 	Check.eq(clouds.Cover, TownLook.CLOUD_COVER)
 	Check.eq(clouds.Density, TownLook.CLOUD_DENSITY)
-	Check.eq(clouds.Color.Hex, TownLook.CLOUD_COLOR)
+	Check.eq(string.gsub(clouds.Color:ToHex(), "#", ""), TownLook.CLOUD_COLOR)
 end)
 
 Check.test("town part and light counts stay inside the sanity guard", function()
