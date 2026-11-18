@@ -44,7 +44,7 @@ type MagicAllow = { path: string, line: number, value: number }
 local MAGIC_ALLOWLIST: { MagicAllow } = {
 	{
 		path = "src/shared/Logic/Schema.luau",
-		line = 620,
+		line = 623,
 		value = 10000000,
 	},
 }

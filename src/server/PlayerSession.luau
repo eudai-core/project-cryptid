@@ -46,6 +46,9 @@ local ShutdownFlush = require(Shared:WaitForChild("Logic"):WaitForChild("Shutdow
 local Snapshot = require(Shared:WaitForChild("Logic"):WaitForChild("Snapshot")) :: any
 local StealGuard = require(Shared:WaitForChild("Logic"):WaitForChild("StealGuard")) :: any
 local Transactions = require(Shared:WaitForChild("Logic"):WaitForChild("Transactions")) :: any
+local ShopAnchors = require(Shared:WaitForChild("Config"):WaitForChild("ShopAnchors")) :: any
+local TownShop = require(Shared:WaitForChild("Logic"):WaitForChild("TownShop")) :: any
+local TownShopService = require(script.Parent:WaitForChild("TownShopService")) :: any
 local UITheme = require(Shared:WaitForChild("UITheme")) :: any
 
 local sessions: { [Player]: any } = {}
@@ -525,6 +528,33 @@ local function pedlarDistance(player: Player): number?
 	return nil
 end
 
+local function shopDistance(player: Player, shopId: string): number?
+	local anchor = TownShopService.anchor(shopId)
+	if anchor ~= nil then
+		return distanceTo(player, anchor)
+	end
+	if shopId == ShopAnchors.PEDLAR_ID then
+		return pedlarDistance(player)
+	end
+	return nil
+end
+
+local function markShopOpen(session: any, shopId: string)
+	session.townShopToken += 1
+	session.townShopId = shopId
+	session.player:SetAttribute(ShopAnchors.OPEN_ID, shopId)
+	session.player:SetAttribute(ShopAnchors.OPEN_TOKEN, session.townShopToken)
+end
+
+local function noteShop(session: any, message: any)
+	if type(message) ~= "string" or message == "" then
+		return
+	end
+	session.townShopNotice += 1
+	session.player:SetAttribute(ShopAnchors.NOTICE, message)
+	session.player:SetAttribute(ShopAnchors.NOTICE_TOKEN, session.townShopNotice)
+end
+
 local function grantPedlarOpen(session: any): boolean
 	if not allowRequest(session) then
 		return false
@@ -546,6 +576,7 @@ local function grantPedlarOpen(session: any): boolean
 	session.lastPedlarOpenAt = at
 	session.pedlarOpenToken += 1
 	session.player:SetAttribute(Shop.OPEN_TOKEN, session.pedlarOpenToken)
+	markShopOpen(session, ShopAnchors.PEDLAR_ID)
 	sink().pedlarOpen(
 		session.player,
 		session,
@@ -670,6 +701,55 @@ local function onSettings(session: any, key: any, value: any)
 	queueSave(session)
 end
 
+local function shopGate(session: any, shopId: string): any
+	local step = session.profile.onboarding.step
+	return {
+		opened = session.townShopId == shopId and type(session.townShopToken) == "number" and session.townShopToken > 0,
+		distance = shopDistance(session.player, shopId),
+		step = step,
+	}
+end
+
+local function onShopBuy(session: any, shopId: any, itemId: any, requestId: any, qty: any)
+	if not allowRequest(session) then
+		return
+	end
+	local parsedShop = RemoteArgs.shopId(shopId)
+	local parsedItem = RemoteArgs.itemId(itemId)
+	local parsedRequest = RemoteArgs.requestId(requestId)
+	local parsedQty = RemoteArgs.shopQty(qty)
+	if parsedShop == nil or parsedItem == nil or parsedRequest == nil or parsedQty == nil then
+		return
+	end
+	if not allowPurchase(session) then
+		return
+	end
+	local result =
+		TownShop.buy(session.profile, parsedShop, parsedItem, parsedRequest, parsedQty, shopGate(session, parsedShop))
+	noteShop(session, result.message)
+	commit(session, result.code == "ok")
+end
+
+local function onShopSell(session: any, shopId: any, itemId: any, requestId: any, qty: any)
+	if not allowRequest(session) then
+		return
+	end
+	local parsedShop = RemoteArgs.shopId(shopId)
+	local parsedItem = RemoteArgs.itemId(itemId)
+	local parsedRequest = RemoteArgs.requestId(requestId)
+	local parsedQty = RemoteArgs.shopQty(qty)
+	if parsedShop == nil or parsedItem == nil or parsedRequest == nil or parsedQty == nil then
+		return
+	end
+	if not allowPurchase(session) then
+		return
+	end
+	local result =
+		TownShop.sell(session.profile, parsedShop, parsedItem, parsedRequest, parsedQty, shopGate(session, parsedShop))
+	noteShop(session, result.message)
+	commit(session, result.code == "ok")
+end
+
 local function onBuySkill(session: any, nodeId: any)
 	if not allowRequest(session) then
 		return
@@ -749,6 +829,8 @@ local function bind(folder: Folder)
 	listen(Names.CLAIM_DAILY, onClaimDaily)
 	listen(Names.SET_SETTINGS, onSettings)
 	listen(Names.BUY_SKILL, onBuySkill)
+	listen(Names.SHOP_BUY, onShopBuy)
+	listen(Names.SHOP_SELL, onShopSell)
 	listen(Names.OPEN_RELICS, function(session)
 		if not allowRequest(session) then
 			return
@@ -999,6 +1081,10 @@ function PlayerSession.onPlayer(player: Player): boolean
 		pedlarToken = 0,
 		pedlarOpenToken = 0,
 		lastPedlarOpenAt = nil,
+		townShopToken = 0,
+		townShopId = nil,
+		townShopNotice = 0,
+		lastTownShopOpenAt = nil,
 		workers = 0,
 		plot = plot,
 		snapshot = snapshot,
@@ -1090,6 +1176,34 @@ function PlayerSession.onRemoving(player: Player)
 		return
 	end
 	closeOwned(player, session, false)
+end
+
+function PlayerSession.onTownShopOpen(player: Player, shopId: any)
+	local session = sessions[player]
+	if session == nil or session.alive ~= true then
+		return
+	end
+	if not allowRequest(session) then
+		return
+	end
+	local parsed = RemoteArgs.shopId(shopId)
+	if parsed == nil then
+		return
+	end
+	local opened, at = PedlarBrowse.tryOpen(
+		shopDistance(player, parsed),
+		session.profile.onboarding.step,
+		Shop.GATE_STEP,
+		Town.PROMPT_DISTANCE,
+		os.clock(),
+		session.lastTownShopOpenAt,
+		Economy.PURCHASE_DEBOUNCE_SECONDS
+	)
+	if opened ~= true or at == nil then
+		return
+	end
+	session.lastTownShopOpenAt = at
+	markShopOpen(session, parsed)
 end
 
 function PlayerSession.onPedlarOpen(player: Player)

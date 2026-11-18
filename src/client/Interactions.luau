@@ -9,6 +9,7 @@ local UiFactory = require(script.Parent:WaitForChild("UiFactory"))
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Economy = require(Shared:WaitForChild("Config"):WaitForChild("Economy")) :: any
 local Shop = require(Shared:WaitForChild("Config"):WaitForChild("Shop")) :: any
+local ShopAnchors = require(Shared:WaitForChild("Config"):WaitForChild("ShopAnchors")) :: any
 local Town = require(Shared:WaitForChild("Config"):WaitForChild("Town")) :: any
 local UITheme = require(Shared:WaitForChild("UITheme")) :: any
 
@@ -103,7 +104,7 @@ function Interactions.start(player: Player, remotes: Folder, names: any, beginCa
 				allowed = allowed and owner == player.UserId
 			end
 			local kindName = inst:GetAttribute("Kind")
-			if kindName == "Pedlar" or kindName == "SkillShrine" then
+			if kindName == "Pedlar" or kindName == "SkillShrine" or kindName == ShopAnchors.PROMPT_KIND then
 				local step = player:GetAttribute("OnboardingStep")
 				if type(step) ~= "number" or step < Shop.GATE_STEP then
 					allowed = false

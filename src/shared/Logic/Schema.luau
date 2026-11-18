@@ -47,6 +47,9 @@ end)
 local RelicsPip = import("./RelicsPip", function()
 	return script.Parent:WaitForChild("RelicsPip")
 end)
+local TownShop = import("./TownShop", function()
+	return script.Parent:WaitForChild("TownShop")
+end)
 
 local SOURCES = {
 	starter = true,
@@ -636,9 +639,18 @@ local function parseAnalytics(raw: any): { lastReturnDay: number, funnelStep: nu
 	}
 end
 
+local function applyWares(profile: any, raw: any): boolean
+	local wares, ok = TownShop.savedFrom(if type(raw) == "table" then raw.wares else nil)
+	if ok ~= true or wares == nil then
+		return false
+	end
+	profile.wares = wares
+	return true
+end
+
 local function migrateToV9(profile: any, raw: any, _version: number, _now: number): boolean
 	profile.analytics = parseAnalytics(raw)
-	return true
+	return applyWares(profile, raw)
 end
 
 local MIGRATION_STEPS: { { to: number, apply: (any, any, number, number) -> boolean } } = {
@@ -758,6 +770,7 @@ function Schema.newProfile(now: number, starterInstanceId: string): any
 			effectsQuality = Return.EFFECTS_DEFAULT,
 		},
 		shop = freshShop(),
+		wares = TownShop.fresh(),
 		base = {
 			defences = {},
 		},

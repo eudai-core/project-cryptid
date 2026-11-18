@@ -44,6 +44,9 @@ local Economy = {
 		[8] = PAD_8_COST,
 	}),
 	ALTAR_COST = BoneAltar.COST,
+	-- PLACEHOLDER: pending design. No spec defines a sell-back fraction.
+	SELL_REFUND_NUMERATOR = 1,
+	SELL_REFUND_DENOMINATOR = 2,
 }
 
 function Economy.padCost(index: number, rebirths: number): number?
